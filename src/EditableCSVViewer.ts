@@ -14,7 +14,7 @@ import { ISignal, Signal } from '@lumino/signaling';
 import { PanelLayout, Widget } from '@lumino/widgets';
 import { CSVViewer, TextRenderConfig } from '@jupyterlab/csvviewer';
 import { DSVModel } from './model';
-import EditableDataGrid from './editabledatagrid';
+import EditableDataModel from './editabledatamodel';
 
 /**
  * The class name added to a CSV viewer.
@@ -196,6 +196,7 @@ export class GridSearchService {
 }
 
 export class EditableCSVViewer extends Widget {
+  dataModel: EditableDataModel;
   /**
    * Construct a new CSV viewer.
    */
@@ -206,8 +207,10 @@ export class EditableCSVViewer extends Widget {
     const layout = (this.layout = new PanelLayout());
 
     this.addClass(CSV_CLASS);
+    this.dataModel = new EditableDataModel();
 
-    this._grid = new EditableDataGrid({
+
+    this._grid = new DataGrid({
       defaultSizes: {
         rowHeight: 24,
         columnWidth: 144,
