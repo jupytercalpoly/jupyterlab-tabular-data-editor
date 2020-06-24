@@ -4,9 +4,9 @@ import {
   ILayoutRestorer
 } from '@jupyterlab/application';
 import {
-  CSVViewer,
-  TextRenderConfig,
-  CSVViewerFactory
+  // CSVViewer,
+  TextRenderConfig
+  // CSVViewerFactory
   // TSVViewerFactory
 } from '@jupyterlab/csvviewer';
 import {
@@ -18,6 +18,7 @@ import { IDocumentWidget } from '@jupyterlab/docregistry';
 // import { ISearchProviderRegistry } from '@jupyterlab/documentsearch';
 import { /*IEditMenu,*/ IMainMenu } from '@jupyterlab/mainmenu';
 import { DataGrid } from '@lumino/datagrid';
+import { EditableCSVViewer, EditableCSVViewerFactory } from './widget';
 
 /**
  * The name of the factories that creates widgets.
@@ -41,14 +42,14 @@ function activateCsv(
   mainMenu: IMainMenu | null
   // searchregistry: ISearchProviderRegistry | null
 ): void {
-  const factory = new CSVViewerFactory({
+  const factory = new EditableCSVViewerFactory({
     name: FACTORY_CSV,
     fileTypes: ['csv'],
     defaultFor: ['csv'],
     readOnly: true
   });
-  const tracker = new WidgetTracker<IDocumentWidget<CSVViewer>>({
-    namespace: 'csvviewer'
+  const tracker = new WidgetTracker<IDocumentWidget<EditableCSVViewer>>({
+    namespace: 'editablecsvviewer'
   });
 
   // The current styles for the data grids.

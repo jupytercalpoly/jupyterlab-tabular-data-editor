@@ -1,5 +1,10 @@
 import { ActivityMonitor } from '@jupyterlab/coreutils';
-import { DocumentRegistry } from '@jupyterlab/docregistry';
+import {
+  DocumentRegistry,
+  IDocumentWidget,
+  ABCWidgetFactory,
+  DocumentWidget
+} from '@jupyterlab/docregistry';
 import { PromiseDelegate } from '@lumino/coreutils';
 import {
   BasicKeyHandler,
@@ -12,9 +17,14 @@ import {
 import { Message } from '@lumino/messaging';
 import { ISignal, Signal } from '@lumino/signaling';
 import { PanelLayout, Widget } from '@lumino/widgets';
-import { CSVViewer, TextRenderConfig } from '@jupyterlab/csvviewer';
+import {
+  // CSVViewer,
+  TextRenderConfig,
+  CSVDelimiter
+} from '@jupyterlab/csvviewer';
 import { DSVModel } from './model';
-import EditableDataModel from './editabledatamodel';
+import EditableDataGrid from './editabledatagrid';
+// import EditableDataModel from './editabledatamodel';
 
 /**
  * The class name added to a CSV viewer.
@@ -38,7 +48,7 @@ const RENDER_TIMEOUT = 1000;
  * to set the background color of cells matching the search text.
  */
 export class GridSearchService {
-  constructor(grid: DataGrid) {
+  constructor(grid: EditableDataGrid) {
     this._grid = grid;
     this._query = null;
     this._row = 0;
@@ -187,7 +197,7 @@ export class GridSearchService {
     return this._query;
   }
 
-  private _grid: DataGrid;
+  private _grid: EditableDataGrid;
   private _query: RegExp | null;
   private _row: number;
   private _column: number;
@@ -195,22 +205,21 @@ export class GridSearchService {
   private _changed = new Signal<GridSearchService, void>(this);
 }
 
+/**
+ * A viewer for CSV tables.
+ */
 export class EditableCSVViewer extends Widget {
-  dataModel: EditableDataModel;
   /**
    * Construct a new CSV viewer.
    */
-  constructor(options: CSVViewer.IOptions) {
+  constructor(options: EditableCSVViewer.IOptions) {
     super();
 
     const context = (this._context = options.context);
     const layout = (this.layout = new PanelLayout());
 
     this.addClass(CSV_CLASS);
-    this.dataModel = new EditableDataModel();
-
-
-    this._grid = new DataGrid({
+    this._grid = new EditableDataGrid({
       defaultSizes: {
         rowHeight: 24,
         columnWidth: 144,
@@ -375,3 +384,119 @@ export class EditableCSVViewer extends Widget {
   private _revealed = new PromiseDelegate<void>();
   private _baseRenderer: TextRenderConfig | null = null;
 }
+
+/**
+ * A namespace for `CSVViewer` statics.
+ */
+export namespace EditableCSVViewer {
+  /**
+   * Instantiation options for CSV widgets.
+   */
+  export interface IOptions {
+    /**
+     * The document context for the CSV being rendered by the widget.
+     */
+    context: DocumentRegistry.Context;
+  }
+}
+
+/**
+ * A document widget for CSV content widgets.
+ */
+export class CSVDocumentWidget extends DocumentWidget<EditableCSVViewer> {
+  constructor(options: CSVDocumentWidget.IOptions) {
+    let { content, context, delimiter, reveal, ...other } = options;
+    content = content || Private.createContent(context);
+    // content = Private.createContent(context);
+    reveal = Promise.all([reveal, content.revealed]);
+    super({ content, context, reveal, ...other });
+
+    if (delimiter) {
+      content.delimiter = delimiter;
+    }
+    const csvDelimiter = new CSVDelimiter({ selected: content.delimiter });
+    this.toolbar.addItem('delimiter', csvDelimiter);
+    csvDelimiter.delimiterChanged.connect(
+      (sender: CSVDelimiter, delimiter: string) => {
+        content!.delimiter = delimiter;
+      }
+    );
+  }
+
+  /**
+   * Set URI fragment identifier for rows
+   */
+  setFragment(fragment: string): void {
+    const parseFragments = fragment.split('=');
+
+    // TODO: expand to allow columns and cells to be selected
+    // reference: https://tools.ietf.org/html/rfc7111#section-3
+    if (parseFragments[0] !== '#row') {
+      return;
+    }
+
+    // multiple rows, separated by semi-colons can be provided, we will just
+    // go to the top one
+    let topRow = parseFragments[1].split(';')[0];
+
+    // a range of rows can be provided, we will take the first value
+    topRow = topRow.split('-')[0];
+
+    // go to that row
+    void this.context.ready.then(() => {
+      this.content.goToLine(Number(topRow));
+    });
+  }
+}
+
+export namespace CSVDocumentWidget {
+  // TODO: In TypeScript 2.8, we can make just the content property optional
+  // using something like https://stackoverflow.com/a/46941824, instead of
+  // inheriting from this IOptionsOptionalContent.
+
+  export interface IOptions
+    extends DocumentWidget.IOptionsOptionalContent<EditableCSVViewer> {
+    delimiter?: string;
+  }
+}
+
+namespace Private {
+  export function createContent(
+    context: DocumentRegistry.IContext<DocumentRegistry.IModel>
+  ) {
+    return new EditableCSVViewer({ context });
+  }
+}
+
+/**
+ * A widget factory for CSV widgets.
+ */
+export class EditableCSVViewerFactory extends ABCWidgetFactory<
+  IDocumentWidget<EditableCSVViewer>
+> {
+  /**
+   * Create a new widget given a context.
+   */
+  protected createNewWidget(
+    context: DocumentRegistry.Context
+  ): IDocumentWidget<EditableCSVViewer> {
+    return new CSVDocumentWidget({ context });
+  }
+}
+
+// /**
+//  * A widget factory for TSV widgets.
+//  */
+// export class TSVViewerFactory extends ABCWidgetFactory<
+//   IDocumentWidget<CSVViewer>
+// > {
+//   /**
+//    * Create a new widget given a context.
+//    */
+//   protected createNewWidget(
+//     context: DocumentRegistry.Context
+//   ): IDocumentWidget<CSVViewer> {
+//     const delimiter = '\t';
+//     return new CSVDocumentWidget({ context, delimiter });
+//   }
+// }
