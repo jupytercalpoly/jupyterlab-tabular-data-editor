@@ -1,7 +1,29 @@
 import {
   JupyterFrontEnd,
-  JupyterFrontEndPlugin
+  JupyterFrontEndPlugin,
+  ILayoutRestorer
 } from '@jupyterlab/application';
+import {
+  CSVViewer,
+  TextRenderConfig,
+  CSVViewerFactory
+  // TSVViewerFactory
+} from '@jupyterlab/csvviewer';
+import {
+  WidgetTracker,
+  IThemeManager
+  // InputDialog
+} from '@jupyterlab/apputils';
+import { IDocumentWidget } from '@jupyterlab/docregistry';
+// import { ISearchProviderRegistry } from '@jupyterlab/documentsearch';
+import { /*IEditMenu,*/ IMainMenu } from '@jupyterlab/mainmenu';
+import { DataGrid } from '@lumino/datagrid';
+
+/**
+ * The name of the factories that creates widgets.
+ */
+const FACTORY_CSV = 'CSVTabularDataEditor';
+// const FACTORY_TSV = 'TSVTable';
 
 /**
  * Initialization data for the jupyterlab-tabular-data-editor extension.
@@ -9,9 +31,138 @@ import {
 const extension: JupyterFrontEndPlugin<void> = {
   id: 'jupyterlab-tabular-data-editor',
   autoStart: true,
-  activate: (app: JupyterFrontEnd) => {
-    console.log('JupyterLab extension jupyterlab-tabular-data-editor is activated!');
-  }
+  activate: activateCsv
 };
 
+function activateCsv(
+  app: JupyterFrontEnd,
+  restorer: ILayoutRestorer | null,
+  themeManager: IThemeManager | null,
+  mainMenu: IMainMenu | null
+  // searchregistry: ISearchProviderRegistry | null
+): void {
+  const factory = new CSVViewerFactory({
+    name: FACTORY_CSV,
+    fileTypes: ['csv'],
+    defaultFor: ['csv'],
+    readOnly: true
+  });
+  const tracker = new WidgetTracker<IDocumentWidget<CSVViewer>>({
+    namespace: 'csvviewer'
+  });
+
+  // The current styles for the data grids.
+  let style: DataGrid.Style = Private.LIGHT_STYLE;
+  let rendererConfig: TextRenderConfig = Private.LIGHT_TEXT_CONFIG;
+
+  if (restorer) {
+    // Handle state restoration.
+    void restorer.restore(tracker, {
+      command: 'docmanager:open',
+      args: widget => ({ path: widget.context.path, factory: FACTORY_CSV }),
+      name: widget => widget.context.path
+    });
+  }
+
+  app.docRegistry.addWidgetFactory(factory);
+  const ft = app.docRegistry.getFileType('csv');
+  factory.widgetCreated.connect((sender, widget) => {
+    // Track the widget.
+    void tracker.add(widget);
+    // Notify the widget tracker if restore data needs to update.
+    widget.context.pathChanged.connect(() => {
+      void tracker.save(widget);
+    });
+
+    if (ft) {
+      widget.title.icon = ft.icon!;
+      widget.title.iconClass = ft.iconClass!;
+      widget.title.iconLabel = ft.iconLabel!;
+    }
+    // Set the theme for the new widget.
+    widget.content.style = style;
+    widget.content.rendererConfig = rendererConfig;
+  });
+
+  // Keep the themes up-to-date.
+  const updateThemes = () => {
+    const isLight =
+      themeManager && themeManager.theme
+        ? themeManager.isLight(themeManager.theme)
+        : true;
+    style = isLight ? Private.LIGHT_STYLE : Private.DARK_STYLE;
+    rendererConfig = isLight
+      ? Private.LIGHT_TEXT_CONFIG
+      : Private.DARK_TEXT_CONFIG;
+    tracker.forEach(grid => {
+      grid.content.style = style;
+      grid.content.rendererConfig = rendererConfig;
+    });
+  };
+  if (themeManager) {
+    themeManager.themeChanged.connect(updateThemes);
+  }
+
+  //TODO: Error with main menu
+  // if (mainMenu) {
+  //   addMenuEntries(mainMenu, tracker);
+  // }
+
+  //TODO: Error when using the search registry
+  // if (searchregistry) {
+  //   searchregistry.register('csv', CSVSearchProvider);
+  // }
+}
+
 export default extension;
+
+/**
+ * A namespace for private data.
+ */
+namespace Private {
+  /**
+   * The light theme for the data grid.
+   */
+  export const LIGHT_STYLE: DataGrid.Style = {
+    ...DataGrid.defaultStyle,
+    voidColor: '#F3F3F3',
+    backgroundColor: 'white',
+    headerBackgroundColor: '#EEEEEE',
+    gridLineColor: 'rgba(20, 20, 20, 0.15)',
+    headerGridLineColor: 'rgba(20, 20, 20, 0.25)',
+    rowBackgroundColor: i => (i % 2 === 0 ? '#F5F5F5' : 'white')
+  };
+
+  /**
+   * The dark theme for the data grid.
+   */
+  export const DARK_STYLE: DataGrid.Style = {
+    ...DataGrid.defaultStyle,
+    voidColor: 'black',
+    backgroundColor: '#111111',
+    headerBackgroundColor: '#424242',
+    gridLineColor: 'rgba(235, 235, 235, 0.15)',
+    headerGridLineColor: 'rgba(235, 235, 235, 0.25)',
+    rowBackgroundColor: i => (i % 2 === 0 ? '#212121' : '#111111')
+  };
+
+  /**
+   * The light config for the data grid renderer.
+   */
+  export const LIGHT_TEXT_CONFIG: TextRenderConfig = {
+    textColor: '#111111',
+    matchBackgroundColor: '#FFFFE0',
+    currentMatchBackgroundColor: '#FFFF00',
+    horizontalAlignment: 'right'
+  };
+
+  /**
+   * The dark config for the data grid renderer.
+   */
+  export const DARK_TEXT_CONFIG: TextRenderConfig = {
+    textColor: '#F5F5F5',
+    matchBackgroundColor: '#838423',
+    currentMatchBackgroundColor: '#A3807A',
+    horizontalAlignment: 'right'
+  };
+}
