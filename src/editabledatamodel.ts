@@ -25,7 +25,7 @@ export default class EditableDataModel extends DSVModel {
 
         // Check wether its a row or collumn we are adding.
         if (axis == "row") {
-            cutoffIndex = this_getOffsetIndex(index, 0);
+            cutoffIndex = this._getOffsetIndex(index, 0);
             this._data = this._data.slice(0, cutoffIndex)
                 .concat(','.repeat(this.columnCount('body') - 1))  //first through (n-1)th entry ends with comma
                 .concat(this._rowDelimiter)                         // nth ends with row-delimeter
@@ -90,8 +90,8 @@ export default class EditableDataModel extends DSVModel {
             trimLeft += 1;
             trimRight += 1;
         }
-        const lastCharIndex: number = nextIndex - trimRight;
-        const firstCharIndex: number = index + trimLeft;
+        // const lastCharIndex: number = nextIndex - trimRight;
+        // const firstCharIndex: number = index + trimLeft;
         
     }
 
