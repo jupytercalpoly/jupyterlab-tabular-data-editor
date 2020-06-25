@@ -207,7 +207,6 @@ export class EditableCSVViewer extends Widget {
     const layout = (this.layout = new PanelLayout());
 
     this.addClass(CSV_CLASS);
-    this.dataModel = new EditableDataModel();
 
 
     this._grid = new DataGrid({
