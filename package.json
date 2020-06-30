@@ -22,7 +22,7 @@
   "style": "style/index.css",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jupytercalpoly/jupyterlab-tabular-data-editor.git.git"
+    "url": "https://github.com/jupytercalpoly/jupyterlab-tabular-data-editor.git"
   },
   "scripts": {
     "build": "tsc",
