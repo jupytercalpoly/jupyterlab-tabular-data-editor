@@ -8,7 +8,7 @@ import {
 } from '@jupyterlab/docregistry';
 
 import { PromiseDelegate } from '@lumino/coreutils';
-import { CSVViewer, GridSearchService, TextRenderConfig,  } from '@jupyterlab/csvviewer';
+import { GridSearchService, TextRenderConfig,  } from '@jupyterlab/csvviewer';
 
 import {
   BasicKeyHandler,
@@ -34,7 +34,7 @@ export class EditableCSVViewer extends Widget {
   /**
    * Construct a new CSV viewer.
    */
-  constructor(options: CSVViewer.IOptions) {
+  constructor(options: EditableCSVViewer.IOptions) {
     super();
 
     const context = (this._context = options.context);
@@ -232,6 +232,16 @@ export class EditableCSVViewerFactory extends ABCWidgetFactory<IDocumentWidget<E
     return new EditableCSVDocumentWidget({ context })
   }
 }
-
+export namespace EditableCSVViewer {
+  /**
+   * Instantiation options for CSV widgets.
+   */
+  export interface IOptions {
+    /**
+     * The document context for the CSV being rendered by the widget.
+     */
+    context: DocumentRegistry.Context;
+  }
+}
 
 
