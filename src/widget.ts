@@ -1,213 +1,35 @@
 import { ActivityMonitor } from '@jupyterlab/coreutils';
+
 import {
+  ABCWidgetFactory,
   DocumentRegistry,
   IDocumentWidget,
-  ABCWidgetFactory,
   DocumentWidget
 } from '@jupyterlab/docregistry';
+
 import { PromiseDelegate } from '@lumino/coreutils';
+import { GridSearchService, TextRenderConfig,  } from '@jupyterlab/csvviewer';
+
 import {
   BasicKeyHandler,
   BasicMouseHandler,
   BasicSelectionModel,
   DataGrid,
-  TextRenderer,
-  CellRenderer
+  TextRenderer
 } from '@lumino/datagrid';
+
 import { Message } from '@lumino/messaging';
-import { ISignal, Signal } from '@lumino/signaling';
+
 import { PanelLayout, Widget } from '@lumino/widgets';
-import {
-  // CSVViewer,
-  TextRenderConfig,
-  CSVDelimiter
-} from '@jupyterlab/csvviewer';
-import { DSVModel } from './model';
-import EditableDataGrid from './editabledatagrid';
-// import EditableDataModel from './editabledatamodel';
+import EditableDataGrid from './grid'
+import EditableDSVModel from './model'
 
-/**
- * The class name added to a CSV viewer.
- */
+
 const CSV_CLASS = 'jp-CSVViewer';
-
-/**
- * The class name added to a CSV viewer datagrid.
- */
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
-
-/**
- * The timeout to wait for change activity to have ceased before rendering.
- */
 const RENDER_TIMEOUT = 1000;
 
-/**
- * Search service remembers the search state and the location of the last
- * match, for incremental searching.
- * Search service is also responsible of providing a cell renderer function
- * to set the background color of cells matching the search text.
- */
-export class GridSearchService {
-  constructor(grid: EditableDataGrid) {
-    this._grid = grid;
-    this._query = null;
-    this._row = 0;
-    this._column = -1;
-  }
 
-  /**
-   * A signal fired when the grid changes.
-   */
-  get changed(): ISignal<GridSearchService, void> {
-    return this._changed;
-  }
-
-  /**
-   * Returns a cellrenderer config function to render each cell background.
-   * If cell match, background is matchBackgroundColor, if it's the current
-   * match, background is currentMatchBackgroundColor.
-   */
-  cellBackgroundColorRendererFunc(
-    config: TextRenderConfig
-  ): CellRenderer.ConfigFunc<string> {
-    return ({ value, row, column }) => {
-      if (this._query) {
-        if ((value as string).match(this._query)) {
-          if (this._row === row && this._column === column) {
-            return config.currentMatchBackgroundColor;
-          }
-          return config.matchBackgroundColor;
-        }
-      }
-      return '';
-    };
-  }
-
-  /**
-   * Clear the search.
-   */
-  clear() {
-    this._query = null;
-    this._row = 0;
-    this._column = -1;
-    this._changed.emit(undefined);
-  }
-
-  /**
-   * incrementally look for searchText.
-   */
-  find(query: RegExp, reverse = false): boolean {
-    const model = this._grid.dataModel!;
-    const rowCount = model.rowCount('body');
-    const columnCount = model.columnCount('body');
-
-    if (this._query !== query) {
-      // reset search
-      this._row = 0;
-      this._column = -1;
-    }
-    this._query = query;
-
-    // check if the match is in current viewport
-
-    const minRow = this._grid.scrollY / this._grid.defaultSizes.rowHeight;
-    const maxRow =
-      (this._grid.scrollY + this._grid.pageHeight) /
-      this._grid.defaultSizes.rowHeight;
-    const minColumn =
-      this._grid.scrollX / this._grid.defaultSizes.columnHeaderHeight;
-    const maxColumn =
-      (this._grid.scrollX + this._grid.pageWidth) /
-      this._grid.defaultSizes.columnHeaderHeight;
-    const isInViewport = (row: number, column: number) => {
-      return (
-        row >= minRow &&
-        row <= maxRow &&
-        column >= minColumn &&
-        column <= maxColumn
-      );
-    };
-
-    const increment = reverse ? -1 : 1;
-    this._column += increment;
-    for (
-      let row = this._row;
-      reverse ? row >= 0 : row < rowCount;
-      row += increment
-    ) {
-      for (
-        let col = this._column;
-        reverse ? col >= 0 : col < columnCount;
-        col += increment
-      ) {
-        const cellData = model.data('body', row, col) as string;
-        if (cellData.match(query)) {
-          // to update the background of matching cells.
-
-          // TODO: we only really need to invalidate the previous and current
-          // cell rects, not the entire grid.
-          this._changed.emit(undefined);
-
-          if (!isInViewport(row, col)) {
-            this._grid.scrollToRow(row);
-          }
-          this._row = row;
-          this._column = col;
-          return true;
-        }
-      }
-      this._column = reverse ? columnCount - 1 : 0;
-    }
-    // We've finished searching all the way to the limits of the grid. If this
-    // is the first time through (looping is true), wrap the indices and search
-    // again. Otherwise, give up.
-    if (this._looping) {
-      this._looping = false;
-      this._row = reverse ? 0 : rowCount - 1;
-      this._wrapRows(reverse);
-      try {
-        return this.find(query, reverse);
-      } finally {
-        this._looping = true;
-      }
-    }
-    return false;
-  }
-
-  /**
-   * Wrap indices if needed to just before the start or just after the end.
-   */
-  private _wrapRows(reverse = false) {
-    const model = this._grid.dataModel!;
-    const rowCount = model.rowCount('body');
-    const columnCount = model.columnCount('body');
-
-    if (reverse && this._row <= 0) {
-      // if we are at the front, wrap to just past the end.
-      this._row = rowCount - 1;
-      this._column = columnCount;
-    } else if (!reverse && this._row >= rowCount - 1) {
-      // if we are at the end, wrap to just before the front.
-      this._row = 0;
-      this._column = -1;
-    }
-  }
-
-  get query(): RegExp | null {
-    return this._query;
-  }
-
-  private _grid: EditableDataGrid;
-  private _query: RegExp | null;
-  private _row: number;
-  private _column: number;
-  private _looping = true;
-  private _changed = new Signal<GridSearchService, void>(this);
-}
-
-/**
- * A viewer for CSV tables.
- */
 export class EditableCSVViewer extends Widget {
   /**
    * Construct a new CSV viewer.
@@ -219,6 +41,7 @@ export class EditableCSVViewer extends Widget {
     const layout = (this.layout = new PanelLayout());
 
     this.addClass(CSV_CLASS);
+
     this._grid = new EditableDataGrid({
       defaultSizes: {
         rowHeight: 24,
@@ -336,11 +159,11 @@ export class EditableCSVViewer extends Widget {
   /**
    * Create the model for the grid.
    */
-  private _updateGrid(): void {
-    const data: string = this._context.model.toString();
-    const delimiter = this._delimiter;
-    const oldModel = this._grid.dataModel as DSVModel;
-    const dataModel = (this._grid.dataModel = new DSVModel({
+  protected _updateGrid() {
+    const data = this._context.model.toString();
+    const delimiter = ',';
+    const oldModel = this._grid.dataModel as EditableDSVModel;
+    const dataModel = (this._grid.dataModel = new EditableDSVModel({
       data,
       delimiter
     }));
@@ -385,9 +208,30 @@ export class EditableCSVViewer extends Widget {
   private _baseRenderer: TextRenderConfig | null = null;
 }
 
-/**
- * A namespace for `CSVViewer` statics.
- */
+
+  // Override the CSVViewer's _updateGrid method to set the datagrid's model to an EditableDataModel
+
+  
+
+export class EditableCSVDocumentWidget extends DocumentWidget<EditableCSVViewer> {
+  constructor(options: EditableCSVDocumentWidget.IOptions) {
+    let { context, content, reveal } = options;
+    content = content || new EditableCSVViewer({ context });
+    reveal = Promise.all([reveal, content.revealed]);
+    super(Object.assign({ context, content, reveal }));
+  }
+}
+export declare namespace EditableCSVDocumentWidget {
+  interface IOptions extends DocumentWidget.IOptionsOptionalContent<EditableCSVViewer> {
+      delimiter?: string;
+  }
+}
+
+export class EditableCSVViewerFactory extends ABCWidgetFactory<IDocumentWidget<EditableCSVViewer>> {
+  createNewWidget(context: DocumentRegistry.Context): IDocumentWidget<EditableCSVViewer> {
+    return new EditableCSVDocumentWidget({ context })
+  }
+}
 export namespace EditableCSVViewer {
   /**
    * Instantiation options for CSV widgets.
@@ -400,103 +244,4 @@ export namespace EditableCSVViewer {
   }
 }
 
-/**
- * A document widget for CSV content widgets.
- */
-export class CSVDocumentWidget extends DocumentWidget<EditableCSVViewer> {
-  constructor(options: CSVDocumentWidget.IOptions) {
-    let { content, context, delimiter, reveal, ...other } = options;
-    content = content || Private.createContent(context);
-    // content = Private.createContent(context);
-    reveal = Promise.all([reveal, content.revealed]);
-    super({ content, context, reveal, ...other });
 
-    if (delimiter) {
-      content.delimiter = delimiter;
-    }
-    const csvDelimiter = new CSVDelimiter({ selected: content.delimiter });
-    this.toolbar.addItem('delimiter', csvDelimiter);
-    csvDelimiter.delimiterChanged.connect(
-      (sender: CSVDelimiter, delimiter: string) => {
-        content!.delimiter = delimiter;
-      }
-    );
-  }
-
-  /**
-   * Set URI fragment identifier for rows
-   */
-  setFragment(fragment: string): void {
-    const parseFragments = fragment.split('=');
-
-    // TODO: expand to allow columns and cells to be selected
-    // reference: https://tools.ietf.org/html/rfc7111#section-3
-    if (parseFragments[0] !== '#row') {
-      return;
-    }
-
-    // multiple rows, separated by semi-colons can be provided, we will just
-    // go to the top one
-    let topRow = parseFragments[1].split(';')[0];
-
-    // a range of rows can be provided, we will take the first value
-    topRow = topRow.split('-')[0];
-
-    // go to that row
-    void this.context.ready.then(() => {
-      this.content.goToLine(Number(topRow));
-    });
-  }
-}
-
-export namespace CSVDocumentWidget {
-  // TODO: In TypeScript 2.8, we can make just the content property optional
-  // using something like https://stackoverflow.com/a/46941824, instead of
-  // inheriting from this IOptionsOptionalContent.
-
-  export interface IOptions
-    extends DocumentWidget.IOptionsOptionalContent<EditableCSVViewer> {
-    delimiter?: string;
-  }
-}
-
-namespace Private {
-  export function createContent(
-    context: DocumentRegistry.IContext<DocumentRegistry.IModel>
-  ) {
-    return new EditableCSVViewer({ context });
-  }
-}
-
-/**
- * A widget factory for CSV widgets.
- */
-export class EditableCSVViewerFactory extends ABCWidgetFactory<
-  IDocumentWidget<EditableCSVViewer>
-> {
-  /**
-   * Create a new widget given a context.
-   */
-  protected createNewWidget(
-    context: DocumentRegistry.Context
-  ): IDocumentWidget<EditableCSVViewer> {
-    return new CSVDocumentWidget({ context });
-  }
-}
-
-// /**
-//  * A widget factory for TSV widgets.
-//  */
-// export class TSVViewerFactory extends ABCWidgetFactory<
-//   IDocumentWidget<CSVViewer>
-// > {
-//   /**
-//    * Create a new widget given a context.
-//    */
-//   protected createNewWidget(
-//     context: DocumentRegistry.Context
-//   ): IDocumentWidget<CSVViewer> {
-//     const delimiter = '\t';
-//     return new CSVDocumentWidget({ context, delimiter });
-//   }
-// }
