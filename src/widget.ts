@@ -17,15 +17,15 @@ import {
   DataGrid,
   TextRenderer,
   CellEditor,
-  ICellEditor
+  ICellEditor,
+  TextCellEditor
 } from '@lumino/datagrid';
 
 import { Message } from '@lumino/messaging';
 
 import { PanelLayout, Widget } from '@lumino/widgets';
-import EditableDataGrid from './grid';
+// import EditableDataGrid from './grid';
 import EditableDSVModel from './model';
-import JSONCellEditor from './editor';
 
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
@@ -42,7 +42,7 @@ export class EditableCSVViewer extends Widget {
     const layout = (this.layout = new PanelLayout());
 
     this.addClass(CSV_CLASS);
-    this._grid = new EditableDataGrid({
+    this._grid = new DataGrid({
       defaultSizes: {
         rowHeight: 24,
         columnWidth: 144,
@@ -69,6 +69,12 @@ export class EditableCSVViewer extends Widget {
 
     void this._context.ready.then(() => {
       this._updateGrid();
+      this._grid.editorController!.setEditor(
+        'string',
+        (config: CellEditor.CellConfig): ICellEditor => {
+          return new TextCellEditor();
+        }
+      );
       this._revealed.resolve(undefined);
       // Throttle the rendering rate of the widget.
       this._monitor = new ActivityMonitor({
@@ -76,16 +82,9 @@ export class EditableCSVViewer extends Widget {
         timeout: RENDER_TIMEOUT
       });
       this._monitor.activityStopped.connect(this._updateGrid, this);
-      const columnIdentifier = { name: 'Test' };
-      this._grid.editorController!.setEditor(
-        columnIdentifier,
-        (config: CellEditor.CellConfig): ICellEditor => {
-          return new JSONCellEditor();
-        }
-      );
-
       console.log('editable boolean', this._grid.editable);
     });
+    this._grid.editingEnabled = true;
   }
 
   /**
