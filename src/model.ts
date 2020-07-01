@@ -38,21 +38,36 @@ export default class EditableDSVModel extends MutableDataModel {
     column: number,
     value: any
   ): boolean {
-    //   const model = this._dsvModel as any;
+    const model = this._dsvModel;
 
-    //   // Set up the field and value variables.
-    //   let field: DSVModel
-
-    //   // Look up the field and value for the region.
-    //   switch (region) {
-    //   case 'body':
-    //     field = model._bodyFields[column];
-    //     model._data[row][field.name] = value;
-    //     break;
-    //   default:
-    //     throw 'cannot change header data';
-    //   }
     console.log('setData method called');
+
+    // Look up the field and value for the region.
+    switch (region) {
+      case 'body':
+        if (model._header.length === 0) {
+          model._setField(row, column, value);
+        } else {
+          model._setField(row + 1, column, value);
+        }
+        console.log('setting field in body');
+        break;
+      //   case 'column-header':
+      //     if (model._header.length === 0) {
+      //       value = (column + 1).toString();
+      //     } else {
+      //       value = model._header[column];
+      //     }
+      //     break;
+      //   case 'row-header':
+      //     value = (row + 1).toString();
+      //     break;
+      //   case 'corner-header':
+      //     value = '';
+      //     break;
+      default:
+        throw 'unreachable';
+    }
 
     this.emitChanged({
       type: 'cells-changed',
