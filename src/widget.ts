@@ -8,27 +8,27 @@ import {
 } from '@jupyterlab/docregistry';
 
 import { PromiseDelegate } from '@lumino/coreutils';
-import { GridSearchService, TextRenderConfig,  } from '@jupyterlab/csvviewer';
+import { GridSearchService, TextRenderConfig } from '@jupyterlab/csvviewer';
 
 import {
   BasicKeyHandler,
   BasicMouseHandler,
   BasicSelectionModel,
   DataGrid,
-  TextRenderer
+  TextRenderer,
+  CellEditor,
+  ICellEditor
 } from '@lumino/datagrid';
 
 import { Message } from '@lumino/messaging';
 
 import { PanelLayout, Widget } from '@lumino/widgets';
-import EditableDataGrid from './grid'
-import EditableDSVModel from './model'
-
+import CSVTextCellEditor from './editor';
+import EditableDSVModel from './model';
 
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
 const RENDER_TIMEOUT = 1000;
-
 
 export class EditableCSVViewer extends Widget {
   /**
@@ -41,8 +41,7 @@ export class EditableCSVViewer extends Widget {
     const layout = (this.layout = new PanelLayout());
 
     this.addClass(CSV_CLASS);
-
-    this._grid = new EditableDataGrid({
+    this._grid = new DataGrid({
       defaultSizes: {
         rowHeight: 24,
         columnWidth: 144,
@@ -50,6 +49,7 @@ export class EditableCSVViewer extends Widget {
         columnHeaderHeight: 36
       }
     });
+
     this._grid.addClass(CSV_GRID_CLASS);
     this._grid.headerVisibility = 'all';
     this._grid.keyHandler = new BasicKeyHandler();
@@ -68,6 +68,12 @@ export class EditableCSVViewer extends Widget {
 
     void this._context.ready.then(() => {
       this._updateGrid();
+      this._grid.editorController!.setEditor(
+        'string',
+        (config: CellEditor.CellConfig): ICellEditor => {
+          return new CSVTextCellEditor();
+        }
+      );
       this._revealed.resolve(undefined);
       // Throttle the rendering rate of the widget.
       this._monitor = new ActivityMonitor({
@@ -75,7 +81,9 @@ export class EditableCSVViewer extends Widget {
         timeout: RENDER_TIMEOUT
       });
       this._monitor.activityStopped.connect(this._updateGrid, this);
+      console.log('editable boolean', this._grid.editable);
     });
+    this._grid.editingEnabled = true;
   }
 
   /**
@@ -168,8 +176,8 @@ export class EditableCSVViewer extends Widget {
       delimiter
     }));
     this._grid.selectionModel = new BasicSelectionModel({ dataModel });
-    if (oldModel) {
-      oldModel.dispose();
+    if (oldModel && oldModel.dsvModel) {
+      oldModel.dsvModel.dispose();
     }
   }
 
@@ -208,12 +216,11 @@ export class EditableCSVViewer extends Widget {
   private _baseRenderer: TextRenderConfig | null = null;
 }
 
+// Override the CSVViewer's _updateGrid method to set the datagrid's model to an EditableDataModel
 
-  // Override the CSVViewer's _updateGrid method to set the datagrid's model to an EditableDataModel
-
-  
-
-export class EditableCSVDocumentWidget extends DocumentWidget<EditableCSVViewer> {
+export class EditableCSVDocumentWidget extends DocumentWidget<
+  EditableCSVViewer
+> {
   constructor(options: EditableCSVDocumentWidget.IOptions) {
     let { context, content, reveal } = options;
     content = content || new EditableCSVViewer({ context });
@@ -222,14 +229,19 @@ export class EditableCSVDocumentWidget extends DocumentWidget<EditableCSVViewer>
   }
 }
 export declare namespace EditableCSVDocumentWidget {
-  interface IOptions extends DocumentWidget.IOptionsOptionalContent<EditableCSVViewer> {
-      delimiter?: string;
+  interface IOptions
+    extends DocumentWidget.IOptionsOptionalContent<EditableCSVViewer> {
+    delimiter?: string;
   }
 }
 
-export class EditableCSVViewerFactory extends ABCWidgetFactory<IDocumentWidget<EditableCSVViewer>> {
-  createNewWidget(context: DocumentRegistry.Context): IDocumentWidget<EditableCSVViewer> {
-    return new EditableCSVDocumentWidget({ context })
+export class EditableCSVViewerFactory extends ABCWidgetFactory<
+  IDocumentWidget<EditableCSVViewer>
+> {
+  createNewWidget(
+    context: DocumentRegistry.Context
+  ): IDocumentWidget<EditableCSVViewer> {
+    return new EditableCSVDocumentWidget({ context });
   }
 }
 export namespace EditableCSVViewer {
@@ -243,5 +255,3 @@ export namespace EditableCSVViewer {
     context: DocumentRegistry.Context;
   }
 }
-
-
