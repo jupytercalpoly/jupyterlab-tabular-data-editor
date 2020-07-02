@@ -25,7 +25,8 @@ export default class EditableDSVModel extends MutableDataModel {
     row: number,
     column: number
   ): DataModel.Metadata {
-    return this._dsvModel.metadata(region, row, column);
+    return { name: this._dsvModel.data(region, row, column), type: 'string' };
+    // return this._dsvModel.metadata(region, row, column);
   }
 
   data(region: DataModel.CellRegion, row: number, column: number): any {
@@ -147,6 +148,8 @@ export default class EditableDSVModel extends MutableDataModel {
       model._data.slice(0, index + trimLeft) +
       value +
       model._data.slice(nextIndex - trimRight, model._data.length);
+
+    model._parseAsync();
   }
 
   private _dsvModel: DSVModel;

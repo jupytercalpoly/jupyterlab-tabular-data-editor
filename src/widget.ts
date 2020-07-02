@@ -17,14 +17,13 @@ import {
   DataGrid,
   TextRenderer,
   CellEditor,
-  ICellEditor,
-  TextCellEditor
+  ICellEditor
 } from '@lumino/datagrid';
 
 import { Message } from '@lumino/messaging';
 
 import { PanelLayout, Widget } from '@lumino/widgets';
-// import EditableDataGrid from './grid';
+import MutableTextCellEditor from './editor';
 import EditableDSVModel from './model';
 
 const CSV_CLASS = 'jp-CSVViewer';
@@ -72,7 +71,7 @@ export class EditableCSVViewer extends Widget {
       this._grid.editorController!.setEditor(
         'string',
         (config: CellEditor.CellConfig): ICellEditor => {
-          return new TextCellEditor();
+          return new MutableTextCellEditor();
         }
       );
       this._revealed.resolve(undefined);

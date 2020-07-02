@@ -3,9 +3,9 @@ import { getKeyboardLayout } from '@lumino/keyboard';
 
 /**
  * Example custom cell editor which implements editing
- * JSON cell data.
+ * text cell data.
  */
-export default class JSONCellEditor extends CellEditor {
+export default class MutableTextCellEditor extends CellEditor {
   dispose(): void {
     if (this.isDisposed) {
       return;
@@ -16,34 +16,12 @@ export default class JSONCellEditor extends CellEditor {
     document.body.removeChild(this._textarea);
   }
 
+  protected getInput() {
+    return this._textarea.value;
+  }
+
   protected startEditing() {
     this._createWidgets();
-  }
-
-  protected getInput(): any {
-    return JSON.parse(this._textarea.value);
-  }
-
-  protected validate() {
-    let value;
-    try {
-      value = this.getInput();
-    } catch (error) {
-      console.log(`Input error: ${error.message}`);
-      this.setValidity(false);
-      return;
-    }
-
-    if (this.validator) {
-      const result = this.validator.validate(this.cell, value);
-      if (result.valid) {
-        this.setValidity(true);
-      } else {
-        this.setValidity(false, result.message || 'Invalid JSON input');
-      }
-    } else {
-      this.setValidity(true);
-    }
   }
 
   private _createWidgets() {
@@ -65,13 +43,13 @@ export default class JSONCellEditor extends CellEditor {
     button.style.overflow = 'hidden';
     button.style.textOverflow = 'ellipsis';
 
-    button.textContent = this._deserialize(data);
+    button.textContent = data;
     this.editorContainer.appendChild(button);
 
     this._button = button;
 
-    const width = 200;
-    const height = 50;
+    const width = 144;
+    const height = 24;
     const textarea = document.createElement('textarea');
     textarea.style.pointerEvents = 'auto';
     textarea.style.position = 'absolute';
@@ -85,7 +63,7 @@ export default class JSONCellEditor extends CellEditor {
     textarea.style.width = width + 'px';
     textarea.style.height = height + 'px';
 
-    textarea.value = JSON.stringify(data);
+    textarea.value = data;
 
     textarea.addEventListener('keydown', (event: KeyboardEvent) => {
       const key = getKeyboardLayout().keyForKeydownEvent(event);
@@ -126,10 +104,6 @@ export default class JSONCellEditor extends CellEditor {
 
     document.body.appendChild(this._textarea);
     this._textarea.focus();
-  }
-
-  private _deserialize(value: any): any {
-    return JSON.stringify(value);
   }
 
   private _button: HTMLButtonElement;
