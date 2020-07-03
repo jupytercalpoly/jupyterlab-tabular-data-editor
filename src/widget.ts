@@ -15,15 +15,15 @@ import {
   BasicMouseHandler,
   BasicSelectionModel,
   DataGrid,
-  TextRenderer,
-  CellEditor,
-  ICellEditor
+  TextRenderer
+  // CellEditor,
+  // ICellEditor
 } from '@lumino/datagrid';
 
 import { Message } from '@lumino/messaging';
 
 import { PanelLayout, Widget } from '@lumino/widgets';
-import CSVTextCellEditor from './editor';
+// import CSVTextCellEditor from './editor';
 import EditableDSVModel from './model';
 
 const CSV_CLASS = 'jp-CSVViewer';
@@ -68,12 +68,12 @@ export class EditableCSVViewer extends Widget {
 
     void this._context.ready.then(() => {
       this._updateGrid();
-      this._grid.editorController!.setEditor(
-        'string',
-        (config: CellEditor.CellConfig): ICellEditor => {
-          return new CSVTextCellEditor();
-        }
-      );
+      // this._grid.editorController!.setEditor(
+      //   'string',
+      //   (config: CellEditor.CellConfig): ICellEditor => {
+      //     return new CSVTextCellEditor();
+      //   }
+      // );
       this._revealed.resolve(undefined);
       // Throttle the rendering rate of the widget.
       this._monitor = new ActivityMonitor({
