@@ -8,7 +8,7 @@ import {
 } from '@jupyterlab/docregistry';
 
 import { PromiseDelegate } from '@lumino/coreutils';
-import { GridSearchService, TextRenderConfig } from '@jupyterlab/csvviewer';
+import { GridSearchService, TextRenderConfig } from 'tde-csvviewer';
 
 import {
   BasicKeyHandler,
