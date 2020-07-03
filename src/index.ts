@@ -8,7 +8,7 @@ import {
   TextRenderConfig
   // CSVViewerFactory
   // TSVViewerFactory
-} from '@jupyterlab/csvviewer';
+} from 'tde-csvviewer';
 import {
   WidgetTracker,
   IThemeManager
