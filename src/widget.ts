@@ -81,6 +81,7 @@ export class EditableCSVViewer extends Widget {
         timeout: RENDER_TIMEOUT
       });
       this._monitor.activityStopped.connect(this._updateGrid, this);
+      console.log('editable boolean', this._grid.editable);
     });
     this._grid.editingEnabled = true;
   }
