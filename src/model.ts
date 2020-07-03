@@ -1,5 +1,5 @@
 import { MutableDataModel, DataModel } from '@lumino/datagrid';
-import { DSVModel } from '@jupyterlab/csvviewer';
+import { DSVModel } from 'tde-csvviewer';
 
 export default class EditableDSVModel extends MutableDataModel {
   constructor(options: DSVModel.IOptions) {
