@@ -11,7 +11,8 @@ import {
 } from 'tde-csvviewer';
 import {
   WidgetTracker,
-  IThemeManager
+  IThemeManager,
+  // ICommandPalette
   // InputDialog
 } from '@jupyterlab/apputils';
 import { IDocumentWidget } from '@jupyterlab/docregistry';
@@ -19,6 +20,7 @@ import { IDocumentWidget } from '@jupyterlab/docregistry';
 import { /*IEditMenu,*/ IMainMenu } from '@jupyterlab/mainmenu';
 import { DataGrid } from '@lumino/datagrid';
 import { EditableCSVViewer, EditableCSVViewerFactory } from './widget';
+
 
 /**
  * The name of the factories that creates widgets.
@@ -51,6 +53,7 @@ function activateCsv(
   const tracker = new WidgetTracker<IDocumentWidget<EditableCSVViewer>>({
     namespace: 'editablecsvviewer'
   });
+  console.log('check update')
 
   // The current styles for the data grids.
   let style: DataGrid.Style = Private.LIGHT_STYLE;
@@ -113,9 +116,49 @@ function activateCsv(
   // if (searchregistry) {
   //   searchregistry.register('csv', CSVSearchProvider);
   // }
+  const { commands } = app;
+  console.log('commands being added')
+
+  commands.addCommand(CommandIDs.addRow, {
+    label: "Add row",
+    execute: () => {
+      tracker.currentWidget.content.addRowSignal.emit(null)
+      // emit a signal to the EditableDSVModel
+    }
+  })
+
+  commands.addCommand(CommandIDs.addColumn, {
+    label: "Add column",
+    execute: () => {
+      tracker.currentWidget.content.addColSignal.emit(null)
+      // emit a signal to the EditableDSVModel
+    }
+  })
+
+
+
+  app.contextMenu.addItem({
+    command: CommandIDs.addRow,
+    selector: '.jp-CSVViewer-grid',
+    rank: 0
+  });
+
+  app.contextMenu.addItem({
+    command: CommandIDs.addColumn,
+    selector: '.jp-CSVViewer-grid',
+    rank: 0
+  });
 }
 
-export default extension;
+
+ 
+
+
+
+
+
+
+export default [extension];
 
 /**
  * A namespace for private data.
@@ -166,4 +209,10 @@ namespace Private {
     currentMatchBackgroundColor: '#A3807A',
     horizontalAlignment: 'right'
   };
+}
+
+const CommandIDs = {
+  addColumn: "tde:add-row",
+
+  addRow: "tde:add-column",
 }

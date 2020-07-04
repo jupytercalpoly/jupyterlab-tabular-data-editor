@@ -8,11 +8,12 @@ import {
 } from '@jupyterlab/docregistry';
 
 import { PromiseDelegate } from '@lumino/coreutils';
+import { Signal } from '@lumino/signaling';
 import { GridSearchService, TextRenderConfig } from 'tde-csvviewer';
 
 import {
   BasicKeyHandler,
-  BasicMouseHandler,
+  // BasicMouseHandler,
   BasicSelectionModel,
   DataGrid,
   TextRenderer
@@ -25,12 +26,14 @@ import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget } from '@lumino/widgets';
 // import CSVTextCellEditor from './editor';
 import EditableDSVModel from './model';
+import RichMouseHandler from './handler';
 
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
 const RENDER_TIMEOUT = 1000;
 
 export class EditableCSVViewer extends Widget {
+  
   /**
    * Construct a new CSV viewer.
    */
@@ -47,19 +50,22 @@ export class EditableCSVViewer extends Widget {
         columnWidth: 144,
         rowHeaderWidth: 64,
         columnHeaderHeight: 36
-      }
+      },
+      headerVisibility: 'none'
     });
 
     this._grid.addClass(CSV_GRID_CLASS);
     this._grid.headerVisibility = 'all';
     this._grid.keyHandler = new BasicKeyHandler();
-    this._grid.mouseHandler = new BasicMouseHandler();
     this._grid.copyConfig = {
       separator: '\t',
       format: DataGrid.copyFormatGeneric,
       headers: 'all',
       warningThreshold: 1e6
     };
+    const handler = new RichMouseHandler();
+    this._grid.mouseHandler = handler;
+    handler.rightClickSignal.connect(this._onRightClick, this)
 
     layout.addWidget(this._grid);
 
@@ -84,6 +90,8 @@ export class EditableCSVViewer extends Widget {
       console.log('editable boolean', this._grid.editable);
     });
     this._grid.editingEnabled = true;
+    this.addRowSignal.connect(this._addRow, this)
+    this.addColSignal.connect(this._addCol, this)
   }
 
   /**
@@ -124,6 +132,10 @@ export class EditableCSVViewer extends Widget {
     this._grid.style = value;
   }
 
+  get coords(): Array<number> {
+    return [this._row, this._column]
+  }
+
   /**
    * The config used to create text renderer.
    */
@@ -137,6 +149,13 @@ export class EditableCSVViewer extends Widget {
    */
   get searchService(): GridSearchService {
     return this._searchService;
+  }
+
+  get addRowSignal(): Signal<this, void> {
+    return this._addRowSignal;
+  }
+  get addColSignal(): Signal<this, void> {
+    return this._addColSignal;
   }
 
   /**
@@ -204,6 +223,23 @@ export class EditableCSVViewer extends Widget {
     });
   }
 
+  private _addRow(this: EditableCSVViewer) {
+    const model = this._grid.dataModel as EditableDSVModel;
+    model.addRow(this._row)
+  }
+
+  private _addCol(this: EditableCSVViewer) {
+    const model = this._grid.dataModel as EditableDSVModel;
+    model.addColumn(this._column)
+  }
+
+  private _onRightClick(emitter: RichMouseHandler, coords: Array<number>) {
+    [this._row, this._column] = coords;
+    console.log(this._row);
+  }
+
+  private _row: number | null;
+  private _column: number | null;
   private _context: DocumentRegistry.Context;
   private _grid: DataGrid;
   private _searchService: GridSearchService;
@@ -214,6 +250,8 @@ export class EditableCSVViewer extends Widget {
   private _delimiter = ',';
   private _revealed = new PromiseDelegate<void>();
   private _baseRenderer: TextRenderConfig | null = null;
+  private _addRowSignal: Signal<this, void> = new Signal<this, void>(this);
+  private _addColSignal: Signal<this, void> = new Signal<this, void>(this);
 }
 
 // Override the CSVViewer's _updateGrid method to set the datagrid's model to an EditableDataModel
