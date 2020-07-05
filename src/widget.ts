@@ -22,9 +22,7 @@ import {
 } from '@lumino/datagrid';
 
 import { Message } from '@lumino/messaging';
-
 import { PanelLayout, Widget } from '@lumino/widgets';
-// import CSVTextCellEditor from './editor';
 import EditableDSVModel from './model';
 import RichMouseHandler from './handler';
 
@@ -33,7 +31,6 @@ const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
 const RENDER_TIMEOUT = 1000;
 
 export class EditableCSVViewer extends Widget {
-  
   /**
    * Construct a new CSV viewer.
    */
@@ -65,7 +62,7 @@ export class EditableCSVViewer extends Widget {
     };
     const handler = new RichMouseHandler();
     this._grid.mouseHandler = handler;
-    handler.rightClickSignal.connect(this._onRightClick, this)
+    handler.rightClickSignal.connect(this._onRightClick, this);
 
     layout.addWidget(this._grid);
 
@@ -74,12 +71,6 @@ export class EditableCSVViewer extends Widget {
 
     void this._context.ready.then(() => {
       this._updateGrid();
-      // this._grid.editorController!.setEditor(
-      //   'string',
-      //   (config: CellEditor.CellConfig): ICellEditor => {
-      //     return new CSVTextCellEditor();
-      //   }
-      // );
       this._revealed.resolve(undefined);
       // Throttle the rendering rate of the widget.
       this._monitor = new ActivityMonitor({
@@ -90,8 +81,8 @@ export class EditableCSVViewer extends Widget {
       console.log('editable boolean', this._grid.editable);
     });
     this._grid.editingEnabled = true;
-    this.addRowSignal.connect(this._addRow, this)
-    this.addColSignal.connect(this._addCol, this)
+    this.addRowSignal.connect(this._addRow, this);
+    this.addColSignal.connect(this._addCol, this);
   }
 
   /**
@@ -133,7 +124,7 @@ export class EditableCSVViewer extends Widget {
   }
 
   get coords(): Array<number> {
-    return [this._row, this._column]
+    return [this._row, this._column];
   }
 
   /**
@@ -171,7 +162,7 @@ export class EditableCSVViewer extends Widget {
   /**
    * Go to line
    */
-  goToLine(lineNumber: number) {
+  goToLine(lineNumber: number): void {
     this._grid.scrollToRow(lineNumber);
   }
 
@@ -186,7 +177,7 @@ export class EditableCSVViewer extends Widget {
   /**
    * Create the model for the grid.
    */
-  protected _updateGrid() {
+  protected _updateGrid(): void {
     const data = this._context.model.toString();
     const delimiter = ',';
     const oldModel = this._grid.dataModel as EditableDSVModel;
@@ -223,17 +214,20 @@ export class EditableCSVViewer extends Widget {
     });
   }
 
-  private _addRow(this: EditableCSVViewer) {
+  private _addRow(this: EditableCSVViewer): void {
     const model = this._grid.dataModel as EditableDSVModel;
-    model.addRow(this._row)
+    model.addRow(this._row);
   }
 
-  private _addCol(this: EditableCSVViewer) {
+  private _addCol(this: EditableCSVViewer): void {
     const model = this._grid.dataModel as EditableDSVModel;
-    model.addColumn(this._column)
+    model.addColumn(this._column);
   }
 
-  private _onRightClick(emitter: RichMouseHandler, coords: Array<number>) {
+  private _onRightClick(
+    emitter: RichMouseHandler,
+    coords: Array<number>
+  ): void {
     [this._row, this._column] = coords;
     console.log(this._row);
   }
@@ -260,10 +254,36 @@ export class EditableCSVDocumentWidget extends DocumentWidget<
   EditableCSVViewer
 > {
   constructor(options: EditableCSVDocumentWidget.IOptions) {
-    let { context, content, reveal } = options;
+    let { content, reveal } = options;
+    const { context, delimiter, ...other } = options;
     content = content || new EditableCSVViewer({ context });
     reveal = Promise.all([reveal, content.revealed]);
-    super(Object.assign({ context, content, reveal }));
+    super({ context, content, reveal, ...other });
+  }
+
+  /**
+   * Set URI fragment identifier for rows
+   */
+  setFragment(fragment: string): void {
+    const parseFragments = fragment.split('=');
+
+    // TODO: expand to allow columns and cells to be selected
+    // reference: https://tools.ietf.org/html/rfc7111#section-3
+    if (parseFragments[0] !== '#row') {
+      return;
+    }
+
+    // multiple rows, separated by semi-colons can be provided, we will just
+    // go to the top one
+    let topRow = parseFragments[1].split(';')[0];
+
+    // a range of rows can be provided, we will take the first value
+    topRow = topRow.split('-')[0];
+
+    // go to that row
+    void this.context.ready.then(() => {
+      this.content.goToLine(Number(topRow));
+    });
   }
 }
 export declare namespace EditableCSVDocumentWidget {
