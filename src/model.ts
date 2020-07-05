@@ -152,5 +152,44 @@ export default class EditableDSVModel extends MutableDataModel {
     model.parseAsync();
   }
 
+  addRow(rowNumber: number): void {
+    const model = this.dsvModel;
+    const index = model.getOffsetIndex(rowNumber + 1, 0)
+    model.rawData = model.rawData.slice(0, index)
+      // supply n - 1 delimeters to mark end of 1st through (n - 1)th entry of ith row
+      + model.delimiter.repeat(model.columnCount('body') - 1)
+      // end row with a row delimeter
+      + model.rowDelimiter
+      // append the rest of the rawData
+      + model.rawData.slice(index)
+    model.parseAsync()
+    this.emitChanged({
+      type: "rows-inserted",
+      region: 'body',
+      index: rowNumber,
+      span: 1
+    });
+  }
+
+  addColumn(colNumber: number): void {
+    const model = this.dsvModel;
+    // this feels sub-optimal but I haven't thought of a better way.
+    let index: number;
+    let shift: number = 0;
+    for (let row=0; row<=model.rowCount('body'); row++) {
+      index = model.getOffsetIndex(row, colNumber) + shift;
+      console.log(row, colNumber);
+      model.rawData = model.rawData.slice(0, index) + model.delimiter + model.rawData.slice(index);
+      shift += model.delimiter.length;
+    }
+    console.log(model.rawData);
+    model.parseAsync();
+    this.emitChanged({
+      type: "columns-inserted",
+      region: 'body',
+      index: colNumber,
+      span: 1
+    });
+  }
   private _dsvModel: DSVModel;
 }
