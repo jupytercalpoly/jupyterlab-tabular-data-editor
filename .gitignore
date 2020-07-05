@@ -6,3 +6,4 @@ node_modules/
 *.tsbuildinfo
 *yarn.lock
 *yarn-error.log
+.eslintcache
