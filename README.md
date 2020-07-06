@@ -1,7 +1,7 @@
 # jupyterlab-tabular-data-editor
 ## Manipulate your tabular data responsively and effectively within JupyterLab.
 
-![Github Actions Status](https://github.com/jupytercalpoly/jupyterlab-tabular-data-editor.git/workflows/Build/badge.svg)
+![Github Actions Status](https://github.com/jupytercalpoly/jupyterlab-tabular-data-editor/workflows/Build/badge.svg)
 
 Read more about the Jupyter Tabular Data Editor Extension in our [press release](https://github.com/jupytercalpoly/jupyterlab-tabular-data-editor/blob/master/PRESS_RELEASE.md)
 
