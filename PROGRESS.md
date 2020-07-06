@@ -24,7 +24,7 @@ An account of tasks and features planned and completed
 - Created a fork of JupyterLab CSVViewer package (renaming of some attributes/methods to protected/public) - Logan
 - Cells are now editable (text editing only) - Kalen, Logan
 
-Completed Prototypes - Ryan
+**Completed Prototypes - Ryan**
 - Editing datagrid
 - Saving datagrid
 - Moving cells, rows, and columns
