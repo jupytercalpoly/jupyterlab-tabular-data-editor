@@ -2,7 +2,7 @@
 An account of tasks and features planned and completed
 
 ## Features To Be Added (listed in order of highest priority)
-- [x] Edit cells
+- [x] Edit cells (text editing only)
 - [ ] Save
 - [ ] Add rows/columns
 - [ ] Delete rows/columns
@@ -23,4 +23,10 @@ An account of tasks and features planned and completed
 ### 06/29/20 - 07/02/20
 - Created a fork of JupyterLab CSVViewer package (renaming of some attributes/methods to protected/public) - Logan
 - Cells are now editable (text editing only) - Kalen, Logan
-- Initial wireframing - Ryan
+
+Completed Prototypes - Ryan
+- Editing datagrid
+- Saving datagrid
+- Moving cells, rows, and columns
+- Inserting rows and columns
+- Filtering data
