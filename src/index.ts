@@ -8,10 +8,11 @@ import {
   TextRenderConfig
   // CSVViewerFactory
   // TSVViewerFactory
-} from '@jupyterlab/csvviewer';
+} from 'tde-csvviewer';
 import {
   WidgetTracker,
   IThemeManager
+  // ICommandPalette
   // InputDialog
 } from '@jupyterlab/apputils';
 import { IDocumentWidget } from '@jupyterlab/docregistry';
@@ -51,6 +52,7 @@ function activateCsv(
   const tracker = new WidgetTracker<IDocumentWidget<EditableCSVViewer>>({
     namespace: 'editablecsvviewer'
   });
+  console.log('check update');
 
   // The current styles for the data grids.
   let style: DataGrid.Style = Private.LIGHT_STYLE;
@@ -76,9 +78,9 @@ function activateCsv(
     });
 
     if (ft) {
-      widget.title.icon = ft.icon!;
-      widget.title.iconClass = ft.iconClass!;
-      widget.title.iconLabel = ft.iconLabel!;
+      widget.title.icon = ft.icon;
+      widget.title.iconClass = ft.iconClass;
+      widget.title.iconLabel = ft.iconLabel;
     }
     // Set the theme for the new widget.
     widget.content.style = style;
@@ -86,7 +88,7 @@ function activateCsv(
   });
 
   // Keep the themes up-to-date.
-  const updateThemes = () => {
+  const updateThemes = (): void => {
     const isLight =
       themeManager && themeManager.theme
         ? themeManager.isLight(themeManager.theme)
@@ -113,9 +115,38 @@ function activateCsv(
   // if (searchregistry) {
   //   searchregistry.register('csv', CSVSearchProvider);
   // }
+  const { commands } = app;
+
+  commands.addCommand(CommandIDs.addRow, {
+    label: 'Add row',
+    execute: () => {
+      tracker.currentWidget.content.addRowSignal.emit(null);
+      // emit a signal to the EditableDSVModel
+    }
+  });
+
+  commands.addCommand(CommandIDs.addColumn, {
+    label: 'Add column',
+    execute: () => {
+      tracker.currentWidget.content.addColSignal.emit(null);
+      // emit a signal to the EditableDSVModel
+    }
+  });
+
+  app.contextMenu.addItem({
+    command: CommandIDs.addRow,
+    selector: '.jp-CSVViewer-grid',
+    rank: 0
+  });
+
+  app.contextMenu.addItem({
+    command: CommandIDs.addColumn,
+    selector: '.jp-CSVViewer-grid',
+    rank: 0
+  });
 }
 
-export default extension;
+export default [extension];
 
 /**
  * A namespace for private data.
@@ -167,3 +198,9 @@ namespace Private {
     horizontalAlignment: 'right'
   };
 }
+
+const CommandIDs = {
+  addColumn: 'tde:add-row',
+
+  addRow: 'tde:add-column'
+};

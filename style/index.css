@@ -1,0 +1,6 @@
+@import '~@lumino/default-theme/style/datagrid.css';
+
+.white-background {
+  background-color: white;
+  color: white;
+}

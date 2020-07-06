@@ -4,3 +4,6 @@ node_modules/
 *.egg-info/
 .ipynb_checkpoints
 *.tsbuildinfo
+*yarn.lock
+*yarn-error.log
+.eslintcache
