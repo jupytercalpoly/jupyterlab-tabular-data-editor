@@ -2,9 +2,9 @@
 
 ![Github Actions Status](https://github.com/jupytercalpoly/jupyterlab-tabular-data-editor.git/workflows/Build/badge.svg)
 
-A tool for editing csv files natively in JupyterLab
+Manipulate your tabular data responsively and effectively within JupyterLab.
 
-
+Check out our current progress and future plans in [`PROGRESS.md`](https://github.com/jupytercalpoly/jupyterlab-tabular-data-editor/blob/master/PROGRESS.md)
 
 ## Requirements
 
