@@ -5,7 +5,6 @@ import { Signal } from '@lumino/signaling';
 export default class EditableDSVModel extends MutableDataModel {
   constructor(options: DSVModel.IOptions) {
     super();
-
     this._dsvModel = new DSVModel(options);
   }
 
@@ -170,17 +169,58 @@ export default class EditableDSVModel extends MutableDataModel {
     let shift = 0;
     for (let row = 0; row <= model.rowCount('body'); row++) {
       index = model.getOffsetIndex(row, colNumber) + shift;
-      console.log(row, colNumber);
       model.rawData =
         model.rawData.slice(0, index) +
         model.delimiter +
         model.rawData.slice(index);
       shift += model.delimiter.length;
     }
-    console.log(model.rawData);
     model.parseAsync();
     this.emitChanged({
       type: 'columns-inserted',
+      region: 'body',
+      index: colNumber,
+      span: 1
+    });
+    this._onChangeSignal.emit();
+  }
+
+  removeRow(rowNumber: number): void {
+    const model = this.dsvModel;
+    const rowRemovedIndex = model.getOffsetIndex(rowNumber + 1, 0);
+    const rowAfterIndex = model.getOffsetIndex(rowNumber + 2, 0);
+    model.rawData =
+      model.rawData.slice(0, rowRemovedIndex) +
+      model.rawData.slice(rowAfterIndex);
+    model.parseAsync();
+    this.emitChanged({
+      type: 'rows-removed',
+      region: 'body',
+      index: rowNumber,
+      span: 1
+    });
+    this._onChangeSignal.emit();
+  }
+
+  removeCol(colNumber: number): void {
+    const model = this.dsvModel;
+    // this feels sub-optimal but I haven't thought of a better way.
+    let startIndex: number;
+    let endIndex: number;
+    let diff: number;
+    let shift = 0;
+    for (let row = 0; row <= model.rowCount('body'); row++) {
+      startIndex = model.getOffsetIndex(row, colNumber) - shift;
+      endIndex = model.getOffsetIndex(row, colNumber + 1) - shift;
+      diff = endIndex - startIndex;
+      model.rawData =
+        model.rawData.slice(0, startIndex) + model.rawData.slice(endIndex);
+      shift += diff;
+    }
+    console.log(model.rawData);
+    model.parseAsync();
+    this.emitChanged({
+      type: 'columns-removed',
       region: 'body',
       index: colNumber,
       span: 1

@@ -78,11 +78,12 @@ export class EditableCSVViewer extends Widget {
         timeout: RENDER_TIMEOUT
       });
       this._monitor.activityStopped.connect(this._updateGrid, this);
-      console.log('editable boolean', this._grid.editable);
     });
     this._grid.editingEnabled = true;
     this.addRowSignal.connect(this._addRow, this);
     this.addColSignal.connect(this._addCol, this);
+    this.removeRowSignal.connect(this._removeRow, this);
+    this.removeColSignal.connect(this._removeCol, this);
   }
 
   /**
@@ -142,11 +143,26 @@ export class EditableCSVViewer extends Widget {
     return this._searchService;
   }
 
+  /**
+   * The DataModel used to render the DataGrid
+   */
+  get dataModel(): EditableDSVModel {
+    return this._grid.dataModel as EditableDSVModel;
+  }
+
   get addRowSignal(): Signal<this, void> {
     return this._addRowSignal;
   }
   get addColSignal(): Signal<this, void> {
     return this._addColSignal;
+  }
+
+  get removeRowSignal(): Signal<this, void> {
+    return this._removeRowSignal;
+  }
+
+  get removeColSignal(): Signal<this, void> {
+    return this._removeColSignal;
   }
 
   /**
@@ -221,13 +237,19 @@ export class EditableCSVViewer extends Widget {
   }
 
   private _addRow(this: EditableCSVViewer): void {
-    const model = this._grid.dataModel as EditableDSVModel;
-    model.addRow(this._row);
+    this.dataModel.addRow(this._row);
   }
 
   private _addCol(this: EditableCSVViewer): void {
-    const model = this._grid.dataModel as EditableDSVModel;
-    model.addColumn(this._column);
+    this.dataModel.addColumn(this._column);
+  }
+
+  private _removeRow(this: EditableCSVViewer): void {
+    this.dataModel.removeRow(this._row);
+  }
+
+  private _removeCol(this: EditableCSVViewer): void {
+    this.dataModel.removeCol(this._column);
   }
 
   private _onRightClick(
@@ -235,7 +257,6 @@ export class EditableCSVViewer extends Widget {
     coords: Array<number>
   ): void {
     [this._row, this._column] = coords;
-    console.log(this._row);
   }
 
   private _row: number | null;
@@ -250,8 +271,12 @@ export class EditableCSVViewer extends Widget {
   private _delimiter = ',';
   private _revealed = new PromiseDelegate<void>();
   private _baseRenderer: TextRenderConfig | null = null;
+
+  // Signals for basic editing functionality
   private _addRowSignal: Signal<this, void> = new Signal<this, void>(this);
   private _addColSignal: Signal<this, void> = new Signal<this, void>(this);
+  private _removeRowSignal: Signal<this, void> = new Signal<this, void>(this);
+  private _removeColSignal: Signal<this, void> = new Signal<this, void>(this);
 }
 
 // Override the CSVViewer's _updateGrid method to set the datagrid's model to an EditableDataModel
@@ -261,7 +286,7 @@ export class EditableCSVDocumentWidget extends DocumentWidget<
 > {
   constructor(options: EditableCSVDocumentWidget.IOptions) {
     let { content, reveal } = options;
-    const { context, delimiter, ...other } = options;
+    const { context, ...other } = options;
     content = content || new EditableCSVViewer({ context });
     reveal = Promise.all([reveal, content.revealed]);
     super({ context, content, reveal, ...other });
