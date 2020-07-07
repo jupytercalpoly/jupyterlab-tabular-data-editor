@@ -5,7 +5,6 @@ import { Signal } from '@lumino/signaling';
 export default class EditableDSVModel extends MutableDataModel {
   constructor(options: DSVModel.IOptions) {
     super();
-
     this._dsvModel = new DSVModel(options);
   }
 
@@ -170,14 +169,12 @@ export default class EditableDSVModel extends MutableDataModel {
     let shift = 0;
     for (let row = 0; row <= model.rowCount('body'); row++) {
       index = model.getOffsetIndex(row, colNumber) + shift;
-      console.log(row, colNumber);
       model.rawData =
         model.rawData.slice(0, index) +
         model.delimiter +
         model.rawData.slice(index);
       shift += model.delimiter.length;
     }
-    console.log(model.rawData);
     model.parseAsync();
     this.emitChanged({
       type: 'columns-inserted',
@@ -186,6 +183,84 @@ export default class EditableDSVModel extends MutableDataModel {
       span: 1
     });
     this._onChangeSignal.emit();
+  }
+
+  removeRow(rowNumber: number): void {
+    const model = this.dsvModel;
+    const rowRemovedIndex = model.getOffsetIndex(rowNumber + 1, 0);
+    const rowAfterIndex = model.getOffsetIndex(rowNumber + 2, 0);
+    model.rawData =
+      model.rawData.slice(0, rowRemovedIndex) +
+      model.rawData.slice(rowAfterIndex);
+    model.parseAsync();
+    this.emitChanged({
+      type: 'rows-removed',
+      region: 'body',
+      index: rowNumber,
+      span: 1
+    });
+    this._onChangeSignal.emit();
+  }
+
+  positiveModulo(n: number, m: number): number {
+    return ((n % m) + m) % m;
+  }
+
+  getModifiedOffsetIndex(
+    rowNum: number,
+    colNum: number,
+    shifted: number
+  ): Array<number> {
+    const model = this._dsvModel;
+    // subtract to find the actual column due to shifting
+    let startCol = colNum - shifted;
+    console.log('Startcol', startCol);
+    let startRow = rowNum;
+    let endCol = startCol + 1;
+    let endRow = rowNum;
+
+    if (startCol < 0) {
+      startRow = startRow - Math.ceil(shifted / model.columnCount('body'));
+      startCol = this.positiveModulo(startCol, model.columnCount('body') + 1);
+      console.log('row', startRow, 'col', startCol);
+    }
+
+    if (endCol < 0) {
+      endRow = endRow - Math.ceil(shifted / model.columnCount('body'));
+      endCol = this.positiveModulo(endCol, model.columnCount('body') + 1);
+    }
+
+    console.log('row', startRow, 'col', startCol);
+    console.log('row', endRow, 'col', endCol, '\n');
+    return [
+      model.getOffsetIndex(startRow, startCol),
+      model.getOffsetIndex(endRow, endCol)
+    ];
+  }
+
+  removeCol(colNumber: number): void {
+    const model = this.dsvModel;
+    let start,
+      end = 0;
+    for (let row = 0; row < 3 /*model.rowCount('body')*/; row++) {
+      [start, end] = this.getModifiedOffsetIndex(row, colNumber, row);
+
+      console.log('start', model.rawData[start], '\tend', model.rawData[end]);
+      model.rawData =
+        model.rawData.slice(
+          0,
+          row > 0 ? start - model.delimiter.length * row : start
+        ) + model.rawData.slice(end);
+      // console.log('shift', end - start);
+    }
+    model.parseAsync();
+    this.emitChanged({
+      type: 'columns-removed',
+      region: 'body',
+      index: colNumber,
+      span: 1
+    });
+    // this._onChangeSignal.emit();
   }
   private _dsvModel: DSVModel;
   private _onChangeSignal: Signal<this, void> = new Signal<this, void>(this);
