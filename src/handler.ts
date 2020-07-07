@@ -7,7 +7,6 @@ export default class RichMouseHandler extends BasicMouseHandler {
     const { clientX, clientY } = event;
     const hit = grid.hitTest(clientX, clientY);
     const { row, column } = hit;
-    console.log(row, column);
     this._rightClickSignal.emit([row, column]);
   }
 
