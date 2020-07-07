@@ -52,7 +52,7 @@ function activateCsv(
   const tracker = new WidgetTracker<IDocumentWidget<EditableCSVViewer>>({
     namespace: 'editablecsvviewer'
   });
-  console.log('check update');
+  console.log('check update1');
 
   // The current styles for the data grids.
   let style: DataGrid.Style = Private.LIGHT_STYLE;
