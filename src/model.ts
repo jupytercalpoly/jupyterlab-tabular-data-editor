@@ -202,57 +202,22 @@ export default class EditableDSVModel extends MutableDataModel {
     this._onChangeSignal.emit();
   }
 
-  positiveModulo(n: number, m: number): number {
-    return ((n % m) + m) % m;
-  }
-
-  getModifiedOffsetIndex(
-    rowNum: number,
-    colNum: number,
-    shifted: number
-  ): Array<number> {
-    const model = this._dsvModel;
-    // subtract to find the actual column due to shifting
-    let startCol = colNum - shifted;
-    console.log('Startcol', startCol);
-    let startRow = rowNum;
-    let endCol = startCol + 1;
-    let endRow = rowNum;
-
-    if (startCol < 0) {
-      startRow = startRow - Math.ceil(shifted / model.columnCount('body'));
-      startCol = this.positiveModulo(startCol, model.columnCount('body') + 1);
-      console.log('row', startRow, 'col', startCol);
-    }
-
-    if (endCol < 0) {
-      endRow = endRow - Math.ceil(shifted / model.columnCount('body'));
-      endCol = this.positiveModulo(endCol, model.columnCount('body') + 1);
-    }
-
-    console.log('row', startRow, 'col', startCol);
-    console.log('row', endRow, 'col', endCol, '\n');
-    return [
-      model.getOffsetIndex(startRow, startCol),
-      model.getOffsetIndex(endRow, endCol)
-    ];
-  }
-
   removeCol(colNumber: number): void {
     const model = this.dsvModel;
-    let start,
-      end = 0;
-    for (let row = 0; row < 3 /*model.rowCount('body')*/; row++) {
-      [start, end] = this.getModifiedOffsetIndex(row, colNumber, row);
-
-      console.log('start', model.rawData[start], '\tend', model.rawData[end]);
+    // this feels sub-optimal but I haven't thought of a better way.
+    let startIndex: number;
+    let endIndex: number;
+    let diff: number;
+    let shift = 0;
+    for (let row = 0; row <= model.rowCount('body'); row++) {
+      startIndex = model.getOffsetIndex(row, colNumber) - shift;
+      endIndex = model.getOffsetIndex(row, colNumber + 1) - shift;
+      diff = endIndex - startIndex;
       model.rawData =
-        model.rawData.slice(
-          0,
-          row > 0 ? start - model.delimiter.length * row : start
-        ) + model.rawData.slice(end);
-      // console.log('shift', end - start);
+        model.rawData.slice(0, startIndex) + model.rawData.slice(endIndex);
+      shift += diff;
     }
+    console.log(model.rawData);
     model.parseAsync();
     this.emitChanged({
       type: 'columns-removed',
@@ -260,7 +225,7 @@ export default class EditableDSVModel extends MutableDataModel {
       index: colNumber,
       span: 1
     });
-    // this._onChangeSignal.emit();
+    this._onChangeSignal.emit();
   }
   private _dsvModel: DSVModel;
   private _onChangeSignal: Signal<this, void> = new Signal<this, void>(this);
