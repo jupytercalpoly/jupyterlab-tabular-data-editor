@@ -2,9 +2,6 @@ import { BasicMouseHandler, DataGrid } from '@lumino/datagrid';
 import { Signal } from '@lumino/signaling';
 
 export default class RichMouseHandler extends BasicMouseHandler {
-  constructor() {
-    super();
-  }
   onContextMenu(grid: DataGrid, event: MouseEvent): void {
     this.onMouseDown(grid, event);
     const { clientX, clientY } = event;
