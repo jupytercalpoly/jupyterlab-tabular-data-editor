@@ -83,7 +83,6 @@ export class EditableCSVViewer extends Widget {
     this._grid.editingEnabled = true;
     this.addRowSignal.connect(this._addRow, this);
     this.addColSignal.connect(this._addCol, this);
-    
   }
 
   /**
@@ -190,7 +189,7 @@ export class EditableCSVViewer extends Widget {
     if (oldModel && oldModel.dsvModel) {
       oldModel.dsvModel.dispose();
     }
-    dataModel.onChangedSignal.connect(this._updateModel, this)
+    dataModel.onChangedSignal.connect(this._updateModel, this);
   }
 
   /**
@@ -218,7 +217,7 @@ export class EditableCSVViewer extends Widget {
 
   private _updateModel(this: EditableCSVViewer): void {
     const dataModel = this._grid.dataModel as EditableDSVModel;
-    this.context.model.fromString(dataModel.dsvModel.rawData)
+    this.context.model.fromString(dataModel.dsvModel.rawData);
   }
 
   private _addRow(this: EditableCSVViewer): void {
