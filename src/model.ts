@@ -245,7 +245,6 @@ export default class EditableDSVModel extends MutableDataModel {
       model.rawData =
         model.rawData.slice(0, startIndex) + model.rawData.slice(endIndex);
       shift += diff;
-      console.log(model.rawData);
     }
 
     console.log(model.rawData);
