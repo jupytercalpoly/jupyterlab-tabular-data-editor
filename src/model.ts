@@ -285,6 +285,7 @@ export default class EditableDSVModel extends MutableDataModel {
       model.rawData =
         model.rawData.slice(0, startIndex) + model.rawData.slice(endIndex);
       shift += diff;
+      console.log(model.rawData);
     }
     // update rawData and header (header handles immediate update, rawData handles parseAsync)
     // slice out the last letter in the column header
