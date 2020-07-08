@@ -68,7 +68,6 @@ export default class EditableDSVModel extends MutableDataModel {
       default:
         throw 'unreachable';
     }
-    console.log(model.rawData);
 
     this.emitChanged({
       type: 'cells-changed',
