@@ -194,8 +194,8 @@ namespace Private {
     backgroundColor: 'white',
     headerBackgroundColor: '#EEEEEE',
     gridLineColor: 'rgba(20, 20, 20, 0.15)',
-    headerGridLineColor: 'rgba(20, 20, 20, 0.25)',
-    rowBackgroundColor: i => (i % 2 === 0 ? '#F5F5F5' : 'white')
+    headerGridLineColor: 'rgba(20, 20, 20, 0.25)'
+    //rowBackgroundColor: i => (i % 2 === 0 ? '#F5F5F5' : 'white')
   };
 
   /**
@@ -218,7 +218,7 @@ namespace Private {
     textColor: '#111111',
     matchBackgroundColor: '#FFFFE0',
     currentMatchBackgroundColor: '#FFFF00',
-    horizontalAlignment: 'right'
+    horizontalAlignment: 'center'
   };
 
   /**
