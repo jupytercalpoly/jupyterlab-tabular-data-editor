@@ -57,7 +57,6 @@ export default class EditableDSVModel extends MutableDataModel {
       default:
         throw 'unreachable';
     }
-    console.log(model.rawData);
 
     this.emitChanged({
       type: 'cells-changed',
@@ -95,7 +94,7 @@ export default class EditableDSVModel extends MutableDataModel {
     // if we are getting the last column.
     if (column === model.columnCount('body') - 1) {
       // Check if we are getting any row but the last.
-      if (row <= model.rowCount('body') - 1) {
+      if (row < model.rowCount('body')) {
         // Set the next offset to the next row, column 0.
         nextIndex = model.getOffsetIndex(row + 1, 0);
 
@@ -190,13 +189,10 @@ export default class EditableDSVModel extends MutableDataModel {
     const model = this.dsvModel;
     const rowRemovedIndex = model.getOffsetIndex(rowNumber + 1, 0);
     const rowAfterIndex = model.getOffsetIndex(rowNumber + 2, 0);
-    if (!rowAfterIndex) {
-      model.rawData = model.rawData.slice(0, rowRemovedIndex);
-    } else {
-      model.rawData =
-        model.rawData.slice(0, rowRemovedIndex) +
-        model.rawData.slice(rowAfterIndex);
-    }
+    model.rawData = rowAfterIndex
+      ? model.rawData.slice(0, rowRemovedIndex) +
+        model.rawData.slice(rowAfterIndex)
+      : model.rawData.slice(0, rowRemovedIndex);
     model.parseAsync();
     this.emitChanged({
       type: 'rows-removed',
@@ -251,8 +247,6 @@ export default class EditableDSVModel extends MutableDataModel {
         model.rawData.slice(0, startIndex) + model.rawData.slice(endIndex);
       shift += diff;
     }
-
-    console.log(model.rawData);
     model.parseAsync();
     this.emitChanged({
       type: 'columns-removed',
