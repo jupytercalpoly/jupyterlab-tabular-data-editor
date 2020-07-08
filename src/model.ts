@@ -57,6 +57,7 @@ export default class EditableDSVModel extends MutableDataModel {
       default:
         throw 'unreachable';
     }
+    console.log(model.rawData);
 
     this.emitChanged({
       type: 'cells-changed',
@@ -94,7 +95,7 @@ export default class EditableDSVModel extends MutableDataModel {
     // if we are getting the last column.
     if (column === model.columnCount('body') - 1) {
       // Check if we are getting any row but the last.
-      if (row < model.rowCount('body') - 1) {
+      if (row <= model.rowCount('body') - 1) {
         // Set the next offset to the next row, column 0.
         nextIndex = model.getOffsetIndex(row + 1, 0);
 
