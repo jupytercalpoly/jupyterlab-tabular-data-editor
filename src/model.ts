@@ -189,9 +189,13 @@ export default class EditableDSVModel extends MutableDataModel {
     const model = this.dsvModel;
     const rowRemovedIndex = model.getOffsetIndex(rowNumber + 1, 0);
     const rowAfterIndex = model.getOffsetIndex(rowNumber + 2, 0);
-    model.rawData =
-      model.rawData.slice(0, rowRemovedIndex) +
-      model.rawData.slice(rowAfterIndex);
+    if (!rowAfterIndex) {
+      model.rawData = model.rawData.slice(0, rowRemovedIndex);
+    } else {
+      model.rawData =
+        model.rawData.slice(0, rowRemovedIndex) +
+        model.rawData.slice(rowAfterIndex);
+    }
     model.parseAsync();
     this.emitChanged({
       type: 'rows-removed',
