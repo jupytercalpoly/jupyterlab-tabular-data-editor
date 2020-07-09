@@ -5,7 +5,6 @@ import { Signal } from '@lumino/signaling';
 export default class EditableDSVModel extends MutableDataModel {
   constructor(options: DSVModel.IOptions) {
     super();
-
     this._dsvModel = new DSVModel(options);
   }
 
@@ -95,7 +94,7 @@ export default class EditableDSVModel extends MutableDataModel {
     // if we are getting the last column.
     if (column === model.columnCount('body') - 1) {
       // Check if we are getting any row but the last.
-      if (row < model.rowCount('body') - 1) {
+      if (row < model.rowCount('body')) {
         // Set the next offset to the next row, column 0.
         nextIndex = model.getOffsetIndex(row + 1, 0);
 
@@ -170,17 +169,87 @@ export default class EditableDSVModel extends MutableDataModel {
     let shift = 0;
     for (let row = 0; row <= model.rowCount('body'); row++) {
       index = model.getOffsetIndex(row, colNumber) + shift;
-      console.log(row, colNumber);
       model.rawData =
         model.rawData.slice(0, index) +
         model.delimiter +
         model.rawData.slice(index);
       shift += model.delimiter.length;
     }
-    console.log(model.rawData);
     model.parseAsync();
     this.emitChanged({
       type: 'columns-inserted',
+      region: 'body',
+      index: colNumber,
+      span: 1
+    });
+    this._onChangeSignal.emit();
+  }
+
+  removeRow(rowNumber: number): void {
+    const model = this.dsvModel;
+    const rowRemovedIndex = model.getOffsetIndex(rowNumber + 1, 0);
+    const rowAfterIndex = model.getOffsetIndex(rowNumber + 2, 0);
+    model.rawData = rowAfterIndex
+      ? model.rawData.slice(0, rowRemovedIndex) +
+        model.rawData.slice(rowAfterIndex)
+      : model.rawData.slice(0, rowRemovedIndex);
+    model.parseAsync();
+    this.emitChanged({
+      type: 'rows-removed',
+      region: 'body',
+      index: rowNumber,
+      span: 1
+    });
+    this._onChangeSignal.emit();
+  }
+
+  removeCol(colNumber: number): void {
+    const model = this.dsvModel;
+
+    let startIndex: number;
+    let endIndex: number;
+    //records length of the data we just removed
+    let diff: number;
+    // the row we are processing
+    let currentRow: number;
+    // total data we removed
+    // the row of the next entry (or we're at the end)
+    let nextRow: number;
+    let shift = 0;
+    // Accounts for length of trailing delimeter if we are removing last column
+    let trailingDelimeter = 0;
+    // Accounts for length of trailing rowDelimeter if we are removing last column
+    let trailingRowDelimeter = 0;
+    // The column of the next entry. 0 if we are removing the last column.
+    let nextCol = colNumber + 1;
+    // If we are removing last column, next entry is on next row, so this gets set to 1.
+    let rowShift = 0;
+    // check if we are removing last column
+    if (colNumber + 1 === model.columnCount('body')) {
+      trailingDelimeter = model.delimiter.length;
+      trailingRowDelimeter = model.rowDelimiter.length;
+      nextCol = 0;
+      rowShift = 1;
+    }
+
+    for (currentRow = 0; currentRow <= model.rowCount('body'); currentRow++) {
+      nextRow = currentRow + rowShift;
+      startIndex =
+        model.getOffsetIndex(currentRow, colNumber) - shift - trailingDelimeter;
+      if (nextRow > this.rowCount('body')) {
+        endIndex = model.rawData.length;
+      } else {
+        endIndex =
+          model.getOffsetIndex(nextRow, nextCol) - shift - trailingRowDelimeter;
+      }
+      diff = endIndex - startIndex;
+      model.rawData =
+        model.rawData.slice(0, startIndex) + model.rawData.slice(endIndex);
+      shift += diff;
+    }
+    model.parseAsync();
+    this.emitChanged({
+      type: 'columns-removed',
       region: 'body',
       index: colNumber,
       span: 1

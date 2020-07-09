@@ -52,7 +52,6 @@ function activateCsv(
   const tracker = new WidgetTracker<IDocumentWidget<EditableCSVViewer>>({
     namespace: 'editablecsvviewer'
   });
-  console.log('check update1');
 
   // The current styles for the data grids.
   let style: DataGrid.Style = Private.LIGHT_STYLE;
@@ -115,33 +114,67 @@ function activateCsv(
   // if (searchregistry) {
   //   searchregistry.register('csv', CSVSearchProvider);
   // }
+
+  addCommands(app, tracker);
+}
+
+function addCommands(
+  app: JupyterFrontEnd,
+  tracker: WidgetTracker<IDocumentWidget<EditableCSVViewer>>
+): void {
   const { commands } = app;
+  const SELECTOR = '.jp-CSVViewer-grid';
 
   commands.addCommand(CommandIDs.addRow, {
-    label: 'Add row',
+    label: 'Add Row',
     execute: () => {
-      tracker.currentWidget.content.addRowSignal.emit(null);
       // emit a signal to the EditableDSVModel
+      tracker.currentWidget.content.addRowSignal.emit(null);
+    }
+  });
+
+  commands.addCommand(CommandIDs.removeRow, {
+    label: 'Remove Row',
+    execute: () => {
+      tracker.currentWidget.content.removeRowSignal.emit(null);
     }
   });
 
   commands.addCommand(CommandIDs.addColumn, {
-    label: 'Add column',
+    label: 'Add Column',
     execute: () => {
       tracker.currentWidget.content.addColSignal.emit(null);
-      // emit a signal to the EditableDSVModel
+    }
+  });
+
+  commands.addCommand(CommandIDs.removeColumn, {
+    label: 'Remove Column',
+    execute: () => {
+      tracker.currentWidget.content.removeColSignal.emit(null);
     }
   });
 
   app.contextMenu.addItem({
     command: CommandIDs.addRow,
-    selector: '.jp-CSVViewer-grid',
+    selector: SELECTOR,
+    rank: 0
+  });
+
+  app.contextMenu.addItem({
+    command: CommandIDs.removeRow,
+    selector: SELECTOR,
     rank: 0
   });
 
   app.contextMenu.addItem({
     command: CommandIDs.addColumn,
-    selector: '.jp-CSVViewer-grid',
+    selector: SELECTOR,
+    rank: 0
+  });
+
+  app.contextMenu.addItem({
+    command: CommandIDs.removeColumn,
+    selector: SELECTOR,
     rank: 0
   });
 }
@@ -201,6 +234,7 @@ namespace Private {
 
 const CommandIDs = {
   addColumn: 'tde:add-row',
-
-  addRow: 'tde:add-column'
+  addRow: 'tde:add-column',
+  removeRow: 'tde-remove-row',
+  removeColumn: 'tde:remove-column'
 };
