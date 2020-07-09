@@ -191,23 +191,133 @@ export class EditableCSVViewer extends Widget {
   }
 
   /**
+   * Generates a string of letters that represent the column header
+   */
+  // Inefficient because each multi-letter is being recomputed from scratch
+  // TODO: Cache some letters (Ex. when computing AA..AZ, save the A instead of recomputing it)
+  private _numbersToLettters(colNum: number, delimiter: string): string {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+    // single alphabet (26 columns or less)
+    if (colNum <= 26) {
+      return alphabet
+        .slice(0, colNum)
+        .split('')
+        .join(delimiter);
+    }
+
+    let quotient = 1;
+    let result = alphabet
+      .slice(0, colNum)
+      .split('')
+      .join(delimiter);
+    let nextChar = '';
+
+    // handles multi-letters (AA, ABC, etc)
+    for (let i = 27; i < colNum; i++) {
+      quotient = i;
+      while (quotient >= 1) {
+        let charIndex = quotient % alphabet.length;
+        quotient /= alphabet.length;
+        if (charIndex - 1 === -1) {
+          charIndex = alphabet.length;
+          quotient--;
+        }
+        nextChar = alphabet.charAt(charIndex - 1) + nextChar;
+      }
+      result += delimiter + nextChar;
+      nextChar = '';
+    }
+    return result;
+  }
+
+  /*
+  Guess the row delimiter if it was not supplied. 
+  This will be fooled if a different line delimiter possibility appears in the first row.
+  */
+  private _guessRowDelimeter(data: string): string {
+    const i = data.slice(0, 5000).indexOf('\r');
+    if (i === -1) {
+      return '\n';
+    } else if (data[i + 1] === '\n') {
+      return '\r\n';
+    } else {
+      return '\r';
+    }
+  }
+
+  /*
+  Counts the occurrences of a substring from a given string
+  */
+  private occurrences(
+    string: string,
+    substring: string,
+    rowDelimiter: string
+  ): number {
+    let numCol = 0;
+    let pos = 0;
+    const l = substring.length;
+    const firstRow = string.slice(0, string.indexOf(rowDelimiter));
+
+    pos = firstRow.indexOf(substring, pos);
+    while (pos !== -1) {
+      numCol++;
+      pos += l;
+      pos = firstRow.indexOf(substring, pos);
+    }
+    // number of columns is the amount of columns + 1
+    return numCol + 1;
+  }
+
+  /*
+  Adds the a column header of alphabets to the top of the data (A..Z,AA..ZZ,AAA...)
+  */
+  // TODO: Improve efficiency as this gets called on every grid update (run asynchronously and cache somewhere?)
+  private _buildColHeader(
+    currentModel: EditableDSVModel,
+    colDelimiter: string
+  ): string {
+    const rawData = this._context.model.toString();
+    let rowDelimiter: string;
+    let columnHeader: string;
+
+    // when the model is first created, we don't know how many columns or what the row delimeter is
+    if (!currentModel) {
+      // figure out number of columns since DSVModel doesn't exist yet
+      rowDelimiter = this._guessRowDelimeter(rawData);
+      const numCol = this.occurrences(rawData, colDelimiter, rowDelimiter);
+      columnHeader = this._numbersToLettters(numCol, colDelimiter);
+    } else {
+      rowDelimiter = currentModel.dsvModel.rowDelimiter;
+      columnHeader = this._numbersToLettters(
+        currentModel.dsvModel.columnCount('body'),
+        colDelimiter
+      );
+      currentModel.colHeaderLength = columnHeader.length;
+    }
+    return columnHeader + rowDelimiter;
+  }
+
+  /**
    * Create the model for the grid.
    */
   protected _updateGrid(): void {
-    const data = this._context.model.toString();
-    const delimiter = ',';
+    const delimiter = this.delimiter;
     const oldModel = this._grid.dataModel as EditableDSVModel;
-    if (!oldModel) {
-      const dataModel = (this._grid.dataModel = new EditableDSVModel({
+    const header = this._buildColHeader(oldModel, this.delimiter);
+    const data = header + this._context.model.toString();
+    const dataModel = (this._grid.dataModel = new EditableDSVModel(
+      {
         data,
         delimiter
-      }));
-      this._grid.selectionModel = new BasicSelectionModel({ dataModel });
-      if (oldModel && oldModel.dsvModel) {
-        oldModel.dsvModel.dispose();
-      }
-      dataModel.onChangedSignal.connect(this._updateModel, this);
+      },
+      header.length
+    ));
+    this._grid.selectionModel = new BasicSelectionModel({ dataModel });
+    if (oldModel && oldModel.dsvModel) {
+      oldModel.dsvModel.dispose();
     }
+    dataModel.onChangedSignal.connect(this._updateModel, this);
   }
 
   /**
@@ -233,9 +343,10 @@ export class EditableCSVViewer extends Widget {
     });
   }
 
-  private _updateModel(this: EditableCSVViewer): void {
-    const dataModel = this._grid.dataModel as EditableDSVModel;
-    this.context.model.fromString(dataModel.dsvModel.rawData);
+  private _updateModel(emitter: EditableDSVModel, data: string): void {
+    // const dataModel = this.dataModel.dsvModel;
+    // const data = dataModel.rawData.slice(dataModel.columnCount('body') * 2);
+    this.context.model.fromString(data);
   }
 
   private _addRow(this: EditableCSVViewer): void {

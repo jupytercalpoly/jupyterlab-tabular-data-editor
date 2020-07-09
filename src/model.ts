@@ -3,17 +3,26 @@ import { DSVModel } from 'tde-csvviewer';
 import { Signal } from '@lumino/signaling';
 
 export default class EditableDSVModel extends MutableDataModel {
-  constructor(options: DSVModel.IOptions) {
+  constructor(options: DSVModel.IOptions, headerLength: number) {
     super();
     this._dsvModel = new DSVModel(options);
+    this._colHeaderLength = headerLength;
   }
 
   get dsvModel(): DSVModel {
     return this._dsvModel;
   }
 
-  get onChangedSignal(): Signal<this, void> {
+  get onChangedSignal(): Signal<this, string> {
     return this._onChangeSignal;
+  }
+
+  get colHeaderLength(): number {
+    return this._colHeaderLength;
+  }
+
+  set colHeaderLength(length: number) {
+    this._colHeaderLength = length;
   }
 
   rowCount(region: DataModel.RowRegion): number {
@@ -43,7 +52,6 @@ export default class EditableDSVModel extends MutableDataModel {
     value: any
   ): boolean {
     const model = this._dsvModel;
-    console.log('setData method called');
     // Look up the field and value for the region.
     switch (region) {
       case 'body':
@@ -52,7 +60,6 @@ export default class EditableDSVModel extends MutableDataModel {
         } else {
           this._setField(row + 1, column, value);
         }
-        console.log('setting field in body');
         break;
       default:
         throw 'unreachable';
@@ -66,7 +73,9 @@ export default class EditableDSVModel extends MutableDataModel {
       rowSpan: 1,
       columnSpan: 1
     });
-    this._onChangeSignal.emit();
+    this._onChangeSignal.emit(
+      this._dsvModel.rawData.slice(this.colHeaderLength)
+    );
 
     return true;
   }
@@ -159,7 +168,9 @@ export default class EditableDSVModel extends MutableDataModel {
       index: rowNumber,
       span: 1
     });
-    this._onChangeSignal.emit();
+    this._onChangeSignal.emit(
+      this._dsvModel.rawData.slice(this.colHeaderLength)
+    );
   }
 
   addColumn(colNumber: number): void {
@@ -167,6 +178,8 @@ export default class EditableDSVModel extends MutableDataModel {
     // this feels sub-optimal but I haven't thought of a better way.
     let index: number;
     let shift = 0;
+
+    // modify body data
     for (let row = 0; row <= model.rowCount('body'); row++) {
       index = model.getOffsetIndex(row, colNumber) + shift;
       model.rawData =
@@ -175,6 +188,10 @@ export default class EditableDSVModel extends MutableDataModel {
         model.rawData.slice(index);
       shift += model.delimiter.length;
     }
+
+    // TODO: need to update when moving on to three character letters
+    this.colHeaderLength += 2;
+
     model.parseAsync();
     this.emitChanged({
       type: 'columns-inserted',
@@ -182,7 +199,11 @@ export default class EditableDSVModel extends MutableDataModel {
       index: colNumber,
       span: 1
     });
-    this._onChangeSignal.emit();
+
+    // TODO: maybe also send the next character to add to the header in the signal
+    this._onChangeSignal.emit(
+      this._dsvModel.rawData.slice(this.colHeaderLength - 1)
+    );
   }
 
   removeRow(rowNumber: number): void {
@@ -200,7 +221,9 @@ export default class EditableDSVModel extends MutableDataModel {
       index: rowNumber,
       span: 1
     });
-    this._onChangeSignal.emit();
+    this._onChangeSignal.emit(
+      this._dsvModel.rawData.slice(this.colHeaderLength)
+    );
   }
 
   removeCol(colNumber: number): void {
@@ -247,6 +270,9 @@ export default class EditableDSVModel extends MutableDataModel {
         model.rawData.slice(0, startIndex) + model.rawData.slice(endIndex);
       shift += diff;
     }
+
+    // TODO: need to update when moving on to three character letters
+    this.colHeaderLength -= 2;
     model.parseAsync();
     this.emitChanged({
       type: 'columns-removed',
@@ -254,8 +280,14 @@ export default class EditableDSVModel extends MutableDataModel {
       index: colNumber,
       span: 1
     });
-    this._onChangeSignal.emit();
+    this._onChangeSignal.emit(
+      this._dsvModel.rawData.slice(this.colHeaderLength)
+    );
   }
   private _dsvModel: DSVModel;
-  private _onChangeSignal: Signal<this, void> = new Signal<this, void>(this);
+  private _onChangeSignal: Signal<this, string> = new Signal<this, string>(
+    this
+  );
+
+  private _colHeaderLength: number;
 }
