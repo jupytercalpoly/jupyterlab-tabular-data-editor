@@ -1,5 +1,6 @@
 import { MutableDataModel, DataModel } from '@lumino/datagrid';
 import { DSVModel } from 'tde-csvviewer';
+import { Signal } from '@lumino/signaling';
 
 export default class EditableDSVModel extends MutableDataModel {
   constructor(options: DSVModel.IOptions) {
@@ -10,6 +11,10 @@ export default class EditableDSVModel extends MutableDataModel {
 
   get dsvModel(): DSVModel {
     return this._dsvModel;
+  }
+
+  get onChangedSignal(): Signal<this, void> {
+    return this._onChangeSignal;
   }
 
   rowCount(region: DataModel.RowRegion): number {
@@ -39,9 +44,7 @@ export default class EditableDSVModel extends MutableDataModel {
     value: any
   ): boolean {
     const model = this._dsvModel;
-
     console.log('setData method called');
-
     // Look up the field and value for the region.
     switch (region) {
       case 'body':
@@ -52,19 +55,6 @@ export default class EditableDSVModel extends MutableDataModel {
         }
         console.log('setting field in body');
         break;
-      //   case 'column-header':
-      //     if (model._header.length === 0) {
-      //       value = (column + 1).toString();
-      //     } else {
-      //       value = model._header[column];
-      //     }
-      //     break;
-      //   case 'row-header':
-      //     value = (row + 1).toString();
-      //     break;
-      //   case 'corner-header':
-      //     value = '';
-      //     break;
       default:
         throw 'unreachable';
     }
@@ -77,6 +67,7 @@ export default class EditableDSVModel extends MutableDataModel {
       rowSpan: 1,
       columnSpan: 1
     });
+    this._onChangeSignal.emit();
 
     return true;
   }
@@ -169,6 +160,7 @@ export default class EditableDSVModel extends MutableDataModel {
       index: rowNumber,
       span: 1
     });
+    this._onChangeSignal.emit();
   }
 
   addColumn(colNumber: number): void {
@@ -193,6 +185,8 @@ export default class EditableDSVModel extends MutableDataModel {
       index: colNumber,
       span: 1
     });
+    this._onChangeSignal.emit();
   }
   private _dsvModel: DSVModel;
+  private _onChangeSignal: Signal<this, void> = new Signal<this, void>(this);
 }
