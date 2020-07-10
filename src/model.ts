@@ -46,6 +46,9 @@ export default class EditableDSVModel extends MutableDataModel {
     return this._dsvModel.data(region, row, column);
   }
 
+  // TODO: Do we need to handle cases for column-headers/row-headers?
+  // Could we make some assumptions that would lead to a faster update?
+  // Ex. We know that a row-header is close to row 0.
   setData(
     region: DataModel.CellRegion,
     row: number,
@@ -192,7 +195,7 @@ export default class EditableDSVModel extends MutableDataModel {
       shift += model.delimiter.length;
     }
 
-    // edit column header
+    // add the next letter to the column header
     const nextLetter =
       model.delimiter + numberToCharacter(alphabet, prevNumCol + 1);
     model.rawData =
@@ -210,7 +213,6 @@ export default class EditableDSVModel extends MutableDataModel {
       span: 1
     });
 
-    // TODO: maybe also send the next character to add to the header in the signal
     this._onChangeSignal.emit(
       this._dsvModel.rawData.slice(this._colHeaderLength)
     );

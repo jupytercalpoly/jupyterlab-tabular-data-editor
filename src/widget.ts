@@ -97,7 +97,7 @@ export class EditableCSVViewer extends Widget {
   /**
    * A promise that resolves when the csv viewer is ready to be revealed.
    */
-  get revealed() {
+  get revealed(): Promise<void> {
     return this._revealed.promise;
   }
 
@@ -315,8 +315,6 @@ export class EditableCSVViewer extends Widget {
   }
 
   private _updateModel(emitter: EditableDSVModel, data: string): void {
-    // const dataModel = this.dataModel.dsvModel;
-    // const data = dataModel.rawData.slice(dataModel.columnCount('body') * 2);
     this.context.model.fromString(data);
   }
 
