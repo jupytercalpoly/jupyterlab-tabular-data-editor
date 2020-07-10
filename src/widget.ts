@@ -25,6 +25,7 @@ import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget } from '@lumino/widgets';
 import EditableDSVModel from './model';
 import RichMouseHandler from './handler';
+import { numberToCharacter } from './_helper';
 
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
@@ -96,7 +97,7 @@ export class EditableCSVViewer extends Widget {
   /**
    * A promise that resolves when the csv viewer is ready to be revealed.
    */
-  get revealed() {
+  get revealed(): Promise<void> {
     return this._revealed.promise;
   }
 
@@ -190,22 +191,96 @@ export class EditableCSVViewer extends Widget {
     this.node.focus();
   }
 
+  /*
+  Guess the row delimiter if it was not supplied. 
+  This will be fooled if a different line delimiter possibility appears in the first row.
+  */
+  private _guessRowDelimeter(data: string): string {
+    const i = data.slice(0, 5000).indexOf('\r');
+    if (i === -1) {
+      return '\n';
+    } else if (data[i + 1] === '\n') {
+      return '\r\n';
+    } else {
+      return '\r';
+    }
+  }
+
+  /*
+  Counts the occurrences of a substring from a given string
+  */
+  private _countOccurrences(
+    string: string,
+    substring: string,
+    rowDelimiter: string
+  ): number {
+    let numCol = 0;
+    let pos = 0;
+    const l = substring.length;
+    const firstRow = string.slice(0, string.indexOf(rowDelimiter));
+
+    pos = firstRow.indexOf(substring, pos);
+    while (pos !== -1) {
+      numCol++;
+      pos += l;
+      pos = firstRow.indexOf(substring, pos);
+    }
+    // number of columns is the amount of columns + 1
+    return numCol + 1;
+  }
+
+  /*
+  Adds the a column header of alphabets to the top of the data (A..Z,AA..ZZ,AAA...)
+  */
+  private _buildColHeader(colDelimiter: string): string {
+    const rawData = this._context.model.toString();
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    // when the model is first created, we don't know how many columns or what the row delimeter is
+    const rowDelimiter = this._guessRowDelimeter(rawData);
+    const numCol = this._countOccurrences(rawData, colDelimiter, rowDelimiter);
+
+    // if only single alphabets fix the string
+    if (numCol <= 26) {
+      return (
+        alphabet
+          .slice(0, numCol)
+          .split('')
+          .join(colDelimiter) + rowDelimiter
+      );
+    }
+    // otherwise compute the column header with multi-letters (AA..)
+    else {
+      // get all single letters
+      let columnHeader = alphabet.split('').join(colDelimiter);
+      // find the rest
+      for (let i = 27; i < numCol; i++) {
+        columnHeader += colDelimiter + numberToCharacter(alphabet, i);
+      }
+      return columnHeader + rowDelimiter;
+    }
+  }
+
   /**
    * Create the model for the grid.
    */
   protected _updateGrid(): void {
-    const data = this._context.model.toString();
-    const delimiter = ',';
-    const oldModel = this._grid.dataModel as EditableDSVModel;
-    if (!oldModel) {
-      const dataModel = (this._grid.dataModel = new EditableDSVModel({
-        data,
-        delimiter
-      }));
+    const delimiter = this.delimiter;
+    const model = this._grid.dataModel as EditableDSVModel;
+    let data: string;
+    let headerLength: number;
+
+    if (!model) {
+      const header = this._buildColHeader(this.delimiter);
+      data = header + this._context.model.toString();
+      headerLength = header.length;
+      const dataModel = (this._grid.dataModel = new EditableDSVModel(
+        {
+          data,
+          delimiter
+        },
+        headerLength
+      ));
       this._grid.selectionModel = new BasicSelectionModel({ dataModel });
-      if (oldModel && oldModel.dsvModel) {
-        oldModel.dsvModel.dispose();
-      }
       dataModel.onChangedSignal.connect(this._updateModel, this);
     }
   }
@@ -233,9 +308,8 @@ export class EditableCSVViewer extends Widget {
     });
   }
 
-  private _updateModel(this: EditableCSVViewer): void {
-    const dataModel = this._grid.dataModel as EditableDSVModel;
-    this.context.model.fromString(dataModel.dsvModel.rawData);
+  private _updateModel(emitter: EditableDSVModel, data: string): void {
+    this.context.model.fromString(data);
   }
 
   private _addRow(this: EditableCSVViewer): void {
