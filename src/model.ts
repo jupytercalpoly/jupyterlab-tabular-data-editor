@@ -320,7 +320,7 @@ export default class EditableDSVModel extends MutableDataModel {
     );
   }
 
-  computeColumnOffsets() {
+  computeColumnOffsets(): void {
     const model = this.dsvModel;
     // abort if all column offsets have already been parsed.
     if (
