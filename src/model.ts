@@ -255,7 +255,8 @@ export default class EditableDSVModel extends MutableDataModel {
       rowShift = 1;
     }
 
-    for (currentRow = 0; currentRow <= model.rowCount('body'); currentRow++) {
+    // remove column from body
+    for (currentRow = 1; currentRow <= model.rowCount('body'); currentRow++) {
       nextRow = currentRow + rowShift;
       startIndex =
         model.getOffsetIndex(currentRow, colNumber) - shift - trailingDelimeter;
@@ -271,8 +272,19 @@ export default class EditableDSVModel extends MutableDataModel {
       shift += diff;
     }
 
-    // TODO: need to update when moving on to three character letters
-    this.colHeaderLength -= 2;
+    // slice out the last letter in the column header
+    const headerIndex = model.rawData.lastIndexOf(
+      model.delimiter,
+      this.colHeaderLength
+    );
+    const slicedHeader = model.rawData.slice(headerIndex, this.colHeaderLength);
+    model.rawData =
+      model.rawData.slice(0, headerIndex) +
+      model.rowDelimiter +
+      model.rawData.slice(this.colHeaderLength);
+    // the -1 is to account for the row delimeter
+    this.colHeaderLength -= slicedHeader.length - 1;
+
     model.parseAsync();
     this.emitChanged({
       type: 'columns-removed',

@@ -288,6 +288,7 @@ export class EditableCSVViewer extends Widget {
       const numCol = this.occurrences(rawData, colDelimiter, rowDelimiter);
       columnHeader = this._numbersToLettters(numCol, colDelimiter);
     } else {
+      console.log(currentModel.dsvModel.rawData);
       rowDelimiter = currentModel.dsvModel.rowDelimiter;
       columnHeader = this._numbersToLettters(
         currentModel.dsvModel.columnCount('body'),
