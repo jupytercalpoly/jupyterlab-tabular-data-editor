@@ -1,6 +1,7 @@
 import { MutableDataModel, DataModel } from '@lumino/datagrid';
 import { DSVModel } from 'tde-csvviewer';
 import { Signal } from '@lumino/signaling';
+import { numberToCharacter } from './_helper';
 
 export default class EditableDSVModel extends MutableDataModel {
   constructor(options: DSVModel.IOptions, headerLength: number) {
@@ -175,12 +176,14 @@ export default class EditableDSVModel extends MutableDataModel {
 
   addColumn(colNumber: number): void {
     const model = this.dsvModel;
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     // this feels sub-optimal but I haven't thought of a better way.
     let index: number;
     let shift = 0;
+    const prevNumCol = this.columnCount('body');
 
     // modify body data
-    for (let row = 0; row <= model.rowCount('body'); row++) {
+    for (let row = 1; row <= model.rowCount('body'); row++) {
       index = model.getOffsetIndex(row, colNumber) + shift;
       model.rawData =
         model.rawData.slice(0, index) +
@@ -189,8 +192,15 @@ export default class EditableDSVModel extends MutableDataModel {
       shift += model.delimiter.length;
     }
 
-    // TODO: need to update when moving on to three character letters
-    this.colHeaderLength += 2;
+    // edit column header
+    const nextLetter =
+      model.delimiter + numberToCharacter(alphabet, prevNumCol + 1);
+    model.rawData =
+      model.rawData.slice(0, this._colHeaderLength - 1) +
+      nextLetter +
+      model.rawData.slice(this._colHeaderLength - 1);
+
+    this.colHeaderLength += nextLetter.length;
 
     model.parseAsync();
     this.emitChanged({
@@ -202,7 +212,7 @@ export default class EditableDSVModel extends MutableDataModel {
 
     // TODO: maybe also send the next character to add to the header in the signal
     this._onChangeSignal.emit(
-      this._dsvModel.rawData.slice(this.colHeaderLength - 1)
+      this._dsvModel.rawData.slice(this._colHeaderLength)
     );
   }
 
@@ -275,13 +285,16 @@ export default class EditableDSVModel extends MutableDataModel {
     // slice out the last letter in the column header
     const headerIndex = model.rawData.lastIndexOf(
       model.delimiter,
-      this.colHeaderLength
+      this._colHeaderLength
     );
-    const slicedHeader = model.rawData.slice(headerIndex, this.colHeaderLength);
+    const slicedHeader = model.rawData.slice(
+      headerIndex,
+      this._colHeaderLength
+    );
     model.rawData =
       model.rawData.slice(0, headerIndex) +
       model.rowDelimiter +
-      model.rawData.slice(this.colHeaderLength);
+      model.rawData.slice(this._colHeaderLength);
     // the -1 is to account for the row delimeter
     this.colHeaderLength -= slicedHeader.length - 1;
 
@@ -293,7 +306,7 @@ export default class EditableDSVModel extends MutableDataModel {
       span: 1
     });
     this._onChangeSignal.emit(
-      this._dsvModel.rawData.slice(this.colHeaderLength)
+      this._dsvModel.rawData.slice(this._colHeaderLength)
     );
   }
   private _dsvModel: DSVModel;

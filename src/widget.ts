@@ -25,6 +25,7 @@ import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget } from '@lumino/widgets';
 import EditableDSVModel from './model';
 import RichMouseHandler from './handler';
+import { numberToCharacter } from './_helper';
 
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
@@ -190,47 +191,6 @@ export class EditableCSVViewer extends Widget {
     this.node.focus();
   }
 
-  /**
-   * Generates a string of letters that represent the column header
-   */
-  // Inefficient because each multi-letter is being recomputed from scratch
-  // TODO: Cache some letters (Ex. when computing AA..AZ, save the A instead of recomputing it)
-  private _numbersToLettters(colNum: number, delimiter: string): string {
-    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-
-    // single alphabet (26 columns or less)
-    if (colNum <= 26) {
-      return alphabet
-        .slice(0, colNum)
-        .split('')
-        .join(delimiter);
-    }
-
-    let quotient = 1;
-    let result = alphabet
-      .slice(0, colNum)
-      .split('')
-      .join(delimiter);
-    let nextChar = '';
-
-    // handles multi-letters (AA, ABC, etc)
-    for (let i = 27; i < colNum; i++) {
-      quotient = i;
-      while (quotient >= 1) {
-        let charIndex = quotient % alphabet.length;
-        quotient /= alphabet.length;
-        if (charIndex - 1 === -1) {
-          charIndex = alphabet.length;
-          quotient--;
-        }
-        nextChar = alphabet.charAt(charIndex - 1) + nextChar;
-      }
-      result += delimiter + nextChar;
-      nextChar = '';
-    }
-    return result;
-  }
-
   /*
   Guess the row delimiter if it was not supplied. 
   This will be fooled if a different line delimiter possibility appears in the first row.
@@ -249,7 +209,7 @@ export class EditableCSVViewer extends Widget {
   /*
   Counts the occurrences of a substring from a given string
   */
-  private occurrences(
+  private _countOccurrences(
     string: string,
     substring: string,
     rowDelimiter: string
@@ -272,31 +232,32 @@ export class EditableCSVViewer extends Widget {
   /*
   Adds the a column header of alphabets to the top of the data (A..Z,AA..ZZ,AAA...)
   */
-  // TODO: Improve efficiency as this gets called on every grid update (run asynchronously and cache somewhere?)
-  private _buildColHeader(
-    currentModel: EditableDSVModel,
-    colDelimiter: string
-  ): string {
+  private _buildColHeader(colDelimiter: string): string {
     const rawData = this._context.model.toString();
-    let rowDelimiter: string;
-    let columnHeader: string;
-
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     // when the model is first created, we don't know how many columns or what the row delimeter is
-    if (!currentModel) {
-      // figure out number of columns since DSVModel doesn't exist yet
-      rowDelimiter = this._guessRowDelimeter(rawData);
-      const numCol = this.occurrences(rawData, colDelimiter, rowDelimiter);
-      columnHeader = this._numbersToLettters(numCol, colDelimiter);
-    } else {
-      console.log(currentModel.dsvModel.rawData);
-      rowDelimiter = currentModel.dsvModel.rowDelimiter;
-      columnHeader = this._numbersToLettters(
-        currentModel.dsvModel.columnCount('body'),
-        colDelimiter
+    const rowDelimiter = this._guessRowDelimeter(rawData);
+    const numCol = this._countOccurrences(rawData, colDelimiter, rowDelimiter);
+
+    // if only single alphabets fix the string
+    if (numCol <= 26) {
+      return (
+        alphabet
+          .slice(0, numCol)
+          .split('')
+          .join(colDelimiter) + rowDelimiter
       );
-      currentModel.colHeaderLength = columnHeader.length;
     }
-    return columnHeader + rowDelimiter;
+    // otherwise compute the column header with multi-letters (AA..)
+    else {
+      // get all single letters
+      let columnHeader = alphabet.split('').join(colDelimiter);
+      // find the rest
+      for (let i = 27; i < numCol; i++) {
+        columnHeader += colDelimiter + numberToCharacter(alphabet, i);
+      }
+      return columnHeader + rowDelimiter;
+    }
   }
 
   /**
@@ -305,14 +266,23 @@ export class EditableCSVViewer extends Widget {
   protected _updateGrid(): void {
     const delimiter = this.delimiter;
     const oldModel = this._grid.dataModel as EditableDSVModel;
-    const header = this._buildColHeader(oldModel, this.delimiter);
-    const data = header + this._context.model.toString();
+    let data: string;
+    let headerLength: number;
+
+    if (!oldModel) {
+      const header = this._buildColHeader(this.delimiter);
+      data = header + this._context.model.toString();
+      headerLength = header.length;
+    } else {
+      data = oldModel.dsvModel.rawData;
+      headerLength = oldModel.colHeaderLength;
+    }
     const dataModel = (this._grid.dataModel = new EditableDSVModel(
       {
         data,
         delimiter
       },
-      header.length
+      headerLength
     ));
     this._grid.selectionModel = new BasicSelectionModel({ dataModel });
     if (oldModel && oldModel.dsvModel) {
