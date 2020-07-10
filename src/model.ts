@@ -244,6 +244,9 @@ export default class EditableDSVModel extends MutableDataModel {
   removeCol(colNumber: number): void {
     const model = this.dsvModel;
 
+    //first, we add all the column offsets to the cache by calling getOffsetIndex at the last row
+    this.computeColumnOffsets();
+
     let startIndex: number;
     let endIndex: number;
     //records length of the data we just removed
@@ -315,6 +318,23 @@ export default class EditableDSVModel extends MutableDataModel {
     this._onChangeSignal.emit(
       this._dsvModel.rawData.slice(this._colHeaderLength)
     );
+  }
+
+  computeColumnOffsets() {
+    const model = this.dsvModel;
+    // abort if all column offsets have already been parsed.
+    if (
+      model.columnOffsets[
+        model.rowCount('body') * model.columnCount('body') - 1
+      ] !== 0xffffffff
+    ) {
+      return;
+    }
+    let rowIndex = 0;
+    while (model.columnOffsets[rowIndex] !== 0xffffffff) {
+      rowIndex++;
+    }
+    model.getOffsetIndex(rowIndex, 0);
   }
   private _dsvModel: DSVModel;
   private _onChangeSignal: Signal<this, string> = new Signal<this, string>(
