@@ -265,30 +265,24 @@ export class EditableCSVViewer extends Widget {
    */
   protected _updateGrid(): void {
     const delimiter = this.delimiter;
-    const oldModel = this._grid.dataModel as EditableDSVModel;
+    const model = this._grid.dataModel as EditableDSVModel;
     let data: string;
     let headerLength: number;
 
-    if (!oldModel) {
+    if (!model) {
       const header = this._buildColHeader(this.delimiter);
       data = header + this._context.model.toString();
       headerLength = header.length;
-    } else {
-      data = oldModel.dsvModel.rawData;
-      headerLength = oldModel.colHeaderLength;
+      const dataModel = (this._grid.dataModel = new EditableDSVModel(
+        {
+          data,
+          delimiter
+        },
+        headerLength
+      ));
+      this._grid.selectionModel = new BasicSelectionModel({ dataModel });
+      dataModel.onChangedSignal.connect(this._updateModel, this);
     }
-    const dataModel = (this._grid.dataModel = new EditableDSVModel(
-      {
-        data,
-        delimiter
-      },
-      headerLength
-    ));
-    this._grid.selectionModel = new BasicSelectionModel({ dataModel });
-    if (oldModel && oldModel.dsvModel) {
-      oldModel.dsvModel.dispose();
-    }
-    dataModel.onChangedSignal.connect(this._updateModel, this);
   }
 
   /**

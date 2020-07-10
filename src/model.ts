@@ -195,15 +195,18 @@ export default class EditableDSVModel extends MutableDataModel {
       shift += model.delimiter.length;
     }
 
+    // update rawData and header (header handles immediate update, rawData handles parseAsync)
     // add the next letter to the column header
-    const nextLetter =
-      model.delimiter + numberToCharacter(alphabet, prevNumCol + 1);
+    const nextLetter = numberToCharacter(alphabet, prevNumCol + 1);
     model.rawData =
       model.rawData.slice(0, this._colHeaderLength - 1) +
+      model.delimiter +
       nextLetter +
       model.rawData.slice(this._colHeaderLength - 1);
 
-    this.colHeaderLength += nextLetter.length;
+    this.colHeaderLength += model.delimiter.length + nextLetter.length;
+    // need to push the letter to the header here so that it updates
+    model.header.push(nextLetter);
 
     model.parseAsync();
     this.emitChanged({
@@ -283,7 +286,7 @@ export default class EditableDSVModel extends MutableDataModel {
         model.rawData.slice(0, startIndex) + model.rawData.slice(endIndex);
       shift += diff;
     }
-
+    // update rawData and header (header handles immediate update, rawData handles parseAsync)
     // slice out the last letter in the column header
     const headerIndex = model.rawData.lastIndexOf(
       model.delimiter,
@@ -299,6 +302,8 @@ export default class EditableDSVModel extends MutableDataModel {
       model.rawData.slice(this._colHeaderLength);
     // the -1 is to account for the row delimeter
     this.colHeaderLength -= slicedHeader.length - 1;
+    // need to remove the last letter from the header
+    model.header.pop();
 
     model.parseAsync();
     this.emitChanged({
