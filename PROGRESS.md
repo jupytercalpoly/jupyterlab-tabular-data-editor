@@ -37,3 +37,8 @@ An account of tasks and features planned and completed
 - Able to add rows and columns - Logan
 - Able to delete rows and columns - Kalen, Logan
 - Able to save file after editing in our extension - Kalen, Logan
+- Added UI/UX for user story issues - Ryan 
+
+**Completed Prototypes - Ryan**
+- Sorting Data
+- Search and Replace
