@@ -7,6 +7,7 @@ An account of tasks and features planned and completed
 - [x] Add rows/columns
 - [x] Delete rows/columns
 - [ ] Move rows/columns
+- [ ] Undo capabilities
 - [ ] Filter
 - [ ] Sort
 - [ ] Search and Replace
