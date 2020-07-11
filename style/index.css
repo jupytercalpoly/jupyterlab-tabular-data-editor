@@ -5,10 +5,12 @@
   color: white;
 }
 
+/*DATAGRID*/
+
 /*border of a cell*/
 .lm-DataGrid-cellEditorContainer {
   border: 2px solid #2196f3;
-  box-shadow: none;
+  box-shadow: var(--jp-cell-editor-box-shadow);
 }
 
 /*surrounding of the cell when double clicked*/
@@ -21,6 +23,8 @@
 
 /*the input in the cell*/
 .lm-DataGrid-cellEditorInput {
+  font-size: 12px; /*var(--jp-ui-font-size1) -> makes the text look bigger when active*/
+  font-family: var(--jp-ui-font-family);
 }
 
 /*something behind the canvas*/
@@ -33,4 +37,15 @@
 /*corner of the scroll bar*/
 .lm-DataGrid-scrollCorner {
   background-color: #f0f0f0;
+}
+
+/*RIGHT-CLICK MENU*/
+.lm-Menu-content {
+}
+
+/*TOOLBAR*/
+
+.jp-Toolbar {
+  height: 29px;
+  min-height: var(--jp-private-toolbar-height);
 }
