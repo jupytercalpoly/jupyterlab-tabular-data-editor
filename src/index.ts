@@ -130,7 +130,7 @@ function addCommands(
     execute: () => {
       // emit a signal to the EditableDSVModel
       tracker.currentWidget &&
-        tracker.currentWidget.content.addRowSignal.emit(null);
+      tracker.currentWidget.content.changeModelSignal.emit("add-row");
     }
   });
 
@@ -138,7 +138,7 @@ function addCommands(
     label: 'Remove Row',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.removeRowSignal.emit(null);
+      tracker.currentWidget.content.changeModelSignal.emit("remove-row");
     }
   });
 
@@ -146,7 +146,7 @@ function addCommands(
     label: 'Add Column',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.addColSignal.emit(null);
+      tracker.currentWidget.content.changeModelSignal.emit("add-column");
     }
   });
 
@@ -154,7 +154,7 @@ function addCommands(
     label: 'Remove Column',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.removeColSignal.emit(null);
+      tracker.currentWidget.content.changeModelSignal.emit("remove-column");
     }
   });
 
