@@ -17,22 +17,8 @@ An account of tasks and features planned and completed
 - [ ] Referencing other cells in formulas (relative positioning)
 
 ## Current Progress
-### 06/22/20 - 06/26/20
-- Initial repo setup - Kalen, Logan, Ryan
-- Linked extension to JupyterLab - Kalen, Logan
-- Completed heuristic evaluation - Ryan
-- Finished personas, user journeys, and user stories - Ryan
 
-### 06/29/20 - 07/02/20
-- Created a fork of JupyterLab CSVViewer package (renaming of some attributes/methods to protected/public) - Logan
-- Cells are now editable (text editing only) - Kalen, Logan
-
-**Completed Prototypes - Ryan**
-- Editing datagrid
-- Saving datagrid
-- Moving cells, rows, and columns
-- Inserting rows and columns
-- Filtering data
+#### [Demo - Initial Progress](https://docs.google.com/presentation/d/1b-cH0wQz6oAtlLLPSqETVqasltpMQd9ceNx0LXjgJyU/edit?usp=sharing)
 
 ### 07/06/20 - 07/10/20
 - Set up pre-commit hook (Husky/Lint-Staged) for linting and formatting code - Kalen
@@ -46,4 +32,19 @@ An account of tasks and features planned and completed
 - Sorting Data
 - Search and Replace
 
-#### [Demo - Initial Progress](https://docs.google.com/presentation/d/1b-cH0wQz6oAtlLLPSqETVqasltpMQd9ceNx0LXjgJyU/edit?usp=sharing)
+### 06/29/20 - 07/02/20
+- Created a fork of JupyterLab CSVViewer package (renaming of some attributes/methods to protected/public) - Logan
+- Cells are now editable (text editing only) - Kalen, Logan
+
+**Completed Prototypes - Ryan**
+- Editing datagrid
+- Saving datagrid
+- Moving cells, rows, and columns
+- Inserting rows and columns
+- Filtering data
+
+### 06/22/20 - 06/26/20
+- Initial repo setup - Kalen, Logan, Ryan
+- Linked extension to JupyterLab - Kalen, Logan
+- Completed heuristic evaluation - Ryan
+- Finished personas, user journeys, and user stories - Ryan
