@@ -25,10 +25,12 @@
     "url": "https://github.com/jupytercalpoly/jupyterlab-tabular-data-editor.git"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -b",
     "clean": "rimraf lib tsconfig.tsbuildinfo",
     "eslint": "eslint . --ext .ts,.tsx --fix",
     "eslint:check": "eslint . --ext .ts,.tsx",
+    "test": "jest",
+    "test:cov": "jest --collect-coverage",
     "prepare": "jlpm run clean && jlpm run build",
     "watch": "tsc -w"
   },
@@ -52,16 +54,19 @@
     "tde-csvviewer": "^1.0.3"
   },
   "devDependencies": {
+    "@types/jest": "^26.0.4",
     "@typescript-eslint/eslint-plugin": "^2.25.0",
     "@typescript-eslint/parser": "^2.25.0",
     "eslint": "^6.8.0",
     "eslint-config-prettier": "^6.10.1",
     "eslint-plugin-prettier": "^3.1.2",
     "husky": ">=4",
+    "jest": "^26.1.0",
     "lint-staged": ">=10",
     "prettier": "1.16.4",
     "rimraf": "^2.6.1",
-    "typescript": "~3.7.0"
+    "ts-jest": "^26.1.1",
+    "typescript": "^3.9.6"
   },
   "sideEffects": [
     "style/*.css"
