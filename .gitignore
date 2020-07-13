@@ -7,3 +7,5 @@ node_modules/
 *yarn.lock
 *yarn-error.log
 .eslintcache
+.DS_Store
+coverage/
