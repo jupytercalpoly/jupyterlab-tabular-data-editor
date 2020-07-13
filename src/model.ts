@@ -187,6 +187,7 @@ export default class EditableDSVModel extends MutableDataModel {
     if (keepingCell) {
       sliceStart = this.firstIndex(cellLoc);
       sliceEnd = this.lastIndex(cellLoc);
+      // check whether we are removing last row (or column)
     } else if (this.isTrimOperation(cellLoc)) {
       const prevCell = this.getPreviousCell(cellLoc);
       sliceStart = this.lastIndex(prevCell);
@@ -203,6 +204,7 @@ export default class EditableDSVModel extends MutableDataModel {
 
   insertAt(value: any, model: DSVModel, cellLoc: ICoordinates): void {
     let insertionIndex: number;
+    //check if we are appending an additional row (or column)
     if (this.isExtensionOperation(cellLoc)) {
       const prevCell = this.getPreviousCell(cellLoc);
       insertionIndex = this.lastIndex(prevCell);
@@ -254,14 +256,15 @@ export default class EditableDSVModel extends MutableDataModel {
     }
     return this.dsvModel.rawData.length;
   }
-
+  // checks whether we are removing data cells on the last row or the last column.
   isTrimOperation(coords: ICoordinates): boolean {
     const { row, column } = coords;
     const rows = this.dsvModel.rowCount('body');
     const columns = this.dsvModel.columnCount('body');
     return column === columns || (row === rows && column === 0);
   }
-
+  // checks whether we are appending a column to the end or appending a row to the end.
+  // This would mainly come up if we were undoing a trim operation.
   isExtensionOperation(coords: ICoordinates): boolean {
     const { row, column } = coords;
     const rows = this.dsvModel.rowCount('body');
