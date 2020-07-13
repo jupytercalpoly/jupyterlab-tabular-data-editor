@@ -24,7 +24,7 @@ import { EditableCSVViewer, EditableCSVViewerFactory } from './widget';
 /**
  * The name of the factories that creates widgets.
  */
-const FACTORY_CSV = 'CSVTabularDataEditor';
+const FACTORY_CSV = 'Tabular Data Editor';
 // const FACTORY_TSV = 'TSVTable';
 
 /**
