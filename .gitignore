@@ -8,3 +8,4 @@ node_modules/
 *yarn-error.log
 .eslintcache
 .DS_Store
+coverage/
