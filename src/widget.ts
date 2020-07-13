@@ -149,7 +149,7 @@ export class EditableCSVViewer extends Widget {
   }
 
   get changeModelSignal(): Signal<this, string> {
-    return this._changeModelSignal
+    return this._changeModelSignal;
   }
 
   /**
@@ -299,20 +299,20 @@ export class EditableCSVViewer extends Widget {
   }
 
   private _changeModel(emitter: EditableCSVViewer, type: string): void {
-    switch(type) {
-      case ("add-row"): {
+    switch (type) {
+      case 'add-row': {
         this.dataModel.addRow(this._row);
         break;
       }
-      case ("add-column"): {
+      case 'add-column': {
         this.dataModel.addColumn(this._column);
         break;
       }
-      case ("remove-row"): {
+      case 'remove-row': {
         this.dataModel.removeRow(this._row);
         break;
       }
-      case ("remove-column"): {
+      case 'remove-column': {
         this.dataModel.removeColumn(this._column);
         break;
       }
@@ -340,7 +340,9 @@ export class EditableCSVViewer extends Widget {
   private _baseRenderer: TextRenderConfig | null = null;
 
   // Signals for basic editing functionality
-  private _changeModelSignal: Signal<this, string> = new Signal<this, string>(this);
+  private _changeModelSignal: Signal<this, string> = new Signal<this, string>(
+    this
+  );
 }
 
 // Override the CSVViewer's _updateGrid method to set the datagrid's model to an EditableDataModel
