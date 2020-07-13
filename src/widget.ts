@@ -125,7 +125,7 @@ export class EditableCSVViewer extends Widget {
     this._grid.style = value;
   }
 
-  get coords(): Array<number> {
+  get coords(): Array<number | null> {
     return [this._row, this._column];
   }
 
@@ -151,18 +151,18 @@ export class EditableCSVViewer extends Widget {
     return this._grid.dataModel as EditableDSVModel;
   }
 
-  get addRowSignal(): Signal<this, void> {
+  get addRowSignal(): Signal<this, null> {
     return this._addRowSignal;
   }
-  get addColSignal(): Signal<this, void> {
+  get addColSignal(): Signal<this, null> {
     return this._addColSignal;
   }
 
-  get removeRowSignal(): Signal<this, void> {
+  get removeRowSignal(): Signal<this, null> {
     return this._removeRowSignal;
   }
 
-  get removeColSignal(): Signal<this, void> {
+  get removeColSignal(): Signal<this, null> {
     return this._removeColSignal;
   }
 
@@ -335,8 +335,8 @@ export class EditableCSVViewer extends Widget {
     [this._row, this._column] = coords;
   }
 
-  private _row: number | null;
-  private _column: number | null;
+  private _row: number;
+  private _column: number;
   private _context: DocumentRegistry.Context;
   private _grid: DataGrid;
   private _searchService: GridSearchService;
@@ -349,10 +349,10 @@ export class EditableCSVViewer extends Widget {
   private _baseRenderer: TextRenderConfig | null = null;
 
   // Signals for basic editing functionality
-  private _addRowSignal: Signal<this, void> = new Signal<this, void>(this);
-  private _addColSignal: Signal<this, void> = new Signal<this, void>(this);
-  private _removeRowSignal: Signal<this, void> = new Signal<this, void>(this);
-  private _removeColSignal: Signal<this, void> = new Signal<this, void>(this);
+  private _addRowSignal: Signal<this, null> = new Signal<this, null>(this);
+  private _addColSignal: Signal<this, null> = new Signal<this, null>(this);
+  private _removeRowSignal: Signal<this, null> = new Signal<this, null>(this);
+  private _removeColSignal: Signal<this, null> = new Signal<this, null>(this);
 }
 
 // Override the CSVViewer's _updateGrid method to set the datagrid's model to an EditableDataModel
