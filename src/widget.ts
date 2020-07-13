@@ -81,10 +81,7 @@ export class EditableCSVViewer extends Widget {
       this._monitor.activityStopped.connect(this._updateGrid, this);
     });
     this._grid.editingEnabled = true;
-    this.addRowSignal.connect(this._addRow, this);
-    this.addColSignal.connect(this._addCol, this);
-    this.removeRowSignal.connect(this._removeRow, this);
-    this.removeColSignal.connect(this._removeCol, this);
+    this.changeModelSignal.connect(this._changeModel, this);
   }
 
   /**
@@ -151,19 +148,8 @@ export class EditableCSVViewer extends Widget {
     return this._grid.dataModel as EditableDSVModel;
   }
 
-  get addRowSignal(): Signal<this, null> {
-    return this._addRowSignal;
-  }
-  get addColSignal(): Signal<this, null> {
-    return this._addColSignal;
-  }
-
-  get removeRowSignal(): Signal<this, null> {
-    return this._removeRowSignal;
-  }
-
-  get removeColSignal(): Signal<this, null> {
-    return this._removeColSignal;
+  get changeModelSignal(): Signal<this, string> {
+    return this._changeModelSignal;
   }
 
   /**
@@ -312,20 +298,25 @@ export class EditableCSVViewer extends Widget {
     this.context.model.fromString(data);
   }
 
-  private _addRow(this: EditableCSVViewer): void {
-    this.dataModel.addRow(this._row);
-  }
-
-  private _addCol(this: EditableCSVViewer): void {
-    this.dataModel.addColumn(this._column);
-  }
-
-  private _removeRow(this: EditableCSVViewer): void {
-    this.dataModel.removeRow(this._row);
-  }
-
-  private _removeCol(this: EditableCSVViewer): void {
-    this.dataModel.removeCol(this._column);
+  private _changeModel(emitter: EditableCSVViewer, type: string): void {
+    switch (type) {
+      case 'add-row': {
+        this.dataModel.addRow(this._row);
+        break;
+      }
+      case 'add-column': {
+        this.dataModel.addColumn(this._column);
+        break;
+      }
+      case 'remove-row': {
+        this.dataModel.removeRow(this._row);
+        break;
+      }
+      case 'remove-column': {
+        this.dataModel.removeColumn(this._column);
+        break;
+      }
+    }
   }
 
   private _onRightClick(
@@ -349,10 +340,9 @@ export class EditableCSVViewer extends Widget {
   private _baseRenderer: TextRenderConfig | null = null;
 
   // Signals for basic editing functionality
-  private _addRowSignal: Signal<this, null> = new Signal<this, null>(this);
-  private _addColSignal: Signal<this, null> = new Signal<this, null>(this);
-  private _removeRowSignal: Signal<this, null> = new Signal<this, null>(this);
-  private _removeColSignal: Signal<this, null> = new Signal<this, null>(this);
+  private _changeModelSignal: Signal<this, string> = new Signal<this, string>(
+    this
+  );
 }
 
 // Override the CSVViewer's _updateGrid method to set the datagrid's model to an EditableDataModel
