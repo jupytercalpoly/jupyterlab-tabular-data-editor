@@ -5,18 +5,28 @@ const delimiter = ',';
 let model: EditableDSVModel;
 
 beforeEach(() => {
-  const data = 'A,B,C\n1,2,3\n4,5,6\n7,8,9';
+  const data = ['A,B,C', '1,2,3', '4,5,6', '7,8,9'].join('\n');
   const headerLength = 3;
   model = new EditableDSVModel({ data, delimiter }, headerLength);
 });
 
-describe('addRow functions', () => {
-  it('adds a row to the beginning of the model', () => {
-    const bool = model ? true : false;
-    expect(bool).toBeTruthy();
+describe('addRow function', () => {
+  it('adds a row at the beginning of the model', () => {
     model.addRow(0);
-    console.log(model.dsvModel.rawData);
-    const expectedData = 'A,B,C\n,,\n1,2,3\n4,5,6\n7,8,9';
+    const expectedData = ['A,B,C', ',,', '1,2,3', '4,5,6', '7,8,9'].join('\n');
+    expect(model.dsvModel.rawData).toBe(expectedData);
+  });
+
+  // not present in UI, but here for complete coverage
+  it('adds a row at the end of the model', () => {
+    model.addRow(model.dsvModel.rowCount('body'));
+    const expectedData = 'A,B,C\n1,2,3\n4,5,6\n7,8,9\n,,';
+    expect(model.dsvModel.rawData).toBe(expectedData);
+  });
+
+  it('adds a row in the middle of the model', () => {
+    model.addRow(2);
+    const expectedData = ['A,B,C', '1,2,3', '4,5,6', ',,', '7,8,9'].join('\n');
     expect(model.dsvModel.rawData).toBe(expectedData);
   });
 });

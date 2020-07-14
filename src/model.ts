@@ -314,11 +314,21 @@ export default class EditableDSVModel extends MutableDataModel {
     } else {
       insertionIndex = this.firstIndex(cellLoc);
     }
-    model.rawData =
-      model.rawData.slice(0, insertionIndex) +
-      value +
-      model.rawData.slice(insertionIndex);
-    console.log(model.rawData);
+
+    // handle row delimeter if we are inserting below the last row (not yet implemented in UI)
+    if (cellLoc.row === model.rowCount('body') + 1) {
+      model.rawData =
+        model.rawData.slice(0, insertionIndex) +
+        model.rowDelimiter +
+        value.slice(0, value.length - model.rowDelimiter.length);
+    }
+    // insert above another row
+    else {
+      model.rawData =
+        model.rawData.slice(0, insertionIndex) +
+        value +
+        model.rawData.slice(insertionIndex);
+    }
   }
 
   blankRow(model: DSVModel, row: number): string {
