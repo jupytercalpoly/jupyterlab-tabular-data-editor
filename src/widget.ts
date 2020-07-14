@@ -1,4 +1,5 @@
 import { ActivityMonitor } from '@jupyterlab/coreutils';
+import { toArray } from '@lumino/algorithm';
 
 import {
   ABCWidgetFactory,
@@ -24,6 +25,7 @@ import {
 import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget } from '@lumino/widgets';
 import EditableDSVModel from './model';
+import { ICellSelection } from './model';
 import RichMouseHandler from './handler';
 import { numberToCharacter } from './_helper';
 
@@ -314,6 +316,27 @@ export class EditableCSVViewer extends Widget {
       }
       case 'remove-column': {
         this.dataModel.removeColumn(this._column);
+        break;
+      }
+      case 'copy-cells': {
+        this._grid.copyToClipboard();
+        const region = toArray(this._grid.selectionModel.selections())[0];
+        const { r1, r2, c1, c2 } = region;
+        const selection: ICellSelection = {
+          startRow: r1 + 1,
+          startColumn: c1 + 1,
+          endRow: r2 + 1,
+          endColumn: c2 + 1
+        };
+        this.dataModel.copy(selection);
+        break;
+      }
+      // case 'cut-cells': {
+      //   this.dataModel.cut(this._column);
+      //   break;
+      // }
+      case 'paste-cells': {
+        this.dataModel.paste({ row: this._row, column: this._column });
         break;
       }
     }

@@ -8,6 +8,15 @@ export default class EditableDSVModel extends MutableDataModel {
     super();
     this._dsvModel = new DSVModel(options);
     this._colHeaderLength = headerLength;
+    this._cellSelection = null;
+  }
+
+  get clipBoard(): Array<any> {
+    return this._clipBoard;
+  }
+
+  set clipBoard(values: Array<any>) {
+    this._clipBoard = values;
   }
 
   get dsvModel(): DSVModel {
@@ -92,7 +101,7 @@ export default class EditableDSVModel extends MutableDataModel {
     );
   }
 
-  addColumn(column: number): void {
+  addColumn(column: number, number = 1): void {
     const model = this.dsvModel;
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     let row: number;
@@ -177,10 +186,77 @@ export default class EditableDSVModel extends MutableDataModel {
     );
   }
 
+  copy(selection: ICellSelection): void {
+    this._cellSelection = selection;
+    const model = this.dsvModel;
+    const { startRow, startColumn, endRow, endColumn } = selection;
+    const numRows = endRow - startRow + 1;
+    const numColumns = endColumn - startColumn + 1;
+    let row: number;
+    let column: number;
+    let columnArray: Array<string>;
+    this._clipBoard = new Array(numRows);
+    for (let i = numRows - 1; i >= 0; i--) {
+      row = startRow + i;
+      columnArray = new Array(numColumns);
+      for (let j = numColumns - 1; j >= 0; j--) {
+        column = startColumn + j;
+        columnArray[j] = this.sliceOut(
+          model,
+          { row: row, column: column },
+          true,
+          true
+        );
+      }
+      this._clipBoard[i] = columnArray;
+    }
+    console.log(this._clipBoard[2][1]);
+    console.log(this._clipBoard[1][1]);
+  }
+
+  paste(startCoord: ICoordinates): void {
+    const model = this.dsvModel;
+    const rowSpan = Math.min(
+      this._cellSelection.endRow - this._cellSelection.startRow + 1,
+      model.rowCount('body') - startCoord.row
+    );
+    const columnSpan = Math.min(
+      this._cellSelection.endColumn - this._cellSelection.startColumn + 1,
+      model.columnCount('body') - startCoord.column
+    );
+    let row: number;
+    let column: number;
+    for (let i = rowSpan - 1; i >= 0; i--) {
+      row = startCoord.row + 1 + i;
+      for (let j = columnSpan - 1; j >= 0; j--) {
+        column = startCoord.column + 1 + j;
+        this.sliceOut(model, { row: row, column: column }, true);
+        this.insertAt(this._clipBoard[i][j], model, {
+          row: row,
+          column: column
+        });
+      }
+    }
+    const change: DataModel.ChangedArgs = {
+      type: 'cells-changed',
+      region: 'body',
+      row: startCoord.row,
+      column: startCoord.column,
+      rowSpan: rowSpan,
+      columnSpan: columnSpan
+    };
+    model.parseAsync();
+    this.emitChanged(change);
+    this._onChangeSignal.emit(
+      this._dsvModel.rawData.slice(this.colHeaderLength)
+    );
+  }
+
   sliceOut(
     model: DSVModel,
     cellLoc: ICoordinates,
-    keepingCell = false
+    keepingCell = false,
+    keepingValue = false
   ): string {
     let sliceStart: number;
     let sliceEnd: number;
@@ -197,8 +273,10 @@ export default class EditableDSVModel extends MutableDataModel {
       sliceEnd = this.firstIndex(this.getNextCell(cellLoc));
     }
     const value = model.rawData.slice(sliceStart, sliceEnd);
-    model.rawData =
-      model.rawData.slice(0, sliceStart) + model.rawData.slice(sliceEnd);
+    if (!keepingValue) {
+      model.rawData =
+        model.rawData.slice(0, sliceStart) + model.rawData.slice(sliceEnd);
+    }
     return value;
   }
 
@@ -215,7 +293,9 @@ export default class EditableDSVModel extends MutableDataModel {
       model.rawData.slice(0, insertionIndex) +
       value +
       model.rawData.slice(insertionIndex);
+    console.log(model.rawData);
   }
+
   blankRow(model: DSVModel, row: number): string {
     const rows = model.rowCount('body');
     if (row > rows) {
@@ -309,6 +389,8 @@ export default class EditableDSVModel extends MutableDataModel {
   private _onChangeSignal: Signal<this, string> = new Signal<this, string>(
     this
   );
+  private _clipBoard: Array<any>;
+  private _cellSelection: ICellSelection | null;
 
   private _colHeaderLength: number;
 }
@@ -316,4 +398,11 @@ export default class EditableDSVModel extends MutableDataModel {
 interface ICoordinates {
   row: number;
   column: number;
+}
+
+export interface ICellSelection {
+  startRow: number;
+  startColumn: number;
+  endColumn: number;
+  endRow: number;
 }
