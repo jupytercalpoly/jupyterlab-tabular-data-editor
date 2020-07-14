@@ -243,3 +243,369 @@ export declare namespace RichMouseHandler {
     grid: DataGrid;
   }
 }
+
+/**
+ * The namespace for the module implementation details.
+ */
+namespace Private {
+  /**
+   * A type alias for the row resize data.
+   */
+  export type RowResizeData = {
+    /**
+     * The descriminated type for the data.
+     */
+    readonly type: 'row-resize';
+
+    /**
+     * The row region which holds the section being resized.
+     */
+    readonly region: DataModel.RowRegion;
+
+    /**
+     * The index of the section being resized.
+     */
+    readonly index: number;
+
+    /**
+     * The original size of the section.
+     */
+    readonly size: number;
+
+    /**
+     * The original client Y position of the mouse.
+     */
+    readonly clientY: number;
+
+    /**
+     * The disposable to clear the cursor override.
+     */
+    readonly override: IDisposable;
+  };
+
+  /**
+   * A type alias for the column resize data.
+   */
+  export type ColumnResizeData = {
+    /**
+     * The descriminated type for the data.
+     */
+    readonly type: 'column-resize';
+
+    /**
+     * The column region which holds the section being resized.
+     */
+    readonly region: DataModel.ColumnRegion;
+
+    /**
+     * The index of the section being resized.
+     */
+    readonly index: number;
+
+    /**
+     * The original size of the section.
+     */
+    readonly size: number;
+
+    /**
+     * The original client X position of the mouse.
+     */
+    readonly clientX: number;
+
+    /**
+     * The disposable to clear the cursor override.
+     */
+    readonly override: IDisposable;
+  };
+
+  /**
+   * A type alias for the column resize data.
+   */
+  export type RowMoveData = {
+    /**
+     * The descriminated type for the data.
+     */
+    readonly type: 'row-move';
+
+    /**
+     * The row region which holds the section being resized.
+     */
+    readonly region: DataModel.RowRegion;
+
+    /**
+     * The index of the section being moved.
+     */
+    readonly index: number;
+
+    /**
+     * The original size of the section.
+     */
+    readonly size: number;
+
+    /**
+     * The original client Y position of the mouse.
+     */
+    readonly clientY: number;
+
+    /**
+     * The disposable to clear the cursor override.
+     */
+    readonly override: IDisposable;
+  };
+
+  /**
+   * A type alias for the select data.
+   */
+  export type SelectData = {
+    /**
+     * The descriminated type for the data.
+     */
+    readonly type: 'select';
+
+    /**
+     * The original region for the mouse press.
+     */
+    readonly region: DataModel.CellRegion;
+
+    /**
+     * The original row that was selected.
+     */
+    readonly row: number;
+
+    /**
+     * The original column that was selected.
+     */
+    readonly column: number;
+
+    /**
+     * The disposable to clear the cursor override.
+     */
+    readonly override: IDisposable;
+
+    /**
+     * The current local X position of the mouse.
+     */
+    localX: number;
+
+    /**
+     * The current local Y position of the mouse.
+     */
+    localY: number;
+
+    /**
+     * The timeout delay for the autoselect loop.
+     */
+    timeout: number;
+  };
+
+  /**
+   * A type alias for the resize handler press data.
+   */
+  export type PressData =
+    | RowResizeData
+    | ColumnResizeData
+    | RowMoveData
+    | SelectData;
+
+  /**
+   * A type alias for the resize handle types.
+   */
+  export type ResizeHandle =
+    | 'top'
+    | 'left'
+    | 'right'
+    | 'bottom'
+    | 'grab'
+    | 'none';
+
+  /**
+   * Get the resize handle for a grid hit test.
+   */
+  export function resizeHandleForHitTest(
+    hit: DataGrid.HitTestResult
+  ): ResizeHandle {
+    // Fetch the row and column.
+    const r = hit.row;
+    const c = hit.column;
+
+    // Fetch the leading and trailing sizes.
+    const lw = hit.x;
+    const lh = hit.y;
+    const tw = hit.width - hit.x;
+    const th = hit.height - hit.y;
+
+    // Set up the result variable.
+    let result: ResizeHandle;
+
+    // Dispatch based on hit test region.
+    switch (hit.region) {
+      case 'corner-header':
+        if (c > 0 && lw <= 5) {
+          result = 'left';
+        } else if (tw <= 6) {
+          result = 'right';
+        } else if (r > 0 && lh <= 5) {
+          result = 'top';
+        } else if (th <= 6) {
+          result = 'bottom';
+        } else {
+          result = 'none';
+        }
+        break;
+      case 'column-header':
+        if (c > 0 && lw <= 5) {
+          result = 'left';
+        } else if (tw <= 6) {
+          result = 'right';
+        } else if (r > 0 && lh <= 5) {
+          result = 'top';
+        } else if (th <= 6) {
+          result = 'bottom';
+        } else {
+          result = 'grab';
+        }
+        break;
+      case 'row-header':
+        if (c > 0 && lw <= 5) {
+          result = 'left';
+        } else if (tw <= 6) {
+          result = 'right';
+        } else if (r > 0 && lh <= 5) {
+          result = 'top';
+        } else if (th <= 6) {
+          result = 'bottom';
+        } else {
+          result = 'grab';
+        }
+        break;
+      case 'body':
+        result = 'none';
+        break;
+      case 'void':
+        result = 'none';
+        break;
+      default:
+        throw 'unreachable';
+    }
+
+    // Return the result.
+    return result;
+  }
+
+  /**
+   * Convert a resize handle into a cursor.
+   */
+  export function cursorForHandle(handle: ResizeHandle): string {
+    return cursorMap[handle];
+  }
+
+  /**
+   * A timer callback for the autoselect loop.
+   *
+   * @param grid - The datagrid of interest.
+   *
+   * @param data - The select data of interest.
+   */
+  export function autoselect(grid: DataGrid, data: SelectData): void {
+    // Bail early if the timeout has been reset.
+    if (data.timeout < 0) {
+      return;
+    }
+
+    // Fetch the selection model.
+    const model = grid.selectionModel;
+
+    // Bail early if the selection model has been removed.
+    if (!model) {
+      return;
+    }
+
+    // Fetch the current selection.
+    let cs = model.currentSelection();
+
+    // Bail early if there is no current selection.
+    if (!cs) {
+      return;
+    }
+
+    // Fetch local X and Y coordinates of the mouse.
+    const lx = data.localX;
+    const ly = data.localY;
+
+    // Set up the selection variables.
+    const r1 = cs.r1;
+    const c1 = cs.c1;
+    let r2 = cs.r2;
+    let c2 = cs.c2;
+    const cursorRow = model.cursorRow;
+    const cursorColumn = model.cursorColumn;
+    const clear: SelectionModel.ClearMode = 'current';
+
+    // Fetch the grid geometry.
+    const hw = grid.headerWidth;
+    const hh = grid.headerHeight;
+    const vpw = grid.viewportWidth;
+    const vph = grid.viewportHeight;
+
+    // Fetch the selection mode.
+    const mode = model.selectionMode;
+
+    // Update the selection based on the hit region.
+    if (data.region === 'row-header' || mode === 'row') {
+      r2 += ly <= hh ? -1 : ly >= vph ? 1 : 0;
+    } else if (data.region === 'column-header' || mode === 'column') {
+      c2 += lx <= hw ? -1 : lx >= vpw ? 1 : 0;
+    } else {
+      r2 += ly <= hh ? -1 : ly >= vph ? 1 : 0;
+      c2 += lx <= hw ? -1 : lx >= vpw ? 1 : 0;
+    }
+
+    // Update the current selection.
+    model.select({ r1, c1, r2, c2, cursorRow, cursorColumn, clear });
+
+    // Re-fetch the current selection.
+    cs = model.currentSelection();
+
+    // Bail if there is no selection.
+    if (!cs) {
+      return;
+    }
+
+    // Scroll the grid based on the hit region.
+    if (data.region === 'row-header' || mode === 'row') {
+      grid.scrollToRow(cs.r2);
+    } else if (data.region === 'column-header' || mode === 'column') {
+      grid.scrollToColumn(cs.c2);
+    } else if (mode === 'cell') {
+      grid.scrollToCell(cs.r2, cs.c2);
+    }
+
+    // Schedule the next call with the current timeout.
+    setTimeout(() => {
+      autoselect(grid, data);
+    }, data.timeout);
+  }
+
+  /**
+   * Compute the scroll timeout for the given delta distance.
+   *
+   * @param delta - The delta pixels from the origin.
+   *
+   * @returns The scaled timeout in milliseconds.
+   */
+  export function computeTimeout(delta: number): number {
+    return 5 + 120 * (1 - Math.min(128, Math.abs(delta)) / 128);
+  }
+
+  /**
+   * A mapping of resize handle to cursor.
+   */
+  const cursorMap = {
+    top: 'ns-resize',
+    left: 'ew-resize',
+    right: 'ew-resize',
+    bottom: 'ns-resize',
+    grab: 'grab',
+    none: 'default'
+  };
+}
