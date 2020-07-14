@@ -86,3 +86,23 @@ describe('cut function', () => {
     expect(model.dsvModel.rawData).toBe(expectedData);
   });
 });
+
+describe('removeRow function', () => {
+  it('remove a row at the beginning of the model', () => {
+    model.removeRow(0);
+    const expectedData = ['A,B,C', '4,5,6', '7,8,9'].join('\n');
+    expect(model.dsvModel.rawData).toBe(expectedData);
+  });
+
+  it('remove a row at the end of the model', () => {
+    model.removeRow(model.dsvModel.rowCount('body') - 1);
+    const expectedData = 'A,B,C\n1,2,3\n4,5,6';
+    expect(model.dsvModel.rawData).toBe(expectedData);
+  });
+
+  it('adds a row in the middle of the model', () => {
+    model.removeRow(1);
+    const expectedData = ['A,B,C', '1,2,3', '7,8,9'].join('\n');
+    expect(model.dsvModel.rawData).toBe(expectedData);
+  });
+});
