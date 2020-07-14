@@ -280,6 +280,18 @@ export default class EditableDSVModel extends MutableDataModel {
     );
   }
 
+  moveRow(row: number): void {
+    const model = this._dsvModel;
+    const change: DataModel.ChangedArgs = {
+      type: 'rows-moved',
+      region: 'body',
+      index: model.getOffsetIndex(row, 0),
+      span: 1,
+      destination: model.getOffsetIndex(row, model.columnCount('body'))
+    };
+    this.emitChanged(change);
+  }
+
   sliceOut(
     model: DSVModel,
     cellLoc: ICoordinates,
