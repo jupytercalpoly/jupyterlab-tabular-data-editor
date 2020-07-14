@@ -3,10 +3,13 @@ An account of tasks and features planned and completed
 
 ## Features To Be Added (listed in order of highest priority)
 - [x] Edit cells (text editing only)
-- [ ] Save
-- [ ] Add rows/columns
-- [ ] Delete rows/columns
+- [x] Save
+- [x] Add rows/columns
+- [x] Delete rows/columns
 - [ ] Move rows/columns
+- [ ] Undo/redo capabilities
+- [ ] Copy, paste, cut
+- [ ] Toolbar for editing functions
 - [ ] Filter
 - [ ] Sort
 - [ ] Search and Replace
@@ -30,3 +33,17 @@ An account of tasks and features planned and completed
 - Moving cells, rows, and columns
 - Inserting rows and columns
 - Filtering data
+
+### 07/06/20 - 07/10/20
+- Set up pre-commit hook (Husky/Lint-Staged) for linting and formatting code - Kalen
+- Able to add rows and columns - Logan
+- Able to delete rows and columns - Kalen, Logan
+- Able to save file after editing in our extension - Kalen, Logan
+- Alphabetic column header - Kalen
+- Added UI/UX for user story issues - Ryan
+
+**Completed Prototypes - Ryan**
+- Sorting Data
+- Search and Replace
+
+#### [Demo - Initial Progress](https://docs.google.com/presentation/d/1b-cH0wQz6oAtlLLPSqETVqasltpMQd9ceNx0LXjgJyU/edit?usp=sharing)

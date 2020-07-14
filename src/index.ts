@@ -24,7 +24,7 @@ import { EditableCSVViewer, EditableCSVViewerFactory } from './widget';
 /**
  * The name of the factories that creates widgets.
  */
-const FACTORY_CSV = 'CSVTabularDataEditor';
+const FACTORY_CSV = 'Tabular Data Editor';
 // const FACTORY_TSV = 'TSVTable';
 
 /**
@@ -78,8 +78,8 @@ function activateCsv(
 
     if (ft) {
       widget.title.icon = ft.icon;
-      widget.title.iconClass = ft.iconClass;
-      widget.title.iconLabel = ft.iconLabel;
+      widget.title.iconClass = ft.iconClass || '';
+      widget.title.iconLabel = ft.iconLabel || '';
     }
     // Set the theme for the new widget.
     widget.content.style = style;
@@ -129,28 +129,32 @@ function addCommands(
     label: 'Add Row',
     execute: () => {
       // emit a signal to the EditableDSVModel
-      tracker.currentWidget.content.addRowSignal.emit(null);
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('add-row');
     }
   });
 
   commands.addCommand(CommandIDs.removeRow, {
     label: 'Remove Row',
     execute: () => {
-      tracker.currentWidget.content.removeRowSignal.emit(null);
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('remove-row');
     }
   });
 
   commands.addCommand(CommandIDs.addColumn, {
     label: 'Add Column',
     execute: () => {
-      tracker.currentWidget.content.addColSignal.emit(null);
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('add-column');
     }
   });
 
   commands.addCommand(CommandIDs.removeColumn, {
     label: 'Remove Column',
     execute: () => {
-      tracker.currentWidget.content.removeColSignal.emit(null);
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('remove-column');
     }
   });
 
