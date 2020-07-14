@@ -4,3 +4,5 @@ coverage
 **/*.d.ts
 tests
 jest.config.js
+babel.config.js
+testutils/**
