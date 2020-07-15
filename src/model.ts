@@ -13,13 +13,6 @@ export default class EditableDSVModel extends MutableDataModel {
     this.dsvModel.changed.connect(this._passMessage, this);
   }
 
-  private _passMessage(
-    emitter: DSVModel,
-    message: DataModel.ChangedArgs
-  ): void {
-    this.emitChanged(message);
-  }
-
   get clipBoard(): Array<any> {
     return this._clipBoard;
   }
@@ -29,13 +22,6 @@ export default class EditableDSVModel extends MutableDataModel {
 
     // propagate changes in the dsvModel up to the grid
     this.dsvModel.changed.connect(this._passMessage, this);
-  }
-
-  private _passMessage(
-    emitter: DSVModel,
-    message: DataModel.ChangedArgs
-  ): void {
-    this.emitChanged(message);
   }
 
   get dsvModel(): DSVModel {
@@ -54,6 +40,13 @@ export default class EditableDSVModel extends MutableDataModel {
       (headerLength - 1) * model.delimiter.length +
       model.rowDelimiter.length
     );
+  }
+
+  private _passMessage(
+    emitter: DSVModel,
+    message: DataModel.ChangedArgs
+  ): void {
+    this.emitChanged(message);
   }
 
   rowCount(region: DataModel.RowRegion): number {
