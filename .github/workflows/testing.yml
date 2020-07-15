@@ -20,7 +20,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v1
     - name: Install modules 
-      run: jlpm install && jlpm test:cov
+      run: yarn install && yarn test:cov
     - name: Jest Lcov Reporter
       uses: vebr/jest-lcov-reporter@v0.2.0
       with:
