@@ -5,10 +5,9 @@ import { numberToCharacter } from './_helper';
 // import { ClipBoardHandler } from './clipboard';
 
 export default class EditableDSVModel extends MutableDataModel {
-  constructor(options: DSVModel.IOptions, headerLength: number) {
+  constructor(options: DSVModel.IOptions) {
     super();
     this._dsvModel = new DSVModel(options);
-    this._colHeaderLength = headerLength;
   }
 
   get clipBoard(): Array<any> {
@@ -38,11 +37,13 @@ export default class EditableDSVModel extends MutableDataModel {
   }
 
   get colHeaderLength(): number {
-    return this._colHeaderLength;
-  }
-
-  set colHeaderLength(length: number) {
-    this._colHeaderLength = length;
+    const model = this._dsvModel;
+    const headerLength = model.header.join('').length;
+    return (
+      headerLength +
+      (headerLength - 1) * model.delimiter.length +
+      model.rowDelimiter.length
+    );
   }
 
   rowCount(region: DataModel.RowRegion): number {
@@ -115,7 +116,7 @@ export default class EditableDSVModel extends MutableDataModel {
     );
   }
 
-  addColumn(column: number, number = 1): void {
+  addColumn(column: number, numAdded = 1): void {
     const model = this.dsvModel;
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     let row: number;
@@ -124,13 +125,16 @@ export default class EditableDSVModel extends MutableDataModel {
     }
     const prevNumCol = this.columnCount('body');
     const nextLetter = numberToCharacter(alphabet, prevNumCol + 1);
+
+    let headerLength = this.colHeaderLength;
+
     model.rawData =
-      model.rawData.slice(0, this._colHeaderLength - 1) +
+      model.rawData.slice(0, headerLength - 1) +
       model.delimiter +
       nextLetter +
-      model.rawData.slice(this._colHeaderLength - 1);
+      model.rawData.slice(headerLength - 1);
 
-    this.colHeaderLength += model.delimiter.length + nextLetter.length;
+    headerLength += model.delimiter.length + nextLetter.length;
     // need to push the letter to the header here so that it updates
     model.header.push(nextLetter);
 
@@ -142,9 +146,7 @@ export default class EditableDSVModel extends MutableDataModel {
     };
     model.parseAsync();
     this.emitChanged(change);
-    this._onChangeSignal.emit(
-      this._dsvModel.rawData.slice(this._colHeaderLength)
-    );
+    this._onChangeSignal.emit(this._dsvModel.rawData.slice(headerLength));
   }
 
   removeRow(row: number): void {
@@ -172,20 +174,18 @@ export default class EditableDSVModel extends MutableDataModel {
     }
     // update rawData and header (header handles immediate update, rawData handles parseAsync)
     // slice out the last letter in the column header
+    let headerLength = this.colHeaderLength;
     const headerIndex = model.rawData.lastIndexOf(
       model.delimiter,
-      this._colHeaderLength
+      headerLength
     );
-    const slicedHeader = model.rawData.slice(
-      headerIndex,
-      this._colHeaderLength
-    );
+    const slicedHeader = model.rawData.slice(headerIndex, headerLength);
     model.rawData =
       model.rawData.slice(0, headerIndex) +
       model.rowDelimiter +
-      model.rawData.slice(this._colHeaderLength);
+      model.rawData.slice(headerLength);
     // the -1 is to account for the row delimeter
-    this.colHeaderLength -= slicedHeader.length - 1;
+    headerLength -= slicedHeader.length - 1;
     // need to remove the last letter from the header
     const change: DataModel.ChangedArgs = {
       type: 'columns-removed',
@@ -195,9 +195,7 @@ export default class EditableDSVModel extends MutableDataModel {
     };
     model.parseAsync();
     this.emitChanged(change);
-    this._onChangeSignal.emit(
-      this._dsvModel.rawData.slice(this._colHeaderLength)
-    );
+    this._onChangeSignal.emit(this._dsvModel.rawData.slice(headerLength));
   }
 
   cut(selection: ICellSelection): void {
@@ -427,8 +425,6 @@ export default class EditableDSVModel extends MutableDataModel {
   private _block = true;
   private _clipBoard: Array<any>;
   // private _cellSelection: ICellSelection | null;
-
-  private _colHeaderLength: number;
 }
 
 interface ICoordinates {
