@@ -32,6 +32,8 @@ import { toArray } from '@lumino/algorithm';
 
 import { SaveButton } from './toolbar';
 
+import { SaveButton } from './toolbar';
+
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
 const RENDER_TIMEOUT = 1000;
