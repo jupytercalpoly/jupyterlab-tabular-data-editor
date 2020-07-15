@@ -1,4 +1,4 @@
-name: Testing with Jest
+name: Jest Testing and Coverage
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
@@ -19,8 +19,6 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v1
-    - name: Install modules
-      run: yarn
     - name: Jest Annotations & Coverage
       uses: mattallty/jest-github-action@v1.0.3
       env:
