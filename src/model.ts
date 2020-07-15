@@ -2,12 +2,21 @@ import { MutableDataModel, DataModel } from '@lumino/datagrid';
 import { DSVModel } from 'tde-csvviewer';
 import { Signal } from '@lumino/signaling';
 import { numberToCharacter } from './_helper';
+// import { ClipBoardHandler } from './clipboard';
 
 export default class EditableDSVModel extends MutableDataModel {
   constructor(options: DSVModel.IOptions, headerLength: number) {
     super();
     this._dsvModel = new DSVModel(options);
     this._colHeaderLength = headerLength;
+  }
+
+  get clipBoard(): Array<any> {
+    return this._clipBoard;
+  }
+
+  set clipBoard(values: Array<any>) {
+    this._clipBoard = values;
 
     // propagate changes in the dsvModel up to the grid
     this.dsvModel.changed.connect(this._passMessage, this);
@@ -66,6 +75,10 @@ export default class EditableDSVModel extends MutableDataModel {
     column: number,
     value: any
   ): boolean {
+    if (this._block) {
+      this._block = false;
+      return true;
+    }
     const model = this.dsvModel;
     this.sliceOut(model, { row: row + 1, column: column + 1 }, true);
     this.insertAt(value, model, { row: row + 1, column: column + 1 });
@@ -102,7 +115,7 @@ export default class EditableDSVModel extends MutableDataModel {
     );
   }
 
-  addColumn(column: number): void {
+  addColumn(column: number, number = 1): void {
     const model = this.dsvModel;
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     let row: number;
@@ -187,10 +200,87 @@ export default class EditableDSVModel extends MutableDataModel {
     );
   }
 
+  cut(selection: ICellSelection): void {
+    // this._cellSelection = selection;
+    const model = this.dsvModel;
+    const { startRow, startColumn, endRow, endColumn } = selection;
+    const numRows = endRow - startRow + 1;
+    const numColumns = endColumn - startColumn + 1;
+    let row: number;
+    let column: number;
+    for (let i = numRows; i >= 1; i--) {
+      row = startRow + i;
+      for (let j = numColumns; j >= 1; j--) {
+        column = startColumn + j;
+        this.sliceOut(model, { row: row, column: column }, true);
+      }
+    }
+    const change: DataModel.ChangedArgs = {
+      type: 'cells-changed',
+      region: 'body',
+      row: startRow,
+      column: startColumn,
+      rowSpan: numRows,
+      columnSpan: numColumns
+    };
+    model.parseAsync();
+    this.emitChanged(change);
+    this._onChangeSignal.emit(
+      this._dsvModel.rawData.slice(this.colHeaderLength)
+    );
+  }
+
+  paste(startCoord: ICoordinates, data: string): void {
+    const model = this.dsvModel;
+    // convert the copied data to an array
+    const clipboardArray = data.split('\n').map(elem => elem.split('\t'));
+    console.log(clipboardArray[0][0]);
+
+    // get the rows we will be adding
+    const rowSpan = Math.min(
+      clipboardArray.length,
+      model.rowCount('body') - startCoord.row
+    );
+    const columnSpan = Math.min(
+      clipboardArray[0].length,
+      model.columnCount('body') - startCoord.column
+    );
+    let row: number;
+    let column: number;
+    for (let i = rowSpan - 1; i >= 0; i--) {
+      row = startCoord.row + 1 + i;
+      for (let j = columnSpan - 1; j >= 0; j--) {
+        column = startCoord.column + 1 + j;
+        this.sliceOut(model, { row: row, column: column }, true);
+        console.log(clipboardArray[i][j]);
+        this.insertAt(clipboardArray[i][j], model, {
+          row: row,
+          column: column
+        });
+      }
+    }
+    this._block = true;
+
+    const change: DataModel.ChangedArgs = {
+      type: 'cells-changed',
+      region: 'body',
+      row: startCoord.row,
+      column: startCoord.column,
+      rowSpan: rowSpan,
+      columnSpan: columnSpan
+    };
+    model.parseAsync();
+    this.emitChanged(change);
+    this._onChangeSignal.emit(
+      this._dsvModel.rawData.slice(this.colHeaderLength)
+    );
+  }
+
   sliceOut(
     model: DSVModel,
     cellLoc: ICoordinates,
-    keepingCell = false
+    keepingCell = false,
+    keepingValue = false
   ): string {
     let sliceStart: number;
     let sliceEnd: number;
@@ -207,12 +297,15 @@ export default class EditableDSVModel extends MutableDataModel {
       sliceEnd = this.firstIndex(this.getNextCell(cellLoc));
     }
     const value = model.rawData.slice(sliceStart, sliceEnd);
-    model.rawData =
-      model.rawData.slice(0, sliceStart) + model.rawData.slice(sliceEnd);
+    if (!keepingValue) {
+      model.rawData =
+        model.rawData.slice(0, sliceStart) + model.rawData.slice(sliceEnd);
+    }
     return value;
   }
 
   insertAt(value: any, model: DSVModel, cellLoc: ICoordinates): void {
+    // check if we are finishing a pasting operation, block the unwanted change
     let insertionIndex: number;
     //check if we are appending an additional row (or column)
     if (this.isExtensionOperation(cellLoc)) {
@@ -225,7 +318,9 @@ export default class EditableDSVModel extends MutableDataModel {
       model.rawData.slice(0, insertionIndex) +
       value +
       model.rawData.slice(insertionIndex);
+    console.log(model.rawData);
   }
+
   blankRow(model: DSVModel, row: number): string {
     const rows = model.rowCount('body');
     if (row > rows) {
@@ -319,6 +414,9 @@ export default class EditableDSVModel extends MutableDataModel {
   private _onChangeSignal: Signal<this, string> = new Signal<this, string>(
     this
   );
+  private _block = true;
+  private _clipBoard: Array<any>;
+  // private _cellSelection: ICellSelection | null;
 
   private _colHeaderLength: number;
 }
@@ -326,4 +424,11 @@ export default class EditableDSVModel extends MutableDataModel {
 interface ICoordinates {
   row: number;
   column: number;
+}
+
+export interface ICellSelection {
+  startRow: number;
+  startColumn: number;
+  endColumn: number;
+  endRow: number;
 }
