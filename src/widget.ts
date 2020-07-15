@@ -30,6 +30,8 @@ import RichMouseHandler from './handler';
 import { numberToCharacter } from './_helper';
 import { toArray } from '@lumino/algorithm';
 
+import { SaveButton } from './toolbar';
+
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
 const RENDER_TIMEOUT = 1000;
@@ -45,12 +47,13 @@ export class EditableCSVViewer extends Widget {
     const layout = (this.layout = new PanelLayout());
 
     this.addClass(CSV_CLASS);
+
     this._grid = new DataGrid({
       defaultSizes: {
-        rowHeight: 24,
+        rowHeight: 28,
         columnWidth: 144,
         rowHeaderWidth: 64,
-        columnHeaderHeight: 36
+        columnHeaderHeight: 32
       },
       headerVisibility: 'none'
     });
@@ -402,6 +405,9 @@ export class EditableCSVDocumentWidget extends DocumentWidget<
     content = content || new EditableCSVViewer({ context });
     reveal = Promise.all([reveal, content.revealed]);
     super({ context, content, reveal, ...other });
+
+    const saveButton = new SaveButton({ selected: content.delimiter });
+    this.toolbar.addItem('save button', saveButton);
   }
 
   /**

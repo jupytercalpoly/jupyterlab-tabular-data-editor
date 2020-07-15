@@ -9,7 +9,6 @@ export default class EditableDSVModel extends MutableDataModel {
     super();
     this._dsvModel = new DSVModel(options);
     this._colHeaderLength = headerLength;
-    // this._cellSelection = null;
   }
 
   get clipBoard(): Array<any> {
@@ -18,6 +17,16 @@ export default class EditableDSVModel extends MutableDataModel {
 
   set clipBoard(values: Array<any>) {
     this._clipBoard = values;
+
+    // propagate changes in the dsvModel up to the grid
+    this.dsvModel.changed.connect(this._passMessage, this);
+  }
+
+  private _passMessage(
+    emitter: DSVModel,
+    message: DataModel.ChangedArgs
+  ): void {
+    this.emitChanged(message);
   }
 
   get dsvModel(): DSVModel {
