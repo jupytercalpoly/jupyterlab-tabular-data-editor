@@ -45,7 +45,6 @@
 
 /*TOOLBAR*/
 
-.jp-Toolbar {
-  height: 29px;
-  min-height: var(--jp-private-toolbar-height);
+.div.lm-wdiget.p-widget.jp-Toolbar {
+  height: 32px;
 }
