@@ -337,7 +337,7 @@ export class EditableCSVViewer extends Widget {
     }
   }
 
-  protected getSelectedRange() {
+  protected getSelectedRange(): any {
     const selections = toArray(this._grid.selectionModel.selections());
     if (selections.length === 0) {
       return;
@@ -355,7 +355,7 @@ export class EditableCSVViewer extends Widget {
     //   ev.stopPropagation();
     // })
   }
-  private _handlePaste(event: ClipboardEvent) {
+  private _handlePaste(event: ClipboardEvent): void {
     const copiedText: string = event.clipboardData.getData('text/plain');
     // prevent default behavior
     event.preventDefault();
