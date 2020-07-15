@@ -19,7 +19,7 @@ import {
  */
 const SAVE_CLASS = 'jp-save';
 
-const SAVE_BUTTON_CLASS = 'jp-save-button';
+const TOOLBAR_BUTTON_CLASS = 'jp-toolbar-button';
 
 /**
  * A button for saving
@@ -61,7 +61,7 @@ namespace Private {
     const select = document.createElement('select');
 
     const node = Styling.wrapSelect(select);
-    node.classList.add(SAVE_BUTTON_CLASS);
+    node.classList.add(TOOLBAR_BUTTON_CLASS);
     /*
     div.appendChild(node);
     */
