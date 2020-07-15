@@ -31,7 +31,9 @@ jobs:
     - name: Install dependencies
       run: python -m pip install jupyterlab
     - name: Run Jest
-      run: jlpm test:cov
+      run: |
+        jlpm
+        jlpm test:cov
     - name: Jest Lcov Reporter
       uses: vebr/jest-lcov-reporter@v0.2.0
       with:
