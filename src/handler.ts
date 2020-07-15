@@ -222,7 +222,7 @@ export default class RichMouseHandler extends BasicMouseHandler {
       console.log(this.pressData);
 
       // Done.
-      return;
+      //return;
     }
 
     // Otherwise, the only option is select.
@@ -236,7 +236,7 @@ export default class RichMouseHandler extends BasicMouseHandler {
     }
 
     // Override the document cursor.
-    const override = Drag.overrideCursor('default');
+    const override = Drag.overrideCursor('grabbing');
 
     // Set up the press data.
     this.pressData = {
@@ -330,6 +330,29 @@ export default class RichMouseHandler extends BasicMouseHandler {
 
     // Handle a row move.
     if (data.type === 'row-move') {
+      // Try and see if this select function works...
+      // The comment below is commented just to pass eslint
+      // Set up the selection variables.
+      // let r1: number;
+      // let c1: number;
+      // let r2: number;
+      // let c2: number;
+      // let cursorRow: number;
+      // let cursorColumn: number;
+      // let clear: SelectionModel.ClearMode;
+
+      // r1 = c1 = 0;
+      // r2 = c2 = Infinity;
+      // clear = 'none';
+      // grid.selectionModel.select({
+      //   r1,
+      //   c1,
+      //   r2,
+      //   c2,
+      //   cursorRow,
+      //   cursorColumn,
+      //   clear
+      // });
       return;
     }
 
