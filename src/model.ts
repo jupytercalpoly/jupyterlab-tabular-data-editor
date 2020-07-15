@@ -5,10 +5,12 @@ import { numberToCharacter } from './_helper';
 // import { ClipBoardHandler } from './clipboard';
 
 export default class EditableDSVModel extends MutableDataModel {
-  constructor(options: DSVModel.IOptions, headerLength: number) {
+  constructor(options: DSVModel.IOptions) {
     super();
     this._dsvModel = new DSVModel(options);
-    this._colHeaderLength = headerLength;
+
+    // propagate changes in the dsvModel up to the grid
+    this.dsvModel.changed.connect(this._passMessage, this);
   }
 
   get clipBoard(): Array<any> {
@@ -22,13 +24,6 @@ export default class EditableDSVModel extends MutableDataModel {
     this.dsvModel.changed.connect(this._passMessage, this);
   }
 
-  private _passMessage(
-    emitter: DSVModel,
-    message: DataModel.ChangedArgs
-  ): void {
-    this.emitChanged(message);
-  }
-
   get dsvModel(): DSVModel {
     return this._dsvModel;
   }
@@ -38,11 +33,20 @@ export default class EditableDSVModel extends MutableDataModel {
   }
 
   get colHeaderLength(): number {
-    return this._colHeaderLength;
+    const model = this._dsvModel;
+    const headerLength = model.header.join('').length;
+    return (
+      headerLength +
+      (headerLength - 1) * model.delimiter.length +
+      model.rowDelimiter.length
+    );
   }
 
-  set colHeaderLength(length: number) {
-    this._colHeaderLength = length;
+  private _passMessage(
+    emitter: DSVModel,
+    message: DataModel.ChangedArgs
+  ): void {
+    this.emitChanged(message);
   }
 
   rowCount(region: DataModel.RowRegion): number {
@@ -100,7 +104,7 @@ export default class EditableDSVModel extends MutableDataModel {
 
   addRow(row: number): void {
     const model = this.dsvModel;
-    const newRow = this.blankRow(model, row);
+    const newRow = this.blankRow(model, row + 1);
     this.insertAt(newRow, model, { row: row + 1, column: 0 });
     const change: DataModel.ChangedArgs = {
       type: 'rows-inserted',
@@ -115,7 +119,7 @@ export default class EditableDSVModel extends MutableDataModel {
     );
   }
 
-  addColumn(column: number, number = 1): void {
+  addColumn(column: number, numAdded = 1): void {
     const model = this.dsvModel;
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     let row: number;
@@ -124,13 +128,16 @@ export default class EditableDSVModel extends MutableDataModel {
     }
     const prevNumCol = this.columnCount('body');
     const nextLetter = numberToCharacter(alphabet, prevNumCol + 1);
+
+    let headerLength = this.colHeaderLength;
+
     model.rawData =
-      model.rawData.slice(0, this._colHeaderLength - 1) +
+      model.rawData.slice(0, headerLength - 1) +
       model.delimiter +
       nextLetter +
-      model.rawData.slice(this._colHeaderLength - 1);
+      model.rawData.slice(headerLength - 1);
 
-    this.colHeaderLength += model.delimiter.length + nextLetter.length;
+    headerLength += model.delimiter.length + nextLetter.length;
     // need to push the letter to the header here so that it updates
     model.header.push(nextLetter);
 
@@ -142,9 +149,7 @@ export default class EditableDSVModel extends MutableDataModel {
     };
     model.parseAsync();
     this.emitChanged(change);
-    this._onChangeSignal.emit(
-      this._dsvModel.rawData.slice(this._colHeaderLength)
-    );
+    this._onChangeSignal.emit(this._dsvModel.rawData.slice(headerLength));
   }
 
   removeRow(row: number): void {
@@ -170,23 +175,24 @@ export default class EditableDSVModel extends MutableDataModel {
     for (row = model.rowCount('body'); row > 0; row--) {
       this.sliceOut(model, { row: row, column: column + 1 });
     }
+
     // update rawData and header (header handles immediate update, rawData handles parseAsync)
     // slice out the last letter in the column header
+    let headerLength = this.colHeaderLength;
     const headerIndex = model.rawData.lastIndexOf(
       model.delimiter,
-      this._colHeaderLength
+      headerLength
     );
-    const slicedHeader = model.rawData.slice(
-      headerIndex,
-      this._colHeaderLength
-    );
+
     model.rawData =
       model.rawData.slice(0, headerIndex) +
       model.rowDelimiter +
-      model.rawData.slice(this._colHeaderLength);
-    // the -1 is to account for the row delimeter
-    this.colHeaderLength -= slicedHeader.length - 1;
+      model.rawData.slice(headerLength);
+
     // need to remove the last letter from the header
+    const removedLetter = model.header.pop();
+    headerLength -= removedLetter.length + model.rowDelimiter.length;
+
     const change: DataModel.ChangedArgs = {
       type: 'columns-removed',
       region: 'body',
@@ -195,9 +201,7 @@ export default class EditableDSVModel extends MutableDataModel {
     };
     model.parseAsync();
     this.emitChanged(change);
-    this._onChangeSignal.emit(
-      this._dsvModel.rawData.slice(this._colHeaderLength)
-    );
+    this._onChangeSignal.emit(this._dsvModel.rawData.slice(headerLength));
   }
 
   cut(selection: ICellSelection): void {
@@ -314,11 +318,26 @@ export default class EditableDSVModel extends MutableDataModel {
     } else {
       insertionIndex = this.firstIndex(cellLoc);
     }
+
     model.rawData =
       model.rawData.slice(0, insertionIndex) +
       value +
       model.rawData.slice(insertionIndex);
-    console.log(model.rawData);
+
+    // handle row delimeter if we are inserting below the last row (not yet implemented in UI)
+    // if (cellLoc.row === model.rowCount('body') + 1) {
+    //   model.rawData =
+    //     model.rawData.slice(0, insertionIndex) +
+    //     model.rowDelimiter +
+    //     value.slice(0, value.length - model.rowDelimiter.length);
+    // }
+    // // insert above another row
+    // else {
+    //   model.rawData =
+    //     model.rawData.slice(0, insertionIndex) +
+    //     value +
+    //     model.rawData.slice(insertionIndex);
+    // }
   }
 
   blankRow(model: DSVModel, row: number): string {
@@ -417,8 +436,6 @@ export default class EditableDSVModel extends MutableDataModel {
   private _block = true;
   private _clipBoard: Array<any>;
   // private _cellSelection: ICellSelection | null;
-
-  private _colHeaderLength: number;
 }
 
 interface ICoordinates {
