@@ -169,8 +169,7 @@ function addCommands(
   commands.addCommand(CommandIDs.paste, {
     label: 'Paste',
     execute: () => {
-      tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('paste-cells');
+      tracker.currentWidget && document.execCommand('paste');
     }
   });
 

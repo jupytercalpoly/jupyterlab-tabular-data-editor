@@ -1,5 +1,5 @@
 import { ActivityMonitor } from '@jupyterlab/coreutils';
-import { toArray } from '@lumino/algorithm';
+// import { toArray } from '@lumino/algorithm';
 
 import {
   ABCWidgetFactory,
@@ -25,9 +25,10 @@ import {
 import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget } from '@lumino/widgets';
 import EditableDSVModel from './model';
-import { ICellSelection } from './model';
+// import { ICellSelection } from './model';
 import RichMouseHandler from './handler';
 import { numberToCharacter } from './_helper';
+import { toArray } from '@lumino/algorithm';
 
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
@@ -60,7 +61,7 @@ export class EditableCSVViewer extends Widget {
     this._grid.copyConfig = {
       separator: '\t',
       format: DataGrid.copyFormatGeneric,
-      headers: 'all',
+      headers: 'none',
       warningThreshold: 1e6
     };
     const handler = new RichMouseHandler();
@@ -320,26 +321,41 @@ export class EditableCSVViewer extends Widget {
       }
       case 'copy-cells': {
         this._grid.copyToClipboard();
-        const region = toArray(this._grid.selectionModel.selections())[0];
-        const { r1, r2, c1, c2 } = region;
-        const selection: ICellSelection = {
-          startRow: r1 + 1,
-          startColumn: c1 + 1,
-          endRow: r2 + 1,
-          endColumn: c2 + 1
-        };
-        this.dataModel.copy(selection);
         break;
       }
       // case 'cut-cells': {
       //   this.dataModel.cut(this._column);
       //   break;
       // }
-      case 'paste-cells': {
-        this.dataModel.paste({ row: this._row, column: this._column });
-        break;
-      }
     }
+  }
+
+  protected getSelectedRange() {
+    const selections = toArray(this._grid.selectionModel.selections());
+    if (selections.length === 0) {
+      return;
+    }
+    return selections[0];
+  }
+
+  protected onAfterAttach(msg: Message): void {
+    super.onAfterAttach(msg);
+    this.node.addEventListener('paste', this._handlePaste.bind(this));
+    // this._grid.node.addEventListener("paste", function(ev) {
+    //   const data = ev.clipboardData.getData('text/plain');
+    //   console.log(data)
+    //   ev.preventDefault();
+    //   ev.stopPropagation();
+    // })
+  }
+  private _handlePaste(event: ClipboardEvent) {
+    const copiedText: string = event.clipboardData.getData('text/plain');
+    // prevent default behavior
+    event.preventDefault();
+    event.stopPropagation();
+    const { r1, c1 } = this.getSelectedRange();
+    console.log(copiedText);
+    this.dataModel.paste({ row: r1, column: c1 }, copiedText);
   }
 
   private _onRightClick(
