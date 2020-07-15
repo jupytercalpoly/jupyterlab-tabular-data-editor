@@ -166,13 +166,6 @@ function addCommands(
     }
   });
 
-  commands.addCommand(CommandIDs.paste, {
-    label: 'Paste',
-    execute: () => {
-      tracker.currentWidget && document.execCommand('paste');
-    }
-  });
-
   commands.addCommand(CommandIDs.cut, {
     label: 'Cut',
     execute: () => {
@@ -212,12 +205,6 @@ function addCommands(
   });
 
   app.contextMenu.addItem({
-    command: CommandIDs.paste,
-    selector: SELECTOR,
-    rank: 0
-  });
-
-  app.contextMenu.addItem({
     command: CommandIDs.cut,
     selector: SELECTOR,
     rank: 0
@@ -226,13 +213,6 @@ function addCommands(
     command: CommandIDs.copy,
     args: {},
     keys: ['Accel C'],
-    selector: SELECTOR
-  });
-
-  app.commands.addKeyBinding({
-    command: CommandIDs.paste,
-    args: {},
-    keys: ['Accel V'],
     selector: SELECTOR
   });
 

@@ -323,10 +323,17 @@ export class EditableCSVViewer extends Widget {
         this._grid.copyToClipboard();
         break;
       }
-      // case 'cut-cells': {
-      //   this.dataModel.cut(this._column);
-      //   break;
-      // }
+      case 'cut-cells': {
+        this._grid.copyToClipboard();
+        const { r1, c1, r2, c2 } = this.getSelectedRange();
+        this.dataModel.cut({
+          startRow: r1,
+          startColumn: c1,
+          endRow: r2,
+          endColumn: c2
+        });
+        break;
+      }
     }
   }
 

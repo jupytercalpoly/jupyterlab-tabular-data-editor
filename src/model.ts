@@ -191,7 +191,7 @@ export default class EditableDSVModel extends MutableDataModel {
     );
   }
 
-  copy(selection: ICellSelection): void {
+  cut(selection: ICellSelection): void {
     // this._cellSelection = selection;
     const model = this.dsvModel;
     const { startRow, startColumn, endRow, endColumn } = selection;
@@ -199,24 +199,26 @@ export default class EditableDSVModel extends MutableDataModel {
     const numColumns = endColumn - startColumn + 1;
     let row: number;
     let column: number;
-    let columnArray: Array<string>;
-    this._clipBoard = new Array(numRows);
-    for (let i = numRows - 1; i >= 0; i--) {
+    for (let i = numRows; i >= 1; i--) {
       row = startRow + i;
-      columnArray = new Array(numColumns);
-      for (let j = numColumns - 1; j >= 0; j--) {
+      for (let j = numColumns; j >= 1; j--) {
         column = startColumn + j;
-        columnArray[j] = this.sliceOut(
-          model,
-          { row: row, column: column },
-          true,
-          true
-        );
+        this.sliceOut(model, { row: row, column: column }, true);
       }
-      this._clipBoard[i] = columnArray;
     }
-    console.log(this._clipBoard[2][1]);
-    console.log(this._clipBoard[1][1]);
+    const change: DataModel.ChangedArgs = {
+      type: 'cells-changed',
+      region: 'body',
+      row: startRow,
+      column: startColumn,
+      rowSpan: numRows,
+      columnSpan: numColumns
+    };
+    model.parseAsync();
+    this.emitChanged(change);
+    this._onChangeSignal.emit(
+      this._dsvModel.rawData.slice(this.colHeaderLength)
+    );
   }
 
   paste(startCoord: ICoordinates, data: string): void {
