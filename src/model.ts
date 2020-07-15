@@ -182,6 +182,7 @@ export default class EditableDSVModel extends MutableDataModel {
     for (row = model.rowCount('body'); row > 0; row--) {
       this.sliceOut(model, { row: row, column: column + 1 });
     }
+
     // update rawData and header (header handles immediate update, rawData handles parseAsync)
     // slice out the last letter in the column header
     let headerLength = this.colHeaderLength;
@@ -189,14 +190,16 @@ export default class EditableDSVModel extends MutableDataModel {
       model.delimiter,
       headerLength
     );
-    const slicedHeader = model.rawData.slice(headerIndex, headerLength);
+
     model.rawData =
       model.rawData.slice(0, headerIndex) +
       model.rowDelimiter +
       model.rawData.slice(headerLength);
-    // the -1 is to account for the row delimeter
-    headerLength -= slicedHeader.length - 1;
+
     // need to remove the last letter from the header
+    const removedLetter = model.header.pop();
+    headerLength -= removedLetter.length + model.rowDelimiter.length;
+
     const change: DataModel.ChangedArgs = {
       type: 'columns-removed',
       region: 'body',
