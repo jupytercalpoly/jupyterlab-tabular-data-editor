@@ -104,7 +104,7 @@ export default class EditableDSVModel extends MutableDataModel {
 
   addRow(row: number): void {
     const model = this.dsvModel;
-    const newRow = this.blankRow(model, row);
+    const newRow = this.blankRow(model, row + 1);
     this.insertAt(newRow, model, { row: row + 1, column: 0 });
     const change: DataModel.ChangedArgs = {
       type: 'rows-inserted',
@@ -319,20 +319,25 @@ export default class EditableDSVModel extends MutableDataModel {
       insertionIndex = this.firstIndex(cellLoc);
     }
 
+    model.rawData =
+      model.rawData.slice(0, insertionIndex) +
+      value +
+      model.rawData.slice(insertionIndex);
+
     // handle row delimeter if we are inserting below the last row (not yet implemented in UI)
-    if (cellLoc.row === model.rowCount('body') + 1) {
-      model.rawData =
-        model.rawData.slice(0, insertionIndex) +
-        model.rowDelimiter +
-        value.slice(0, value.length - model.rowDelimiter.length);
-    }
-    // insert above another row
-    else {
-      model.rawData =
-        model.rawData.slice(0, insertionIndex) +
-        value +
-        model.rawData.slice(insertionIndex);
-    }
+    // if (cellLoc.row === model.rowCount('body') + 1) {
+    //   model.rawData =
+    //     model.rawData.slice(0, insertionIndex) +
+    //     model.rowDelimiter +
+    //     value.slice(0, value.length - model.rowDelimiter.length);
+    // }
+    // // insert above another row
+    // else {
+    //   model.rawData =
+    //     model.rawData.slice(0, insertionIndex) +
+    //     value +
+    //     model.rawData.slice(insertionIndex);
+    // }
   }
 
   blankRow(model: DSVModel, row: number): string {
