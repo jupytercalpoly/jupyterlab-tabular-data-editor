@@ -19,11 +19,9 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v1
-    - name: Install node
-      uses: actions/setup-node@v1
+    - name: Install modules 
+      run: jlpm install && jlpm test:cov
+    - name: Jest Lcov Reporter
+      uses: vebr/jest-lcov-reporter@v0.2.0
       with:
-       node-version: '10.x'
-    - name: Jest Annotations & Coverage
-      uses: mattallty/jest-github-action@v1.0.3
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
