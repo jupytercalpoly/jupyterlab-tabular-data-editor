@@ -39,7 +39,7 @@ describe('addRow function', () => {
 describe('paste function', () => {
   it('paste a single entry to the first row, first column', () => {
     model.paste({ row: 0, column: 0 }, 'Sup');
-    const expectedData = 'A,B,C\nSup,2,3\n4,5,6\n7,8,9';
+    const expectedData = 'A,B,C\nSup,2,3\nabc,5,6\n7,8,9';
     expect(model.dsvModel.rawData).toBe(expectedData);
   });
   it('paste a row', () => {
@@ -54,22 +54,22 @@ describe('paste function', () => {
   });
   it('Paste more columns than available. Should only paste where there is room', () => {
     model.paste({ row: 0, column: 2 }, 'paste-1\tpaste-2');
-    const expectedData = 'A,B,C\n1,2,paste-1\n4,5,6\n7,8,9';
+    const expectedData = 'A,B,C\n1,2,paste-1\nabc,5,6\n7,8,9';
     expect(model.dsvModel.rawData).toBe(expectedData);
   });
   it('Paste more rows than available. Should only paste where there is room', () => {
     model.paste({ row: 2, column: 0 }, 'paste-1\npaste-2');
-    const expectedData = 'A,B,C\n1,2,3\n4,5,6\npaste-1,8,9';
+    const expectedData = 'A,B,C\n1,2,3\nabc,5,6\npaste-1,8,9';
     expect(model.dsvModel.rawData).toBe(expectedData);
   });
   it('Paste empty string.', () => {
     model.paste({ row: 0, column: 0 }, '');
-    const expectedData = 'A,B,C\n,2,3\n4,5,6\n7,8,9';
+    const expectedData = 'A,B,C\n,2,3\nabc,5,6\n7,8,9';
     expect(model.dsvModel.rawData).toBe(expectedData);
   });
   it('Paste more rows & columns than available. Should only paste where there is room', () => {
     model.paste({ row: 2, column: 2 }, 'paste-1\tpaste-2\npaste-3\tpaste-4');
-    const expectedData = 'A,B,C\n1,2,3\n4,5,6\n7,8,paste-1';
+    const expectedData = 'A,B,C\n1,2,3\nabc,5,6\n7,8,paste-1';
     expect(model.dsvModel.rawData).toBe(expectedData);
   });
 });
@@ -77,17 +77,17 @@ describe('paste function', () => {
 describe('cut function', () => {
   it('cut a value', () => {
     model.cut({ startRow: 0, endRow: 0, startColumn: 0, endColumn: 0 });
-    const expectedData = 'A,B,C\n,2,3\n4,5,6\n7,8,9';
+    const expectedData = 'A,B,C\n,2,3\nabc,5,6\n7,8,9';
     expect(model.dsvModel.rawData).toBe(expectedData);
   });
   it('cut end row', () => {
     model.cut({ startRow: 2, endRow: 2, startColumn: 0, endColumn: 2 });
-    const expectedData = 'A,B,C\n1,2,3\n4,5,6\n,,';
+    const expectedData = 'A,B,C\n1,2,3\nabc,5,6\n,,';
     expect(model.dsvModel.rawData).toBe(expectedData);
   });
   it('cut end column', () => {
     model.cut({ startRow: 0, endRow: 2, startColumn: 2, endColumn: 2 });
-    const expectedData = 'A,B,C\n1,2,\n4,5,\n7,8,';
+    const expectedData = 'A,B,C\n1,2,\nabc,5,\n7,8,';
     expect(model.dsvModel.rawData).toBe(expectedData);
   });
 });
