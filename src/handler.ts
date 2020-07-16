@@ -5,7 +5,7 @@ import {
   DataGrid,
   DataModel,
   SelectionModel
-} from '@lumino/datagrid';
+} from 'tde-datagrid';
 import { Platform } from '@lumino/domutils';
 import { Drag } from '@lumino/dragdrop';
 import { Signal } from '@lumino/signaling';
