@@ -20,7 +20,6 @@ export class SaveButton extends Widget {
     const saveButton = new ToolbarButton({
       icon: saveIcon,
       onClick: (): void => {
-        /*does something here*/
         console.log('FILE IS SAVED');
       },
       tooltip: 'Save',
