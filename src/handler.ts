@@ -9,6 +9,7 @@ import {
 import { Platform } from '@lumino/domutils';
 import { Drag } from '@lumino/dragdrop';
 import { Signal } from '@lumino/signaling';
+import EditableDSVModel from './model';
 
 export default class RichMouseHandler extends BasicMouseHandler {
   get rightClickSignal(): Signal<this, Array<number>> {
@@ -330,8 +331,8 @@ export default class RichMouseHandler extends BasicMouseHandler {
 
     // Handle a row move.
     if (data.type === 'row-move') {
-      // Try and see if this select function works...
-      // The comment below is commented just to pass eslint
+      const model = grid.dataModel as EditableDSVModel;
+      model.moveRow(0);
       // Set up the selection variables.
       // let r1: number;
       // let c1: number;
@@ -341,8 +342,12 @@ export default class RichMouseHandler extends BasicMouseHandler {
       // let cursorColumn: number;
       // let clear: SelectionModel.ClearMode;
 
-      // r1 = c1 = 0;
-      // r2 = c2 = Infinity;
+      // r1 =
+      // r2 =
+      // c1 = 0;
+      // c2 = Infinity;
+      // cursorRow = model.cursorRow
+      // cursorColumn =
       // clear = 'none';
       // grid.selectionModel.select({
       //   r1,
