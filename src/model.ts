@@ -613,6 +613,8 @@ export default class EditableDSVModel extends MutableDataModel {
     this
   );
   private _litestore: Litestore;
+  private _block = true;
+  private _transmitting = true;
   // private _cellSelection: ICellSelection | null;
 }
 
