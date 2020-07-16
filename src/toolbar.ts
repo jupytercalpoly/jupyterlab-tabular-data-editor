@@ -3,34 +3,109 @@
 
 import { Widget } from '@lumino/widgets';
 
-import { Styling } from '@jupyterlab/apputils';
-
 import {
   saveIcon,
+  undoIcon,
   cutIcon,
   copyIcon,
   pasteIcon,
-  undoIcon,
   filterListIcon
 } from '@jupyterlab/ui-components';
 
-/**
- * The class name added to a csv toolbar widget.
- */
-const SAVE_CLASS = 'jp-save';
+import { ToolbarButton } from '@jupyterlab/apputils';
 
-const TOOLBAR_BUTTON_CLASS = 'jp-toolbar-button';
-
-/**
- * A button for saving
- */
 export class SaveButton extends Widget {
-  /**
-   * Construct a new csv table widget.
-   */
   constructor(options: CSVToolbar.IOptions) {
-    super({ node: Private.createNode(options.selected) });
-    this.addClass(SAVE_CLASS);
+    super();
+    const saveButton = new ToolbarButton({
+      icon: saveIcon,
+      onClick: (): void => {
+        console.log('FILE IS SAVED');
+      },
+      tooltip: 'Save',
+      className: 'jp-toolbar-save'
+    });
+    return saveButton;
+  }
+}
+
+export class UndoButton extends Widget {
+  constructor(options: CSVToolbar.IOptions) {
+    super();
+    const undoButton = new ToolbarButton({
+      icon: undoIcon,
+      onClick: (): void => {
+        /*does something here*/
+        console.log('UNDO');
+      },
+      tooltip: 'Undo',
+      className: 'jp-toolbar-undo'
+    });
+    return undoButton;
+  }
+}
+
+export class CutButton extends Widget {
+  constructor(options: CSVToolbar.IOptions) {
+    super();
+    const cutButton = new ToolbarButton({
+      icon: cutIcon,
+      onClick: (): void => {
+        /*does something here*/
+        console.log('CUT');
+      },
+      tooltip: 'Cut',
+      className: 'jp-toolbar-cut'
+    });
+    return cutButton;
+  }
+}
+
+export class CopyButton extends Widget {
+  constructor(options: CSVToolbar.IOptions) {
+    super();
+    const copyButton = new ToolbarButton({
+      icon: copyIcon,
+      onClick: (): void => {
+        /*does something here*/
+        console.log('COPY');
+      },
+      tooltip: 'Copy',
+      className: 'jp-toolbar-copy'
+    });
+    return copyButton;
+  }
+}
+
+export class PasteButton extends Widget {
+  constructor(options: CSVToolbar.IOptions) {
+    super();
+    const pasteButton = new ToolbarButton({
+      icon: pasteIcon,
+      onClick: (): void => {
+        /*does something here*/
+        console.log('PASTE');
+      },
+      tooltip: 'Paste',
+      className: 'jp-toolbar-paste'
+    });
+    return pasteButton;
+  }
+}
+
+export class FilterButton extends Widget {
+  constructor(options: CSVToolbar.IOptions) {
+    super();
+    const filterButton = new ToolbarButton({
+      icon: filterListIcon,
+      onClick: (): void => {
+        /*does something here*/
+        console.log('FILTER DATA');
+      },
+      tooltip: 'Filter',
+      className: 'jp-toolbar-filter'
+    });
+    return filterButton;
   }
 }
 
@@ -46,73 +121,5 @@ export namespace CSVToolbar {
      * The initially selected delimiter.
      */
     selected: string;
-  }
-}
-
-/**
- * A namespace for private toolbar methods.
- */
-namespace Private {
-  /**
-   * Create the node for the save button.
-   */
-  export function createNode(selected: string): HTMLElement {
-    const div = document.createElement('div');
-    const select = document.createElement('select');
-
-    const node = Styling.wrapSelect(select);
-    node.classList.add(TOOLBAR_BUTTON_CLASS);
-    /*
-    div.appendChild(node);
-    */
-    div.appendChild(
-      saveIcon.element({
-        tag: 'span',
-        margin: 'auto 7px auto 16px',
-        width: '18px'
-      })
-    );
-
-    div.appendChild(
-      undoIcon.element({
-        tag: 'span',
-        margin: 'auto 7px',
-        width: '18px'
-      })
-    );
-
-    div.appendChild(
-      cutIcon.element({
-        tag: 'span',
-        margin: 'auto 7px',
-        width: '18px'
-      })
-    );
-
-    div.appendChild(
-      copyIcon.element({
-        tag: 'span',
-        margin: 'auto 7px',
-        width: '18px'
-      })
-    );
-
-    div.appendChild(
-      pasteIcon.element({
-        tag: 'span',
-        margin: 'auto 7px',
-        width: '18px'
-      })
-    );
-
-    div.appendChild(
-      filterListIcon.element({
-        tag: 'span',
-        margin: 'auto 7px',
-        width: '18px'
-      })
-    );
-
-    return div;
   }
 }
