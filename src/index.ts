@@ -237,8 +237,8 @@ namespace Private {
 }
 
 const CommandIDs = {
-  addColumn: 'tde:add-row',
-  addRow: 'tde:add-column',
+  addColumn: 'tde:add-column',
+  addRow: 'tde:add-row',
   removeRow: 'tde-remove-row',
   removeColumn: 'tde:remove-column'
 };

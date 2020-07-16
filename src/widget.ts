@@ -27,7 +27,14 @@ import EditableDSVModel from './model';
 import RichMouseHandler from './handler';
 import { numberToCharacter } from './_helper';
 
-import { SaveButton } from './toolbar';
+import {
+  SaveButton,
+  UndoButton,
+  CutButton,
+  CopyButton,
+  PasteButton,
+  FilterButton
+} from './toolbar';
 
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
@@ -360,8 +367,23 @@ export class EditableCSVDocumentWidget extends DocumentWidget<
     reveal = Promise.all([reveal, content.revealed]);
     super({ context, content, reveal, ...other });
 
-    const saveButton = new SaveButton({ selected: content.delimiter });
-    this.toolbar.addItem('save button', saveButton);
+    const saveData = new SaveButton({ selected: content.delimiter });
+    this.toolbar.addItem('save-data', saveData);
+
+    const undoChange = new UndoButton({ selected: content.delimiter });
+    this.toolbar.addItem('undo', undoChange);
+
+    const cutData = new CutButton({ selected: content.delimiter });
+    this.toolbar.addItem('cut-data', cutData);
+
+    const copyData = new CopyButton({ selected: content.delimiter });
+    this.toolbar.addItem('copy-data', copyData);
+
+    const pasteData = new PasteButton({ selected: content.delimiter });
+    this.toolbar.addItem('pastte-data', pasteData);
+
+    const filterData = new FilterButton({ selected: content.delimiter });
+    this.toolbar.addItem('filter-data', filterData);
   }
 
   /**
