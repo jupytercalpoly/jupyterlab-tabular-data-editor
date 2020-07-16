@@ -19,7 +19,7 @@ import {
   CellRenderer
   // CellEditor,
   // ICellEditor
-} from '@lumino/datagrid';
+} from 'tde-datagrid';
 
 import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget } from '@lumino/widgets';

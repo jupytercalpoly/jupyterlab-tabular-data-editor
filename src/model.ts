@@ -1,4 +1,4 @@
-import { MutableDataModel, DataModel } from '@lumino/datagrid';
+import { MutableDataModel, DataModel } from 'tde-datagrid';
 import { DSVModel } from 'tde-csvviewer';
 import { Signal } from '@lumino/signaling';
 import { numberToCharacter } from './_helper';
@@ -700,8 +700,6 @@ export default class EditableDSVModel extends MutableDataModel {
     this
   );
   private _litestore: Litestore;
-  private _block = true;
-  private _transmitting = true;
   // private _cellSelection: ICellSelection | null;
 }
 
