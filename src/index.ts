@@ -158,6 +158,22 @@ function addCommands(
     }
   });
 
+  commands.addCommand(CommandIDs.copy, {
+    label: 'Copy',
+    execute: () => {
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('copy-cells');
+    }
+  });
+
+  commands.addCommand(CommandIDs.cut, {
+    label: 'Cut',
+    execute: () => {
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('cut-cells');
+    }
+  });
+
   app.contextMenu.addItem({
     command: CommandIDs.addRow,
     selector: SELECTOR,
@@ -180,6 +196,31 @@ function addCommands(
     command: CommandIDs.removeColumn,
     selector: SELECTOR,
     rank: 0
+  });
+
+  app.contextMenu.addItem({
+    command: CommandIDs.copy,
+    selector: SELECTOR,
+    rank: 0
+  });
+
+  app.contextMenu.addItem({
+    command: CommandIDs.cut,
+    selector: SELECTOR,
+    rank: 0
+  });
+  app.commands.addKeyBinding({
+    command: CommandIDs.copy,
+    args: {},
+    keys: ['Accel C'],
+    selector: SELECTOR
+  });
+
+  app.commands.addKeyBinding({
+    command: CommandIDs.cut,
+    args: {},
+    keys: ['Accel X'],
+    selector: SELECTOR
   });
 }
 
@@ -237,8 +278,11 @@ namespace Private {
 }
 
 const CommandIDs = {
-  addColumn: 'tde:add-column',
   addRow: 'tde:add-row',
+  addColumn: 'tde:add-column',
   removeRow: 'tde-remove-row',
-  removeColumn: 'tde:remove-column'
+  removeColumn: 'tde:remove-column',
+  copy: 'tde:copy',
+  paste: 'tde:paste',
+  cut: 'tde:cut'
 };

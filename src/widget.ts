@@ -1,4 +1,5 @@
 import { ActivityMonitor } from '@jupyterlab/coreutils';
+// import { toArray } from '@lumino/algorithm';
 
 import {
   ABCWidgetFactory,
@@ -24,8 +25,10 @@ import {
 import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget } from '@lumino/widgets';
 import EditableDSVModel from './model';
+// import { ICellSelection } from './model';
 import RichMouseHandler from './handler';
 import { numberToCharacter } from './_helper';
+import { toArray } from '@lumino/algorithm';
 
 import {
   SaveButton,
@@ -68,7 +71,7 @@ export class EditableCSVViewer extends Widget {
     this._grid.copyConfig = {
       separator: '\t',
       format: DataGrid.copyFormatGeneric,
-      headers: 'all',
+      headers: 'none',
       warningThreshold: 1e6
     };
     const handler = new RichMouseHandler();
@@ -263,19 +266,16 @@ export class EditableCSVViewer extends Widget {
     const delimiter = this.delimiter;
     const model = this._grid.dataModel as EditableDSVModel;
     let data: string;
-    let headerLength: number;
+    //let headerLength: number;
 
     if (!model) {
       const header = this._buildColHeader(this.delimiter);
       data = header + this._context.model.toString();
-      headerLength = header.length;
-      const dataModel = (this._grid.dataModel = new EditableDSVModel(
-        {
-          data,
-          delimiter
-        },
-        headerLength
-      ));
+      // headerLength = header.length;
+      const dataModel = (this._grid.dataModel = new EditableDSVModel({
+        data,
+        delimiter
+      }));
       this._grid.selectionModel = new BasicSelectionModel({ dataModel });
       dataModel.onChangedSignal.connect(this._updateModel, this);
     }
@@ -326,7 +326,50 @@ export class EditableCSVViewer extends Widget {
         this.dataModel.removeColumn(this._column);
         break;
       }
+      case 'copy-cells': {
+        this._grid.copyToClipboard();
+        break;
+      }
+      case 'cut-cells': {
+        this._grid.copyToClipboard();
+        const { r1, c1, r2, c2 } = this.getSelectedRange();
+        this.dataModel.cut({
+          startRow: r1,
+          startColumn: c1,
+          endRow: r2,
+          endColumn: c2
+        });
+        break;
+      }
     }
+  }
+
+  protected getSelectedRange(): any {
+    const selections = toArray(this._grid.selectionModel.selections());
+    if (selections.length === 0) {
+      return;
+    }
+    return selections[0];
+  }
+
+  protected onAfterAttach(msg: Message): void {
+    super.onAfterAttach(msg);
+    this.node.addEventListener('paste', this._handlePaste.bind(this));
+    // this._grid.node.addEventListener("paste", function(ev) {
+    //   const data = ev.clipboardData.getData('text/plain');
+    //   console.log(data)
+    //   ev.preventDefault();
+    //   ev.stopPropagation();
+    // })
+  }
+  private _handlePaste(event: ClipboardEvent): void {
+    const copiedText: string = event.clipboardData.getData('text/plain');
+    // prevent default behavior
+    event.preventDefault();
+    event.stopPropagation();
+    const { r1, c1 } = this.getSelectedRange();
+    console.log(copiedText);
+    this.dataModel.paste({ row: r1, column: c1 }, copiedText);
   }
 
   private _onRightClick(
