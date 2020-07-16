@@ -35,8 +35,8 @@
     "watch": "tsc -w"
   },
   "dependencies": {
-    "@jupyterlab/application": "2.0.0",
-    "@jupyterlab/apputils": "2.1.1",
+    "@jupyterlab/application": "^2.0.0",
+    "@jupyterlab/apputils": "2.2.0",
     "@jupyterlab/coreutils": "4.1.0",
     "@jupyterlab/csvviewer-extension": "^2.1.2",
     "@jupyterlab/docregistry": "2.1.2",
