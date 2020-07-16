@@ -81,7 +81,6 @@ export default class EditableDSVModel extends MutableDataModel {
     const model = this.dsvModel;
     this.sliceOut(model, { row: row + 1, column: column + 1 }, true);
     this.insertAt(value, model, { row: row + 1, column: column + 1 });
-    model.parseAsync();
     const change: DataModel.ChangedArgs = {
       type: 'cells-changed',
       region: 'body',
@@ -91,6 +90,8 @@ export default class EditableDSVModel extends MutableDataModel {
       columnSpan: 1
     };
     this.emitChanged(change);
+    this._silenceDsvModel();
+    model.parseAsync();
     this._onChangeSignal.emit(
       this._dsvModel.rawData.slice(this.colHeaderLength)
     );
@@ -144,8 +145,9 @@ export default class EditableDSVModel extends MutableDataModel {
       index: column,
       span: 1
     };
-    model.parseAsync();
     this.emitChanged(change);
+    this._silenceDsvModel();
+    model.parseAsync();
     this._onChangeSignal.emit(this._dsvModel.rawData.slice(headerLength));
   }
 
