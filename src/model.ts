@@ -13,17 +13,6 @@ export default class EditableDSVModel extends MutableDataModel {
     this.dsvModel.changed.connect(this._passMessage, this);
   }
 
-  get clipBoard(): Array<any> {
-    return this._clipBoard;
-  }
-
-  set clipBoard(values: Array<any>) {
-    this._clipBoard = values;
-
-    // propagate changes in the dsvModel up to the grid
-    this.dsvModel.changed.connect(this._passMessage, this);
-  }
-
   get dsvModel(): DSVModel {
     return this._dsvModel;
   }
@@ -41,12 +30,18 @@ export default class EditableDSVModel extends MutableDataModel {
       model.rowDelimiter.length
     );
   }
+  private _silenceDsvModel(): void {
+    this._transmitting = false;
+    window.setTimeout(() => (this._transmitting = true), 30);
+  }
 
   private _passMessage(
     emitter: DSVModel,
     message: DataModel.ChangedArgs
   ): void {
-    this.emitChanged(message);
+    if (this._transmitting) {
+      this.emitChanged(message);
+    }
   }
 
   rowCount(region: DataModel.RowRegion): number {
@@ -86,7 +81,6 @@ export default class EditableDSVModel extends MutableDataModel {
     const model = this.dsvModel;
     this.sliceOut(model, { row: row + 1, column: column + 1 }, true);
     this.insertAt(value, model, { row: row + 1, column: column + 1 });
-    model.parseAsync();
     const change: DataModel.ChangedArgs = {
       type: 'cells-changed',
       region: 'body',
@@ -96,6 +90,8 @@ export default class EditableDSVModel extends MutableDataModel {
       columnSpan: 1
     };
     this.emitChanged(change);
+    this._silenceDsvModel();
+    model.parseAsync();
     this._onChangeSignal.emit(
       this._dsvModel.rawData.slice(this.colHeaderLength)
     );
@@ -112,8 +108,10 @@ export default class EditableDSVModel extends MutableDataModel {
       index: row,
       span: 1
     };
-    model.parseAsync();
     this.emitChanged(change);
+    this._silenceDsvModel();
+    model.parseAsync();
+
     this._onChangeSignal.emit(
       this._dsvModel.rawData.slice(this.colHeaderLength)
     );
@@ -147,8 +145,9 @@ export default class EditableDSVModel extends MutableDataModel {
       index: column,
       span: 1
     };
-    model.parseAsync();
     this.emitChanged(change);
+    this._silenceDsvModel();
+    model.parseAsync();
     this._onChangeSignal.emit(this._dsvModel.rawData.slice(headerLength));
   }
 
@@ -162,8 +161,9 @@ export default class EditableDSVModel extends MutableDataModel {
       index: row,
       span: 1
     };
-    model.parseAsync();
     this.emitChanged(change);
+    this._silenceDsvModel();
+    model.parseAsync();
     this._onChangeSignal.emit(
       this._dsvModel.rawData.slice(this.colHeaderLength)
     );
@@ -199,8 +199,9 @@ export default class EditableDSVModel extends MutableDataModel {
       index: column,
       span: 1
     };
-    model.parseAsync();
     this.emitChanged(change);
+    this._silenceDsvModel();
+    model.parseAsync();
     this._onChangeSignal.emit(this._dsvModel.rawData.slice(headerLength));
   }
 
@@ -227,8 +228,9 @@ export default class EditableDSVModel extends MutableDataModel {
       rowSpan: numRows,
       columnSpan: numColumns
     };
-    model.parseAsync();
     this.emitChanged(change);
+    this._silenceDsvModel();
+    model.parseAsync();
     this._onChangeSignal.emit(
       this._dsvModel.rawData.slice(this.colHeaderLength)
     );
@@ -434,7 +436,7 @@ export default class EditableDSVModel extends MutableDataModel {
     this
   );
   private _block = true;
-  private _clipBoard: Array<any>;
+  private _transmitting = true;
   // private _cellSelection: ICellSelection | null;
 }
 
