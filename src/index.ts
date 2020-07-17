@@ -185,6 +185,14 @@ function addCommands(
     }
   });
 
+  commands.addCommand(CommandIDs.redo, {
+    label: 'Redo',
+    execute: () => {
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('redo');
+    }
+  });
+
   // Add items to the context menu
   app.contextMenu.addItem({
     command: CommandIDs.addRow,
@@ -240,6 +248,12 @@ function addCommands(
     command: CommandIDs.undo,
     args: {},
     keys: ['Accel Z'],
+    selector: SELECTOR
+  });
+  app.commands.addKeyBinding({
+    command: CommandIDs.redo,
+    args: {},
+    keys: ['Accel Shift Z'],
     selector: SELECTOR
   });
 }
@@ -305,5 +319,6 @@ const CommandIDs = {
   copy: 'tde:copy',
   paste: 'tde:paste',
   cut: 'tde:cut',
-  undo: 'tde:undo'
+  undo: 'tde:undo',
+  redo: 'tde:redo'
 };

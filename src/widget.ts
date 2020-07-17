@@ -347,6 +347,10 @@ export class EditableCSVViewer extends Widget {
         this.dataModel.undo();
         break;
       }
+      case 'redo': {
+        this.dataModel.redo();
+        break;
+      }
     }
   }
 

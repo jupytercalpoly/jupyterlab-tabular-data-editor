@@ -405,6 +405,13 @@ export default class EditableDSVModel extends MutableDataModel {
     }
   }
 
+  /*
+  Utilizes the litestore to redo the last undo
+  */
+  redo() {
+    console.log('Redo time');
+  }
+
   sliceOut(
     model: DSVModel,
     cellLoc: ICoordinates,
