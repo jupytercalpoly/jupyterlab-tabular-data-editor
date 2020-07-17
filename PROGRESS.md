@@ -21,7 +21,7 @@ An account of tasks and features planned and completed
 ### 07/13/20 - 07/17/20
 - Set up Jest framework for testing - Kalen, Logan
 - Implemented Litestore (simplified version of Lumino Datastore) to manage model data - Kalen
-- Cell editing, adding/removing rows/columns can be undone/redone - Kalen
+- Able to undo and redo basic cell functions (cell editing, additions/removals of rows/columns) - Kalen
 
 ### 07/06/20 - 07/10/20
 #### [Demo - Initial Progress](https://docs.google.com/presentation/d/1b-cH0wQz6oAtlLLPSqETVqasltpMQd9ceNx0LXjgJyU/edit?usp=sharing)
