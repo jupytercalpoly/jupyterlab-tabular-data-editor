@@ -44,11 +44,11 @@ export default class EditableDSVModel extends MutableDataModel {
     }
   }
 
-  rowCount(region: DataModel.RowRegion): number {
+  rowCount(region: DataModel.RowRegion = 'body'): number {
     return this._dsvModel.rowCount(region);
   }
 
-  columnCount(region: DataModel.ColumnRegion): number {
+  columnCount(region: DataModel.ColumnRegion = 'body'): number {
     return this._dsvModel.columnCount(region);
   }
 
@@ -79,8 +79,8 @@ export default class EditableDSVModel extends MutableDataModel {
       return true;
     }
     const model = this.dsvModel;
-    this.sliceOut(model, { row: row + 1, column: column + 1 }, true);
-    this.insertAt(value, model, { row: row + 1, column: column + 1 });
+    this.sliceOut(model, { row: row, column: column }, true);
+    this.insertAt(value, model, { row: row, column: column });
     const change: DataModel.ChangedArgs = {
       type: 'cells-changed',
       region: 'body',
@@ -100,8 +100,8 @@ export default class EditableDSVModel extends MutableDataModel {
 
   addRow(row: number): void {
     const model = this.dsvModel;
-    const newRow = this.blankRow(model, row + 1);
-    this.insertAt(newRow, model, { row: row + 1, column: 0 });
+    const newRow = this.blankRow(model, row);
+    this.insertAt(newRow, model, { row: row });
     const change: DataModel.ChangedArgs = {
       type: 'rows-inserted',
       region: 'body',
@@ -117,14 +117,14 @@ export default class EditableDSVModel extends MutableDataModel {
     );
   }
 
-  addColumn(column: number, numAdded = 1): void {
+  addColumn(column: number): void {
     const model = this.dsvModel;
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     let row: number;
-    for (row = model.rowCount('body'); row > 0; row--) {
-      this.insertAt(model.delimiter, model, { row: row, column: column + 1 });
+    for (row = this.rowCount() - 1; row >= 0; row--) {
+      this.insertAt(model.delimiter, model, { row: row, column: column });
     }
-    const prevNumCol = this.columnCount('body');
+    const prevNumCol = this.columnCount();
     const nextLetter = numberToCharacter(alphabet, prevNumCol + 1);
 
     let headerLength = this.colHeaderLength;
@@ -153,7 +153,7 @@ export default class EditableDSVModel extends MutableDataModel {
 
   removeRow(row: number): void {
     const model = this.dsvModel;
-    this.sliceOut(model, { row: row + 1, column: 0 });
+    this.sliceOut(model, { row: row });
 
     const change: DataModel.ChangedArgs = {
       type: 'rows-removed',
@@ -172,8 +172,8 @@ export default class EditableDSVModel extends MutableDataModel {
   removeColumn(column: number): void {
     const model = this.dsvModel;
     let row: number;
-    for (row = model.rowCount('body'); row > 0; row--) {
-      this.sliceOut(model, { row: row, column: column + 1 });
+    for (row = this.rowCount() - 1; row >= 0; row--) {
+      this.sliceOut(model, { row: row, column: column });
     }
 
     // update rawData and header (header handles immediate update, rawData handles parseAsync)
@@ -209,13 +209,13 @@ export default class EditableDSVModel extends MutableDataModel {
     // this._cellSelection = selection;
     const model = this.dsvModel;
     const { startRow, startColumn, endRow, endColumn } = selection;
-    const numRows = endRow - startRow + 1;
-    const numColumns = endColumn - startColumn + 1;
+    const numRows = endRow - startRow;
+    const numColumns = endColumn - startColumn;
     let row: number;
     let column: number;
-    for (let i = numRows; i >= 1; i--) {
+    for (let i = numRows; i >= 0; i--) {
       row = startRow + i;
-      for (let j = numColumns; j >= 1; j--) {
+      for (let j = numColumns; j >= 0; j--) {
         column = startColumn + j;
         this.sliceOut(model, { row: row, column: column }, true);
       }
@@ -245,18 +245,18 @@ export default class EditableDSVModel extends MutableDataModel {
     // get the rows we will be adding
     const rowSpan = Math.min(
       clipboardArray.length,
-      model.rowCount('body') - startCoord.row
+      this.rowCount() - startCoord.row
     );
     const columnSpan = Math.min(
       clipboardArray[0].length,
-      model.columnCount('body') - startCoord.column
+      this.columnCount() - startCoord.column
     );
     let row: number;
     let column: number;
     for (let i = rowSpan - 1; i >= 0; i--) {
-      row = startCoord.row + 1 + i;
+      row = startCoord.row + i;
       for (let j = columnSpan - 1; j >= 0; j--) {
-        column = startCoord.column + 1 + j;
+        column = startCoord.column + j;
         this.sliceOut(model, { row: row, column: column }, true);
         console.log(clipboardArray[i][j]);
         this.insertAt(clipboardArray[i][j], model, {
@@ -325,34 +325,16 @@ export default class EditableDSVModel extends MutableDataModel {
       model.rawData.slice(0, insertionIndex) +
       value +
       model.rawData.slice(insertionIndex);
-
-    // handle row delimeter if we are inserting below the last row (not yet implemented in UI)
-    // if (cellLoc.row === model.rowCount('body') + 1) {
-    //   model.rawData =
-    //     model.rawData.slice(0, insertionIndex) +
-    //     model.rowDelimiter +
-    //     value.slice(0, value.length - model.rowDelimiter.length);
-    // }
-    // // insert above another row
-    // else {
-    //   model.rawData =
-    //     model.rawData.slice(0, insertionIndex) +
-    //     value +
-    //     model.rawData.slice(insertionIndex);
-    // }
   }
 
   blankRow(model: DSVModel, row: number): string {
-    const rows = model.rowCount('body');
-    if (row > rows) {
+    const rows = this.rowCount();
+    if (row > rows - 1) {
       return (
-        model.rowDelimiter +
-        model.delimiter.repeat(model.columnCount('body') - 1)
+        model.rowDelimiter + model.delimiter.repeat(this.columnCount() - 1)
       );
     }
-    return (
-      model.delimiter.repeat(model.columnCount('body') - 1) + model.rowDelimiter
-    );
+    return model.delimiter.repeat(this.columnCount() - 1) + model.rowDelimiter;
   }
 
   /**
@@ -361,52 +343,56 @@ export default class EditableDSVModel extends MutableDataModel {
    */
   firstIndex(coords: ICoordinates): number {
     const { row, column } = coords;
-    return this.dsvModel.getOffsetIndex(row, Math.max(0, column - 1));
+    if (column === undefined) {
+      return this.dsvModel.getOffsetIndex(row + 1, 0);
+    }
+    return this.dsvModel.getOffsetIndex(row + 1, column);
   }
 
   lastIndex(coords: ICoordinates): number {
     const { row, column } = coords;
-    const columns = this.dsvModel.columnCount('body');
+    const columns = this.columnCount();
     const delim = this.dsvModel.delimiter.length;
-    if (0 < column && column < columns) {
-      return this.dsvModel.getOffsetIndex(row, column) - delim;
+    if (0 <= column && column < columns - 1) {
+      return this.dsvModel.getOffsetIndex(row + 1, column + 1) - delim;
     }
     return this.rowEnd(row);
   }
 
   rowEnd(row: number): number {
-    const rows = this.dsvModel.rowCount('body');
+    const rows = this.rowCount();
     const rowDelim = this.dsvModel.rowDelimiter.length;
-    if (row < rows) {
-      return this.dsvModel.getOffsetIndex(row + 1, 0) - rowDelim;
+    if (row < rows - 1) {
+      return this.dsvModel.getOffsetIndex(row + 2, 0) - rowDelim;
     }
     return this.dsvModel.rawData.length;
   }
   // checks whether we are removing data cells on the last row or the last column.
   isTrimOperation(coords: ICoordinates): boolean {
     const { row, column } = coords;
-    const rows = this.dsvModel.rowCount('body');
-    const columns = this.dsvModel.columnCount('body');
-    return column === columns || (row === rows && column === 0);
+    const rows = this.rowCount();
+    const columns = this.columnCount();
+    return column === columns - 1 || (row === rows - 1 && column === undefined);
   }
   // checks whether we are appending a column to the end or appending a row to the end.
   // This would mainly come up if we were undoing a trim operation.
   isExtensionOperation(coords: ICoordinates): boolean {
     const { row, column } = coords;
-    const rows = this.dsvModel.rowCount('body');
-    const columns = this.dsvModel.columnCount('body');
-    return column > columns || row > rows;
+    const rows = this.rowCount();
+    const columns = this.columnCount();
+    return column >= columns || row >= rows;
   }
 
   getPreviousCell(coords: ICoordinates): ICoordinates {
     const { row, column } = coords;
-    const columns = this.dsvModel.columnCount('body');
+    const columns = this.columnCount();
     switch (column) {
-      case 0: {
-        return { row: Math.max(row - 1, 0), column: 0 };
+      // if column is not specified, then 'cell' is treated as the whole row
+      case undefined: {
+        return { row: Math.max(row - 1, 0) };
       }
-      case 1: {
-        return { row: Math.max(row - 1, 0), column: columns };
+      case 0: {
+        return { row: Math.max(row - 1, 0), column: columns - 1 };
       }
       default: {
         return { row: row, column: column - 1 };
@@ -416,14 +402,15 @@ export default class EditableDSVModel extends MutableDataModel {
 
   getNextCell(coords: ICoordinates): ICoordinates {
     const { row, column } = coords;
-    const columns = this.dsvModel.columnCount('body');
-    const rows = this.dsvModel.rowCount('body');
+    const columns = this.columnCount();
     switch (column) {
-      case 0: {
-        return { row: Math.min(row + 1, rows), column: 0 };
+      // if column is not specified, then we seek then next cell is treated as the next row.
+      case undefined: {
+        return { row: row + 1 };
       }
-      case columns: {
-        return { row: Math.min(row + 1, rows), column: 1 };
+      // indexing for last column
+      case columns - 1: {
+        return { row: row + 1, column: 0 };
       }
       default: {
         return { row: row, column: column + 1 };
@@ -442,7 +429,7 @@ export default class EditableDSVModel extends MutableDataModel {
 
 interface ICoordinates {
   row: number;
-  column: number;
+  column?: number;
 }
 
 export interface ICellSelection {
