@@ -408,8 +408,32 @@ export default class EditableDSVModel extends MutableDataModel {
   /*
   Utilizes the litestore to redo the last undo
   */
-  redo() {
-    console.log('Redo time');
+  redo(): void {
+    const model = this._dsvModel;
+    this._litestore.redo();
+    const { change, modelData } = this._litestore.getRecord({
+      schema: DATAMODEL_SCHEMA,
+      record: RECORD_ID
+    });
+
+    if (!change) {
+      return;
+    }
+
+    // need to update model header when making a change to columns
+    if (change.type === 'columns-inserted') {
+      model.header.push(numberToCharacter(model.header.length + 1));
+    } else if (change.type === 'columns-removed') {
+      model.header.pop();
+    }
+
+    model.rawData = modelData;
+    this.emitChanged(change);
+    this._silenceDsvModel();
+    model.parseAsync();
+    this._onChangeSignal.emit(
+      this._dsvModel.rawData.slice(this.colHeaderLength)
+    );
   }
 
   sliceOut(
