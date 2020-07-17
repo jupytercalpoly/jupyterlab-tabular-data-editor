@@ -2,12 +2,18 @@ import { MutableDataModel, DataModel } from '@lumino/datagrid';
 import { DSVModel } from 'tde-csvviewer';
 import { Signal } from '@lumino/signaling';
 import { numberToCharacter } from './_helper';
+import { Litestore } from './litestore';
+import { Fields } from '@lumino/datastore';
 // import { ClipBoardHandler } from './clipboard';
 
 export default class EditableDSVModel extends MutableDataModel {
   constructor(options: DSVModel.IOptions) {
     super();
     this._dsvModel = new DSVModel(options);
+    this._litestore = new Litestore({ id: 0, schemas: [DATAMODEL_SCHEMA] });
+
+    // set inital status of litestore
+    this.updateLitestore();
 
     // propagate changes in the dsvModel up to the grid
     this.dsvModel.changed.connect(this._passMessage, this);
@@ -34,6 +40,11 @@ export default class EditableDSVModel extends MutableDataModel {
       model.rowDelimiter.length
     );
   }
+
+  get litestore(): Litestore {
+    return this._litestore;
+  }
+
   private _silenceDsvModel(): void {
     this._transmitting = false;
     window.setTimeout(() => (this._transmitting = true), 30);
@@ -89,6 +100,7 @@ export default class EditableDSVModel extends MutableDataModel {
       rowSpan: 1,
       columnSpan: 1
     };
+    this.updateLitestore(change);
     this.emitChanged(change);
     this._silenceDsvModel();
     model.parseAsync();
@@ -108,6 +120,7 @@ export default class EditableDSVModel extends MutableDataModel {
       index: row,
       span: 1
     };
+    this.updateLitestore(change);
     this.emitChanged(change);
     this._silenceDsvModel();
     model.parseAsync();
@@ -119,13 +132,12 @@ export default class EditableDSVModel extends MutableDataModel {
 
   addColumn(column: number): void {
     const model = this.dsvModel;
-    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     let row: number;
     for (row = this.rowCount() - 1; row >= 0; row--) {
       this.insertAt(model.delimiter, model, { row: row, column: column });
     }
     const prevNumCol = this.columnCount();
-    const nextLetter = numberToCharacter(alphabet, prevNumCol + 1);
+    const nextLetter = numberToCharacter(prevNumCol + 1);
 
     let headerLength = this.colHeaderLength;
 
@@ -145,6 +157,7 @@ export default class EditableDSVModel extends MutableDataModel {
       index: column,
       span: 1
     };
+    this.updateLitestore(change);
     this.emitChanged(change);
     this._silenceDsvModel();
     model.parseAsync();
@@ -161,6 +174,8 @@ export default class EditableDSVModel extends MutableDataModel {
       index: row,
       span: 1
     };
+
+    this.updateLitestore(change);
     this.emitChanged(change);
     this._silenceDsvModel();
     model.parseAsync();
@@ -199,6 +214,9 @@ export default class EditableDSVModel extends MutableDataModel {
       index: column,
       span: 1
     };
+
+    this.updateLitestore(change);
+
     this.emitChanged(change);
     this._silenceDsvModel();
     model.parseAsync();
@@ -275,6 +293,144 @@ export default class EditableDSVModel extends MutableDataModel {
     };
     model.parseAsync();
     this.emitChanged(change);
+    this._onChangeSignal.emit(
+      this._dsvModel.rawData.slice(this.colHeaderLength)
+    );
+  }
+
+  /*
+  Utilizes the litestore to undo the last change
+  */
+  undo(): void {
+    const model = this._dsvModel;
+    const { change } = this._litestore.getRecord({
+      schema: DATAMODEL_SCHEMA,
+      record: RECORD_ID
+    });
+
+    if (!change) {
+      return;
+    }
+
+    let undoChange: DataModel.ChangedArgs;
+    let headerLength = this.colHeaderLength;
+
+    // undo first and then get the model data
+    this._litestore.undo();
+    const { modelData } = this._litestore.getRecord({
+      schema: DATAMODEL_SCHEMA,
+      record: RECORD_ID
+    });
+
+    switch (change.type) {
+      // TODO: select the cell that was edited upon undo
+      case 'cells-changed':
+        model.rawData = modelData;
+        undoChange = {
+          type: 'cells-changed',
+          region: 'body',
+          row: change.row,
+          column: change.column,
+          rowSpan: change.rowSpan,
+          columnSpan: change.columnSpan
+        };
+        this.emitChanged(undoChange);
+        this._silenceDsvModel();
+        model.parseAsync();
+        this._onChangeSignal.emit(this._dsvModel.rawData.slice(headerLength));
+        break;
+      case 'rows-inserted':
+        model.rawData = modelData;
+        undoChange = {
+          type: 'rows-removed',
+          region: 'body',
+          index: change.index,
+          span: change.span
+        };
+        this.emitChanged(undoChange);
+        this._silenceDsvModel();
+        model.parseAsync();
+        this._onChangeSignal.emit(this._dsvModel.rawData.slice(headerLength));
+        break;
+      case 'columns-inserted':
+        model.rawData = modelData;
+        // need to remove a letter from the header
+        model.header.pop();
+
+        // recompute header length since header is updated
+        headerLength = this.colHeaderLength;
+        undoChange = {
+          type: 'columns-removed',
+          region: 'body',
+          index: change.index,
+          span: change.span
+        };
+        this.emitChanged(undoChange);
+        this._silenceDsvModel();
+        model.parseAsync();
+        this._onChangeSignal.emit(this._dsvModel.rawData.slice(headerLength));
+        break;
+      case 'rows-removed':
+        model.rawData = modelData;
+        undoChange = {
+          type: 'rows-inserted',
+          region: 'body',
+          index: change.index,
+          span: change.span
+        };
+        this.emitChanged(undoChange);
+        this._silenceDsvModel();
+        model.parseAsync();
+        this._onChangeSignal.emit(this._dsvModel.rawData.slice(headerLength));
+        break;
+      case 'columns-removed':
+        model.rawData = modelData;
+
+        // add the next letter into the header
+        model.header.push(numberToCharacter(model.header.length + 1));
+
+        // recompute header length since header is updated
+        headerLength = this.colHeaderLength;
+        undoChange = {
+          type: 'columns-inserted',
+          region: 'body',
+          index: change.index,
+          span: change.span
+        };
+        this.emitChanged(undoChange);
+        this._silenceDsvModel();
+        model.parseAsync();
+        this._onChangeSignal.emit(this._dsvModel.rawData.slice(headerLength));
+        break;
+    }
+  }
+
+  /*
+  Utilizes the litestore to redo the last undo
+  */
+  redo(): void {
+    const model = this._dsvModel;
+    this._litestore.redo();
+    const { change, modelData } = this._litestore.getRecord({
+      schema: DATAMODEL_SCHEMA,
+      record: RECORD_ID
+    });
+
+    if (!change) {
+      return;
+    }
+
+    // need to update model header when making a change to columns
+    if (change.type === 'columns-inserted') {
+      model.header.push(numberToCharacter(model.header.length + 1));
+    } else if (change.type === 'columns-removed') {
+      model.header.pop();
+    }
+
+    model.rawData = modelData;
+    this.emitChanged(change);
+    this._silenceDsvModel();
+    model.parseAsync();
     this._onChangeSignal.emit(
       this._dsvModel.rawData.slice(this.colHeaderLength)
     );
@@ -416,6 +572,26 @@ export default class EditableDSVModel extends MutableDataModel {
     }
   }
 
+  /*
+  Creates a new transaction containing the raw data, header, and changeArgs
+  */
+  updateLitestore(change?: DataModel.ChangedArgs): void {
+    const model = this._dsvModel;
+    this._litestore.beginTransaction();
+    this._litestore.updateRecord(
+      {
+        schema: DATAMODEL_SCHEMA,
+        record: RECORD_ID
+      },
+      {
+        modelData: model.rawData,
+        modelHeader: model.header,
+        change: change
+      }
+    );
+    this._litestore.endTransaction();
+  }
+
   private _dsvModel: DSVModel;
   private _onChangeSignal: Signal<this, string> = new Signal<this, string>(
     this
@@ -424,6 +600,7 @@ export default class EditableDSVModel extends MutableDataModel {
   private _cancelEditingSignal: Signal<this, null> = new Signal<this, null>(
     this
   );
+  private _litestore: Litestore;
   // private _cellSelection: ICellSelection | null;
 }
 
@@ -438,3 +615,16 @@ export interface ICellSelection {
   endColumn: number;
   endRow: number;
 }
+
+const SCHEMA_ID = 'datamodel';
+const RECORD_ID = 'datamodel';
+const DATAMODEL_SCHEMA = {
+  id: SCHEMA_ID,
+  fields: {
+    modelData: Fields.String(),
+    modelHeader: Fields.Register<string[]>({ value: [] }),
+    change: Fields.Register<DataModel.ChangedArgs>({
+      value: { type: 'model-reset' }
+    })
+  }
+};

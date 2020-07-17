@@ -118,6 +118,9 @@ function activateCsv(
   addCommands(app, tracker);
 }
 
+/*
+Creates commands, adds them to the context menu, and adds keybindings for common functionality
+*/
 function addCommands(
   app: JupyterFrontEnd,
   tracker: WidgetTracker<IDocumentWidget<EditableCSVViewer>>
@@ -174,6 +177,23 @@ function addCommands(
     }
   });
 
+  commands.addCommand(CommandIDs.undo, {
+    label: 'Undo',
+    execute: () => {
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('undo');
+    }
+  });
+
+  commands.addCommand(CommandIDs.redo, {
+    label: 'Redo',
+    execute: () => {
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('redo');
+    }
+  });
+
+  // Add items to the context menu
   app.contextMenu.addItem({
     command: CommandIDs.addRow,
     selector: SELECTOR,
@@ -209,6 +229,8 @@ function addCommands(
     selector: SELECTOR,
     rank: 0
   });
+
+  // add keybindings
   app.commands.addKeyBinding({
     command: CommandIDs.copy,
     args: {},
@@ -220,6 +242,18 @@ function addCommands(
     command: CommandIDs.cut,
     args: {},
     keys: ['Accel X'],
+    selector: SELECTOR
+  });
+  app.commands.addKeyBinding({
+    command: CommandIDs.undo,
+    args: {},
+    keys: ['Accel Z'],
+    selector: SELECTOR
+  });
+  app.commands.addKeyBinding({
+    command: CommandIDs.redo,
+    args: {},
+    keys: ['Accel Shift Z'],
     selector: SELECTOR
   });
 }
@@ -284,5 +318,7 @@ const CommandIDs = {
   removeColumn: 'tde:remove-column',
   copy: 'tde:copy',
   paste: 'tde:paste',
-  cut: 'tde:cut'
+  cut: 'tde:cut',
+  undo: 'tde:undo',
+  redo: 'tde:redo'
 };

@@ -156,6 +156,89 @@ describe('removeColumn function', () => {
   });
 });
 
+describe('undo function', () => {
+  it('tries to undo when nothing can be undone', () => {
+    model.undo();
+    const expectedData = ['A,B,C', '1,2,3', 'abc,5,6', '7,8,9'].join('\n');
+    expect(model.dsvModel.rawData).toBe(expectedData);
+  });
+  it('undo a cell edit', () => {
+    model.setData('body', 1, 0, '123');
+    model.undo();
+    const expectedData = ['A,B,C', '1,2,3', 'abc,5,6', '7,8,9'].join('\n');
+    expect(model.dsvModel.rawData).toBe(expectedData);
+  });
+  it('undo add a row', () => {
+    model.addRow(2);
+    model.undo();
+    const expectedData = ['A,B,C', '1,2,3', 'abc,5,6', '7,8,9'].join('\n');
+    expect(model.dsvModel.rawData).toBe(expectedData);
+  });
+  it('undo add a column', () => {
+    model.addColumn(0);
+    model.undo();
+    const expectedData = ['A,B,C', '1,2,3', 'abc,5,6', '7,8,9'].join('\n');
+    expect(model.dsvModel.rawData).toBe(expectedData);
+  });
+  it('undo remove a row ', () => {
+    model.removeRow(1);
+    model.undo();
+    const expectedData = ['A,B,C', '1,2,3', 'abc,5,6', '7,8,9'].join('\n');
+    expect(model.dsvModel.rawData).toBe(expectedData);
+  });
+  it('undo remove a column', () => {
+    model.removeColumn(0);
+    model.undo();
+    const expectedData = ['A,B,C', '1,2,3', 'abc,5,6', '7,8,9'].join('\n');
+    expect(model.dsvModel.rawData).toBe(expectedData);
+  });
+});
+
+describe('redo function', () => {
+  it('tries to undo when nothing can be undone', () => {
+    model.redo();
+    const expectedData = ['A,B,C', '1,2,3', 'abc,5,6', '7,8,9'].join('\n');
+    expect(model.dsvModel.rawData).toBe(expectedData);
+  });
+  it('redo a cell edit', () => {
+    model.setData('body', 1, 0, '123');
+    model.undo();
+    model.redo();
+    const expectedData = ['A,B,C', '1,2,3', '123,5,6', '7,8,9'].join('\n');
+    expect(model.dsvModel.rawData).toBe(expectedData);
+  });
+  it('redo add a row', () => {
+    model.addRow(2);
+    model.undo();
+    model.redo();
+    const expectedData = ['A,B,C', '1,2,3', 'abc,5,6', ',,', '7,8,9'].join(
+      '\n'
+    );
+    expect(model.dsvModel.rawData).toBe(expectedData);
+  });
+  it('redo add a column', () => {
+    model.addColumn(0);
+    model.undo();
+    model.redo();
+    const expectedData = ['A,B,C,D', ',1,2,3', ',abc,5,6', ',7,8,9'].join('\n');
+    expect(model.dsvModel.rawData).toBe(expectedData);
+  });
+  it('redo remove a row ', () => {
+    model.removeRow(1);
+    model.undo();
+    model.redo();
+    const expectedData = ['A,B,C', '1,2,3', '7,8,9'].join('\n');
+    expect(model.dsvModel.rawData).toBe(expectedData);
+  });
+  it('redo remove a column', () => {
+    model.removeColumn(0);
+    model.undo();
+    model.redo();
+    const expectedData = ['A,B', '2,3', '5,6', '8,9'].join('\n');
+    expect(model.dsvModel.rawData).toBe(expectedData);
+  });
+});
+
 describe('Test suite for sliceOut', () => {
   it('remove the top corner (keeping cell)', () => {
     model.sliceOut(model.dsvModel, { row: 0, column: 0 }, true);

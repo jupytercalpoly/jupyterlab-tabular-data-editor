@@ -252,7 +252,7 @@ export class EditableCSVViewer extends Widget {
       let columnHeader = alphabet.split('').join(colDelimiter);
       // find the rest
       for (let i = 27; i < numCol; i++) {
-        columnHeader += colDelimiter + numberToCharacter(alphabet, i);
+        columnHeader += colDelimiter + numberToCharacter(i);
       }
       return columnHeader + rowDelimiter;
     }
@@ -265,12 +265,10 @@ export class EditableCSVViewer extends Widget {
     const delimiter = this.delimiter;
     const model = this._grid.dataModel as EditableDSVModel;
     let data: string;
-    //let headerLength: number;
 
     if (!model) {
       const header = this._buildColHeader(this.delimiter);
       data = header + this._context.model.toString();
-      // headerLength = header.length;
       const dataModel = (this._grid.dataModel = new EditableDSVModel({
         data,
         delimiter
@@ -343,6 +341,14 @@ export class EditableCSVViewer extends Widget {
           endRow: r2,
           endColumn: c2
         });
+        break;
+      }
+      case 'undo': {
+        this.dataModel.undo();
+        break;
+      }
+      case 'redo': {
+        this.dataModel.redo();
         break;
       }
     }
