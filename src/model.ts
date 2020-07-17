@@ -299,6 +299,62 @@ export default class EditableDSVModel extends MutableDataModel {
     );
   }
 
+  /*
+  Utilizes the litestore to undo the last change
+  */
+  undo(): void {
+    const model = this._dsvModel;
+    let undoChange: DataModel.ChangedArgs;
+    let headerLength = this.colHeaderLength;
+    const { change } = this._litestore.getRecord({
+      schema: DATAMODEL_SCHEMA,
+      record: RECORD_ID
+    });
+
+    this._litestore.undo();
+    const { modelData, modelHeader } = this._litestore.getRecord({
+      schema: DATAMODEL_SCHEMA,
+      record: RECORD_ID
+    });
+
+    //console.log(change, modelData, modelHeader);
+
+    switch (change.type) {
+      case 'rows-inserted':
+        model.rawData = modelData;
+        undoChange = {
+          type: 'rows-removed',
+          region: 'body',
+          index: change.index,
+          span: 1
+        };
+        this.emitChanged(undoChange);
+        this._silenceDsvModel();
+        model.parseAsync();
+        this._onChangeSignal.emit(this._dsvModel.rawData.slice(headerLength));
+        break;
+      case 'columns-inserted':
+        model.rawData = modelData;
+        model.header = modelHeader;
+        model.header.pop();
+        //console.log('new info', model.rawData, model.header);
+
+        // recompute header length since header is updated
+        headerLength = this.colHeaderLength;
+        undoChange = {
+          type: 'columns-removed',
+          region: 'body',
+          index: change.index,
+          span: 1
+        };
+        this.emitChanged(undoChange);
+        this._silenceDsvModel();
+        model.parseAsync();
+        this._onChangeSignal.emit(this._dsvModel.rawData.slice(headerLength));
+        break;
+    }
+  }
+
   sliceOut(
     model: DSVModel,
     cellLoc: ICoordinates,
@@ -444,16 +500,15 @@ export default class EditableDSVModel extends MutableDataModel {
     this._litestore.updateRecord(
       {
         schema: DATAMODEL_SCHEMA,
-        record: 'datamodel-record'
+        record: RECORD_ID
       },
       {
         modelData: model.rawData,
         modelHeader: model.header,
-        change: { change }
+        change: change
       }
     );
     this._litestore.endTransaction();
-    console.log(this._litestore.getLastTransaction());
   }
 
   private _dsvModel: DSVModel;
@@ -480,11 +535,15 @@ export interface ICellSelection {
   endRow: number;
 }
 
+const SCHEMA_ID = 'datamodel';
+const RECORD_ID = 'datamodel';
 const DATAMODEL_SCHEMA = {
-  id: 'datamodel',
+  id: SCHEMA_ID,
   fields: {
     modelData: Fields.String(),
     modelHeader: Fields.Register<string[]>({ value: [] }),
-    change: Fields.Map<DataModel.ChangedArgs>()
+    change: Fields.Register<DataModel.ChangedArgs>({
+      value: { type: 'model-reset' }
+    })
   }
 };
