@@ -343,6 +343,10 @@ export class EditableCSVViewer extends Widget {
         });
         break;
       }
+      case 'undo': {
+        this.dataModel.undo();
+        break;
+      }
     }
   }
 
