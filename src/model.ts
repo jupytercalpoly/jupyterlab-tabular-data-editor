@@ -132,13 +132,12 @@ export default class EditableDSVModel extends MutableDataModel {
 
   addColumn(column: number): void {
     const model = this.dsvModel;
-    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     let row: number;
     for (row = this.rowCount() - 1; row >= 0; row--) {
       this.insertAt(model.delimiter, model, { row: row, column: column });
     }
     const prevNumCol = this.columnCount();
-    const nextLetter = numberToCharacter(alphabet, prevNumCol + 1);
+    const nextLetter = numberToCharacter(prevNumCol + 1);
 
     let headerLength = this.colHeaderLength;
 
@@ -304,29 +303,49 @@ export default class EditableDSVModel extends MutableDataModel {
   */
   undo(): void {
     const model = this._dsvModel;
-    let undoChange: DataModel.ChangedArgs;
-    let headerLength = this.colHeaderLength;
     const { change } = this._litestore.getRecord({
       schema: DATAMODEL_SCHEMA,
       record: RECORD_ID
     });
 
+    if (!change) {
+      return;
+    }
+
+    let undoChange: DataModel.ChangedArgs;
+    let headerLength = this.colHeaderLength;
+
+    // undo first and then get the model data
     this._litestore.undo();
-    const { modelData, modelHeader } = this._litestore.getRecord({
+    const { modelData } = this._litestore.getRecord({
       schema: DATAMODEL_SCHEMA,
       record: RECORD_ID
     });
 
-    //console.log(change, modelData, modelHeader);
-
     switch (change.type) {
+      // TODO: select the cell that was edited upon undo
+      case 'cells-changed':
+        model.rawData = modelData;
+        undoChange = {
+          type: 'cells-changed',
+          region: 'body',
+          row: change.row,
+          column: change.column,
+          rowSpan: change.rowSpan,
+          columnSpan: change.columnSpan
+        };
+        this.emitChanged(undoChange);
+        this._silenceDsvModel();
+        model.parseAsync();
+        this._onChangeSignal.emit(this._dsvModel.rawData.slice(headerLength));
+        break;
       case 'rows-inserted':
         model.rawData = modelData;
         undoChange = {
           type: 'rows-removed',
           region: 'body',
           index: change.index,
-          span: 1
+          span: change.span
         };
         this.emitChanged(undoChange);
         this._silenceDsvModel();
@@ -335,9 +354,8 @@ export default class EditableDSVModel extends MutableDataModel {
         break;
       case 'columns-inserted':
         model.rawData = modelData;
-        model.header = modelHeader;
+        // need to remove a letter from the header
         model.header.pop();
-        //console.log('new info', model.rawData, model.header);
 
         // recompute header length since header is updated
         headerLength = this.colHeaderLength;
@@ -345,7 +363,39 @@ export default class EditableDSVModel extends MutableDataModel {
           type: 'columns-removed',
           region: 'body',
           index: change.index,
-          span: 1
+          span: change.span
+        };
+        this.emitChanged(undoChange);
+        this._silenceDsvModel();
+        model.parseAsync();
+        this._onChangeSignal.emit(this._dsvModel.rawData.slice(headerLength));
+        break;
+      case 'rows-removed':
+        model.rawData = modelData;
+        undoChange = {
+          type: 'rows-inserted',
+          region: 'body',
+          index: change.index,
+          span: change.span
+        };
+        this.emitChanged(undoChange);
+        this._silenceDsvModel();
+        model.parseAsync();
+        this._onChangeSignal.emit(this._dsvModel.rawData.slice(headerLength));
+        break;
+      case 'columns-removed':
+        model.rawData = modelData;
+
+        // add the next letter into the header
+        model.header.push(numberToCharacter(model.header.length + 1));
+
+        // recompute header length since header is updated
+        headerLength = this.colHeaderLength;
+        undoChange = {
+          type: 'columns-inserted',
+          region: 'body',
+          index: change.index,
+          span: change.span
         };
         this.emitChanged(undoChange);
         this._silenceDsvModel();

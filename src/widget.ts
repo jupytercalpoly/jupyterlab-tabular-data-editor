@@ -252,7 +252,7 @@ export class EditableCSVViewer extends Widget {
       let columnHeader = alphabet.split('').join(colDelimiter);
       // find the rest
       for (let i = 27; i < numCol; i++) {
-        columnHeader += colDelimiter + numberToCharacter(alphabet, i);
+        columnHeader += colDelimiter + numberToCharacter(i);
       }
       return columnHeader + rowDelimiter;
     }
