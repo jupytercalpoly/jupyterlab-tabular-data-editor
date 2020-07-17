@@ -241,7 +241,6 @@ export default class EditableDSVModel extends MutableDataModel {
     const model = this.dsvModel;
     // convert the copied data to an array
     const clipboardArray = data.split('\n').map(elem => elem.split('\t'));
-    console.log(clipboardArray[0][0]);
 
     // get the rows we will be adding
     const rowSpan = Math.min(
@@ -259,7 +258,6 @@ export default class EditableDSVModel extends MutableDataModel {
       for (let j = columnSpan - 1; j >= 0; j--) {
         column = startCoord.column + j;
         this.sliceOut(model, { row: row, column: column }, true);
-        console.log(clipboardArray[i][j]);
         this.insertAt(clipboardArray[i][j], model, {
           row: row,
           column: column
