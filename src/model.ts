@@ -2,12 +2,18 @@ import { MutableDataModel, DataModel } from '@lumino/datagrid';
 import { DSVModel } from 'tde-csvviewer';
 import { Signal } from '@lumino/signaling';
 import { numberToCharacter } from './_helper';
+import { Litestore } from './litestore';
+import { Fields } from '@lumino/datastore';
 // import { ClipBoardHandler } from './clipboard';
 
 export default class EditableDSVModel extends MutableDataModel {
   constructor(options: DSVModel.IOptions) {
     super();
     this._dsvModel = new DSVModel(options);
+    this._litestore = new Litestore({ id: 0, schemas: [DATAMODEL_SCHEMA] });
+
+    // set inital status of litestore
+    this.updateLitestore();
 
     // propagate changes in the dsvModel up to the grid
     this.dsvModel.changed.connect(this._passMessage, this);
@@ -34,6 +40,11 @@ export default class EditableDSVModel extends MutableDataModel {
       model.rowDelimiter.length
     );
   }
+
+  get litestore(): Litestore {
+    return this._litestore;
+  }
+
   private _silenceDsvModel(): void {
     this._transmitting = false;
     window.setTimeout(() => (this._transmitting = true), 30);
@@ -89,6 +100,7 @@ export default class EditableDSVModel extends MutableDataModel {
       rowSpan: 1,
       columnSpan: 1
     };
+    this.updateLitestore(change);
     this.emitChanged(change);
     this._silenceDsvModel();
     model.parseAsync();
@@ -108,6 +120,7 @@ export default class EditableDSVModel extends MutableDataModel {
       index: row,
       span: 1
     };
+    this.updateLitestore(change);
     this.emitChanged(change);
     this._silenceDsvModel();
     model.parseAsync();
@@ -145,6 +158,7 @@ export default class EditableDSVModel extends MutableDataModel {
       index: column,
       span: 1
     };
+    this.updateLitestore(change);
     this.emitChanged(change);
     this._silenceDsvModel();
     model.parseAsync();
@@ -161,6 +175,8 @@ export default class EditableDSVModel extends MutableDataModel {
       index: row,
       span: 1
     };
+
+    this.updateLitestore(change);
     this.emitChanged(change);
     this._silenceDsvModel();
     model.parseAsync();
@@ -199,6 +215,9 @@ export default class EditableDSVModel extends MutableDataModel {
       index: column,
       span: 1
     };
+
+    this.updateLitestore(change);
+
     this.emitChanged(change);
     this._silenceDsvModel();
     model.parseAsync();
@@ -416,6 +435,27 @@ export default class EditableDSVModel extends MutableDataModel {
     }
   }
 
+  /*
+  Creates a new transaction containing the raw data, header, and changeArgs
+  */
+  updateLitestore(change?: DataModel.ChangedArgs): void {
+    const model = this._dsvModel;
+    this._litestore.beginTransaction();
+    this._litestore.updateRecord(
+      {
+        schema: DATAMODEL_SCHEMA,
+        record: 'datamodel-record'
+      },
+      {
+        modelData: model.rawData,
+        modelHeader: model.header,
+        change: { change }
+      }
+    );
+    this._litestore.endTransaction();
+    console.log(this._litestore.getLastTransaction());
+  }
+
   private _dsvModel: DSVModel;
   private _onChangeSignal: Signal<this, string> = new Signal<this, string>(
     this
@@ -424,6 +464,7 @@ export default class EditableDSVModel extends MutableDataModel {
   private _cancelEditingSignal: Signal<this, null> = new Signal<this, null>(
     this
   );
+  private _litestore: Litestore;
   // private _cellSelection: ICellSelection | null;
 }
 
@@ -438,3 +479,12 @@ export interface ICellSelection {
   endColumn: number;
   endRow: number;
 }
+
+const DATAMODEL_SCHEMA = {
+  id: 'datamodel',
+  fields: {
+    modelData: Fields.String(),
+    modelHeader: Fields.Register<string[]>({ value: [] }),
+    change: Fields.Map<DataModel.ChangedArgs>()
+  }
+};
