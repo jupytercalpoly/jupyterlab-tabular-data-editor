@@ -17,6 +17,10 @@ export default class EditableDSVModel extends MutableDataModel {
     return this._dsvModel;
   }
 
+  get cancelEditingSignal(): Signal<this, null> {
+    return this._cancelEditingSignal;
+  }
+
   get onChangedSignal(): Signal<this, string> {
     return this._onChangeSignal;
   }
@@ -74,10 +78,6 @@ export default class EditableDSVModel extends MutableDataModel {
     column: number,
     value: any
   ): boolean {
-    if (this._block) {
-      this._block = false;
-      return true;
-    }
     const model = this.dsvModel;
     this.sliceOut(model, { row: row, column: column }, true);
     this.insertAt(value, model, { row: row, column: column });
@@ -209,13 +209,13 @@ export default class EditableDSVModel extends MutableDataModel {
     // this._cellSelection = selection;
     const model = this.dsvModel;
     const { startRow, startColumn, endRow, endColumn } = selection;
-    const numRows = endRow - startRow;
-    const numColumns = endColumn - startColumn;
+    const numRows = endRow - startRow + 1;
+    const numColumns = endColumn - startColumn + 1;
     let row: number;
     let column: number;
-    for (let i = numRows; i >= 0; i--) {
+    for (let i = numRows - 1; i >= 0; i--) {
       row = startRow + i;
-      for (let j = numColumns; j >= 0; j--) {
+      for (let j = numColumns - 1; j >= 0; j--) {
         column = startColumn + j;
         this.sliceOut(model, { row: row, column: column }, true);
       }
@@ -237,6 +237,7 @@ export default class EditableDSVModel extends MutableDataModel {
   }
 
   paste(startCoord: ICoordinates, data: string): void {
+    this._cancelEditingSignal.emit(null);
     const model = this.dsvModel;
     // convert the copied data to an array
     const clipboardArray = data.split('\n').map(elem => elem.split('\t'));
@@ -265,7 +266,6 @@ export default class EditableDSVModel extends MutableDataModel {
         });
       }
     }
-    this._block = true;
 
     const change: DataModel.ChangedArgs = {
       type: 'cells-changed',
@@ -422,8 +422,10 @@ export default class EditableDSVModel extends MutableDataModel {
   private _onChangeSignal: Signal<this, string> = new Signal<this, string>(
     this
   );
-  private _block = true;
   private _transmitting = true;
+  private _cancelEditingSignal: Signal<this, null> = new Signal<this, null>(
+    this
+  );
   // private _cellSelection: ICellSelection | null;
 }
 
