@@ -155,3 +155,48 @@ describe('removeColumn function', () => {
     expect(model.dsvModel.rawData).toBe(expectedData);
   });
 });
+
+describe('Test suite for sliceOut', () => {
+  it('remove the top corner (keeping cell)', () => {
+    model.sliceOut(model.dsvModel, { row: 0, column: 0 }, true);
+    const expectedData = 'A,B,C\n,2,3\nabc,5,6\n7,8,9';
+    expect(model.dsvModel.rawData).toBe(expectedData);
+  });
+  it('Check return value of sliceOut', () => {
+    const value = model.sliceOut(model.dsvModel, { row: 0, column: 0 }, true);
+    expect(value).toBe('1');
+  });
+  it('return value for last row', () => {
+    const value = model.sliceOut(model.dsvModel, { row: model.rowCount() - 1 });
+    expect(value).toBe('\n7,8,9');
+  });
+});
+
+describe('Test suite for isTrimOperation', () => {
+  it('selecting on last column, should return true', () => {
+    const result = model.isTrimOperation({
+      row: 1,
+      column: model.columnCount() - 1
+    });
+    expect(result).toBe(true);
+  });
+  it('selecting on last row w/out column, should return true', () => {
+    const result = model.isTrimOperation({ row: model.rowCount() - 1 });
+    expect(result).toBe(true);
+  });
+  it('selecting middle entry, should return false', () => {
+    const result = model.isTrimOperation({ row: 1, column: 1 });
+    expect(result).toBe(false);
+  });
+});
+
+describe('Test suite for lastIndex', () => {
+  it('requesting last index of middle row', () => {
+    const result = model.lastIndex({ row: 1 });
+    expect(result).toBe(model.dsvModel.rawData.indexOf('6') + 1);
+  });
+  it('requesting last index of last row', () => {
+    const result = model.lastIndex({ row: 2 });
+    expect(result).toBe(model.dsvModel.rawData.length);
+  });
+});

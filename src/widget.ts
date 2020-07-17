@@ -38,7 +38,6 @@ import {
   PasteButton,
   FilterButton
 } from './toolbar';
-
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
 const RENDER_TIMEOUT = 1000;
@@ -278,6 +277,7 @@ export class EditableCSVViewer extends Widget {
       }));
       this._grid.selectionModel = new BasicSelectionModel({ dataModel });
       dataModel.onChangedSignal.connect(this._updateModel, this);
+      dataModel.cancelEditingSignal.connect(this._cancelEditing, this);
     }
   }
 
@@ -306,6 +306,10 @@ export class EditableCSVViewer extends Widget {
 
   private _updateModel(emitter: EditableDSVModel, data: string): void {
     this.context.model.fromString(data);
+  }
+
+  private _cancelEditing(emitter: EditableDSVModel): void {
+    this._grid.editorController.cancel();
   }
 
   private _changeModel(emitter: EditableCSVViewer, type: string): void {
