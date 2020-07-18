@@ -8,7 +8,7 @@ An account of tasks and features planned and completed
 - [x] Delete rows/columns
 - [ ] Move rows/columns
 - [x] Undo/redo capabilities
-- [ ] Copy, paste, cut
+- [x] Copy, paste, cut
 - [ ] Toolbar for editing functions
 - [ ] Filter
 - [ ] Sort
@@ -22,6 +22,8 @@ An account of tasks and features planned and completed
 - Set up Jest framework for testing - Kalen, Logan
 - Implemented Litestore (simplified version of Lumino Datastore) to manage model data - Kalen
 - Able to undo and redo basic cell functions (cell editing, additions/removals of rows/columns) - Kalen
+- Able to copy/cut and paste - Logan
+- Created a new npm package for our slightly modified version of lumino. - Logan
 
 ### 07/06/20 - 07/10/20
 #### [Demo - Initial Progress](https://docs.google.com/presentation/d/1b-cH0wQz6oAtlLLPSqETVqasltpMQd9ceNx0LXjgJyU/edit?usp=sharing)
