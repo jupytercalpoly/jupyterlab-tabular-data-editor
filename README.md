@@ -11,6 +11,8 @@ Check out our [current progress and future plans](https://github.com/jupytercalp
 
 See our progress as of 07/09/2020 from these [slides](https://docs.google.com/presentation/d/1b-cH0wQz6oAtlLLPSqETVqasltpMQd9ceNx0LXjgJyU/edit?usp=sharing)!
 
+View a report of our code coverage [here](http://htmlpreview.github.io/?https://github.com/jupytercalpoly/jupyterlab-tabular-data-editor/blob/master/coverage/lcov-report/index.html)!
+
 ## Requirements
 
 * JupyterLab >= 2.0
