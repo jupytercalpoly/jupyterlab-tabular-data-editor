@@ -23,7 +23,9 @@ An account of tasks and features planned and completed
 - Implemented Litestore (simplified version of Lumino Datastore) to manage model data - Kalen
 - Able to undo and redo basic cell functions (cell editing, additions/removals of rows/columns) - Kalen
 - Able to copy/cut and paste - Logan
-- Created a new npm package for our slightly modified version of lumino. - Logan
+- Created a new npm package for our slightly modified version of lumino - Logan
+- Started designing the UX/UI for writing code (i.e. code editor) for a cell in a table (Phase 2 Exploration) - Ryan
+- Added a toolbar with clickable buttons (functionality still needs to be implementted) - Ryan
 
 ### 07/06/20 - 07/10/20
 #### [Demo - Initial Progress](https://docs.google.com/presentation/d/1b-cH0wQz6oAtlLLPSqETVqasltpMQd9ceNx0LXjgJyU/edit?usp=sharing)
