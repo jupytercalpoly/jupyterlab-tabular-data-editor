@@ -16,6 +16,11 @@ export class RichMouseHandler extends BasicMouseHandler {
     this._grid = options.grid;
     this._cursor = null;
   }
+
+  get rightClickSignal(): Signal<this, Array<number>> {
+    return this._rightClickSignal;
+  }
+
   cursorForHandle(region: ResizeHandle): string {
     const cursorMap = {
       top: 'ns-resize',
@@ -27,24 +32,25 @@ export class RichMouseHandler extends BasicMouseHandler {
     this._cursor = cursorMap[region];
     return this._cursor;
   }
-  get rightClickSignal(): Signal<this, Array<number>> {
-    return this._rightClickSignal;
-  }
-  onMouseHover(grid: DataGrid, event: MouseEvent): void {
-    this._event = event;
-    super.onMouseHover(grid, event);
-  }
 
   cursorByRegion(): string {
     const hit = this._grid.hitTest(this._event.clientX, this._event.clientY);
     switch (hit.region) {
-      case 'row-header' || 'column-header': {
+      case 'row-header': {
+        return 'grab';
+      }
+      case 'column-header': {
         return 'grab';
       }
       default: {
-        return 'none';
+        return 'default';
       }
     }
+  }
+
+  onMouseHover(grid: DataGrid, event: MouseEvent): void {
+    this._event = event;
+    super.onMouseHover(grid, event);
   }
 
   /**
@@ -56,12 +62,11 @@ export class RichMouseHandler extends BasicMouseHandler {
    */
   onMouseDown(grid: DataGrid, event: MouseEvent): void {
     this._event = event;
-    // Unpack the event.
-    if (this._cursor === 'grab') {
-      this.handleGrabbing();
-      return;
-    }
     super.onMouseDown(grid, event);
+    if (this._cursor === 'grab') {
+      this._cursor = 'grabbing';
+      this.handleGrabbing();
+    }
     return;
   }
 
@@ -86,8 +91,8 @@ export class RichMouseHandler extends BasicMouseHandler {
 
     // Create the temporary press data.
     const clientY = this._event.clientY;
-    this.moveData = { type, region: rgn, index, size, clientY, override };
-    console.log(this.moveData);
+    this._moveData = { type, region: rgn, index, size, clientY, override };
+    console.log(this._moveData);
     return;
   }
 
@@ -100,10 +105,10 @@ export class RichMouseHandler extends BasicMouseHandler {
    */
   onMouseMove(grid: DataGrid, event: MouseEvent): void {
     // Fetch the press data.
-    if (this.moveData) {
+    if (this._moveData) {
       const model = grid.dataModel as EditableDSVModel;
-      model.moveRow(this.moveData.index);
-      this.moveData = null;
+      model.moveRow(this._moveData.index);
+      this._moveData = null;
     }
     super.onMouseMove(grid, event);
     return;
@@ -125,7 +130,7 @@ export class RichMouseHandler extends BasicMouseHandler {
   private _grid: DataGrid;
   private _event: MouseEvent;
   private _cursor: string | null;
-  protected moveData: RowMoveData | null;
+  private _moveData: RowMoveData | null;
   private _rightClickSignal = new Signal<this, Array<number>>(this);
 }
 
