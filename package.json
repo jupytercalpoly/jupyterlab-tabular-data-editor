@@ -29,19 +29,22 @@
     "clean": "rimraf lib tsconfig.tsbuildinfo",
     "eslint": "eslint . --ext .ts,.tsx --fix",
     "eslint:check": "eslint . --ext .ts,.tsx",
+    "test": "jest",
+    "test:cov": "jest --collect-coverage",
     "prepare": "jlpm run clean && jlpm run build",
     "watch": "tsc -w"
   },
   "dependencies": {
     "@jupyterlab/application": "^2.0.0",
-    "@jupyterlab/apputils": "2.1.1",
-    "@jupyterlab/coreutils": "4.1.0",
+    "@jupyterlab/apputils": "^2.2.0",
+    "@jupyterlab/coreutils": "^4.2.0",
     "@jupyterlab/csvviewer-extension": "^2.1.2",
     "@jupyterlab/docregistry": "2.1.2",
     "@jupyterlab/mainmenu": "^2.1.1",
     "@lumino/algorithm": "^1.2.3",
     "@lumino/coreutils": "^1.4.2",
     "@lumino/datagrid": "^0.6.0",
+    "@lumino/datastore": "^0.10.2",
     "@lumino/default-theme": "^0.4.2",
     "@lumino/disposable": "^1.3.5",
     "@lumino/keyboard": "^1.2.2",
@@ -49,19 +52,30 @@
     "@lumino/signaling": "^1.3.5",
     "@lumino/widgets": "^1.11.1",
     "@types/codemirror": "^0.0.96",
-    "tde-csvviewer": "1.0.0"
+    "tde-csvviewer": "^1.0.3"
   },
   "devDependencies": {
+    "@babel/core": "^7",
+    "@babel/preset-env": "^7",
+    "@jupyterlab/testutils": "^2.1.2",
+    "@types/jest": "^24",
     "@typescript-eslint/eslint-plugin": "^2.25.0",
     "@typescript-eslint/parser": "^2.25.0",
+    "canvas": "^2.6.1",
+    "enzyme": "^3.11.0",
+    "enzyme-adapter-react-16": "^1.15.2",
     "eslint": "^6.8.0",
     "eslint-config-prettier": "^6.10.1",
     "eslint-plugin-prettier": "^3.1.2",
     "husky": ">=4",
+    "jest": "^24",
+    "jest-canvas-mock": "^2.2.0",
+    "jest-fetch-mock": "^3.0.3",
     "lint-staged": ">=10",
     "prettier": "1.16.4",
     "rimraf": "^2.6.1",
-    "typescript": "~3.7.0"
+    "ts-jest": "^24",
+    "typescript": "^3.9.6"
   },
   "sideEffects": [
     "style/*.css"
@@ -75,6 +89,8 @@
     }
   },
   "lint-staged": {
-    "*.{js,ts}": ["eslint --cache --fix"]
+    "*.{js,ts}": [
+      "eslint --cache --fix"
+    ]
   }
 }

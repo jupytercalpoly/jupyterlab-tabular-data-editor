@@ -1,4 +1,5 @@
 import { ActivityMonitor } from '@jupyterlab/coreutils';
+// import { toArray } from '@lumino/algorithm';
 
 import {
   ABCWidgetFactory,
@@ -24,8 +25,19 @@ import {
 import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget } from '@lumino/widgets';
 import EditableDSVModel from './model';
+// import { ICellSelection } from './model';
 import RichMouseHandler from './handler';
+import { numberToCharacter } from './_helper';
+import { toArray } from '@lumino/algorithm';
 
+import {
+  SaveButton,
+  UndoButton,
+  CutButton,
+  CopyButton,
+  PasteButton,
+  FilterButton
+} from './toolbar';
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
 const RENDER_TIMEOUT = 1000;
@@ -41,12 +53,13 @@ export class EditableCSVViewer extends Widget {
     const layout = (this.layout = new PanelLayout());
 
     this.addClass(CSV_CLASS);
+
     this._grid = new DataGrid({
       defaultSizes: {
-        rowHeight: 24,
+        rowHeight: 28,
         columnWidth: 144,
         rowHeaderWidth: 64,
-        columnHeaderHeight: 36
+        columnHeaderHeight: 32
       },
       headerVisibility: 'none'
     });
@@ -57,7 +70,7 @@ export class EditableCSVViewer extends Widget {
     this._grid.copyConfig = {
       separator: '\t',
       format: DataGrid.copyFormatGeneric,
-      headers: 'all',
+      headers: 'none',
       warningThreshold: 1e6
     };
     const handler = new RichMouseHandler();
@@ -80,10 +93,7 @@ export class EditableCSVViewer extends Widget {
       this._monitor.activityStopped.connect(this._updateGrid, this);
     });
     this._grid.editingEnabled = true;
-    this.addRowSignal.connect(this._addRow, this);
-    this.addColSignal.connect(this._addCol, this);
-    this.removeRowSignal.connect(this._removeRow, this);
-    this.removeColSignal.connect(this._removeCol, this);
+    this.changeModelSignal.connect(this._changeModel, this);
   }
 
   /**
@@ -96,7 +106,7 @@ export class EditableCSVViewer extends Widget {
   /**
    * A promise that resolves when the csv viewer is ready to be revealed.
    */
-  get revealed() {
+  get revealed(): Promise<void> {
     return this._revealed.promise;
   }
 
@@ -124,7 +134,7 @@ export class EditableCSVViewer extends Widget {
     this._grid.style = value;
   }
 
-  get coords(): Array<number> {
+  get coords(): Array<number | null> {
     return [this._row, this._column];
   }
 
@@ -150,19 +160,8 @@ export class EditableCSVViewer extends Widget {
     return this._grid.dataModel as EditableDSVModel;
   }
 
-  get addRowSignal(): Signal<this, void> {
-    return this._addRowSignal;
-  }
-  get addColSignal(): Signal<this, void> {
-    return this._addColSignal;
-  }
-
-  get removeRowSignal(): Signal<this, void> {
-    return this._removeRowSignal;
-  }
-
-  get removeColSignal(): Signal<this, void> {
-    return this._removeColSignal;
+  get changeModelSignal(): Signal<this, string> {
+    return this._changeModelSignal;
   }
 
   /**
@@ -190,22 +189,94 @@ export class EditableCSVViewer extends Widget {
     this.node.focus();
   }
 
+  /*
+  Guess the row delimiter if it was not supplied. 
+  This will be fooled if a different line delimiter possibility appears in the first row.
+  */
+  private _guessRowDelimeter(data: string): string {
+    const i = data.slice(0, 5000).indexOf('\r');
+    if (i === -1) {
+      return '\n';
+    } else if (data[i + 1] === '\n') {
+      return '\r\n';
+    } else {
+      return '\r';
+    }
+  }
+
+  /*
+  Counts the occurrences of a substring from a given string
+  */
+  private _countOccurrences(
+    string: string,
+    substring: string,
+    rowDelimiter: string
+  ): number {
+    let numCol = 0;
+    let pos = 0;
+    const l = substring.length;
+    const firstRow = string.slice(0, string.indexOf(rowDelimiter));
+
+    pos = firstRow.indexOf(substring, pos);
+    while (pos !== -1) {
+      numCol++;
+      pos += l;
+      pos = firstRow.indexOf(substring, pos);
+    }
+    // number of columns is the amount of columns + 1
+    return numCol + 1;
+  }
+
+  /*
+  Adds the a column header of alphabets to the top of the data (A..Z,AA..ZZ,AAA...)
+  */
+  private _buildColHeader(colDelimiter: string): string {
+    const rawData = this._context.model.toString();
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    // when the model is first created, we don't know how many columns or what the row delimeter is
+    const rowDelimiter = this._guessRowDelimeter(rawData);
+    const numCol = this._countOccurrences(rawData, colDelimiter, rowDelimiter);
+
+    // if only single alphabets fix the string
+    if (numCol <= 26) {
+      return (
+        alphabet
+          .slice(0, numCol)
+          .split('')
+          .join(colDelimiter) + rowDelimiter
+      );
+    }
+    // otherwise compute the column header with multi-letters (AA..)
+    else {
+      // get all single letters
+      let columnHeader = alphabet.split('').join(colDelimiter);
+      // find the rest
+      for (let i = 27; i < numCol; i++) {
+        columnHeader += colDelimiter + numberToCharacter(i);
+      }
+      return columnHeader + rowDelimiter;
+    }
+  }
+
   /**
    * Create the model for the grid.
    */
   protected _updateGrid(): void {
-    const data = this._context.model.toString();
-    const delimiter = ',';
-    const oldModel = this._grid.dataModel as EditableDSVModel;
-    const dataModel = (this._grid.dataModel = new EditableDSVModel({
-      data,
-      delimiter
-    }));
-    this._grid.selectionModel = new BasicSelectionModel({ dataModel });
-    if (oldModel && oldModel.dsvModel) {
-      oldModel.dsvModel.dispose();
+    const delimiter = this.delimiter;
+    const model = this._grid.dataModel as EditableDSVModel;
+    let data: string;
+
+    if (!model) {
+      const header = this._buildColHeader(this.delimiter);
+      data = header + this._context.model.toString();
+      const dataModel = (this._grid.dataModel = new EditableDSVModel({
+        data,
+        delimiter
+      }));
+      this._grid.selectionModel = new BasicSelectionModel({ dataModel });
+      dataModel.onChangedSignal.connect(this._updateModel, this);
+      dataModel.cancelEditingSignal.connect(this._cancelEditing, this);
     }
-    dataModel.onChangedSignal.connect(this._updateModel, this);
   }
 
   /**
@@ -231,25 +302,84 @@ export class EditableCSVViewer extends Widget {
     });
   }
 
-  private _updateModel(this: EditableCSVViewer): void {
-    const dataModel = this._grid.dataModel as EditableDSVModel;
-    this.context.model.fromString(dataModel.dsvModel.rawData);
+  private _updateModel(emitter: EditableDSVModel, data: string): void {
+    this.context.model.fromString(data);
   }
 
-  private _addRow(this: EditableCSVViewer): void {
-    this.dataModel.addRow(this._row);
+  private _cancelEditing(emitter: EditableDSVModel): void {
+    this._grid.editorController.cancel();
   }
 
-  private _addCol(this: EditableCSVViewer): void {
-    this.dataModel.addColumn(this._column);
+  private _changeModel(emitter: EditableCSVViewer, type: string): void {
+    switch (type) {
+      case 'add-row': {
+        this.dataModel.addRow(this._row);
+        break;
+      }
+      case 'add-column': {
+        this.dataModel.addColumn(this._column);
+        break;
+      }
+      case 'remove-row': {
+        this.dataModel.removeRow(this._row);
+        break;
+      }
+      case 'remove-column': {
+        this.dataModel.removeColumn(this._column);
+        break;
+      }
+      case 'copy-cells': {
+        this._grid.copyToClipboard();
+        break;
+      }
+      case 'cut-cells': {
+        this._grid.copyToClipboard();
+        const { r1, c1, r2, c2 } = this.getSelectedRange();
+        this.dataModel.cut({
+          startRow: r1,
+          startColumn: c1,
+          endRow: r2,
+          endColumn: c2
+        });
+        break;
+      }
+      case 'undo': {
+        this.dataModel.undo();
+        break;
+      }
+      case 'redo': {
+        this.dataModel.redo();
+        break;
+      }
+    }
   }
 
-  private _removeRow(this: EditableCSVViewer): void {
-    this.dataModel.removeRow(this._row);
+  protected getSelectedRange(): any {
+    const selections = toArray(this._grid.selectionModel.selections());
+    if (selections.length === 0) {
+      return;
+    }
+    return selections[0];
   }
 
-  private _removeCol(this: EditableCSVViewer): void {
-    this.dataModel.removeCol(this._column);
+  protected onAfterAttach(msg: Message): void {
+    super.onAfterAttach(msg);
+    this.node.addEventListener('paste', this._handlePaste.bind(this));
+    // this._grid.node.addEventListener("paste", function(ev) {
+    //   const data = ev.clipboardData.getData('text/plain');
+    //   console.log(data)
+    //   ev.preventDefault();
+    //   ev.stopPropagation();
+    // })
+  }
+  private _handlePaste(event: ClipboardEvent): void {
+    const copiedText: string = event.clipboardData.getData('text/plain');
+    // prevent default behavior
+    event.preventDefault();
+    event.stopPropagation();
+    const { r1, c1 } = this.getSelectedRange();
+    console.log(copiedText);
+    this.dataModel.paste({ row: r1, column: c1 }, copiedText);
   }
 
   private _onRightClick(
@@ -259,8 +389,8 @@ export class EditableCSVViewer extends Widget {
     [this._row, this._column] = coords;
   }
 
-  private _row: number | null;
-  private _column: number | null;
+  private _row: number;
+  private _column: number;
   private _context: DocumentRegistry.Context;
   private _grid: DataGrid;
   private _searchService: GridSearchService;
@@ -273,10 +403,9 @@ export class EditableCSVViewer extends Widget {
   private _baseRenderer: TextRenderConfig | null = null;
 
   // Signals for basic editing functionality
-  private _addRowSignal: Signal<this, void> = new Signal<this, void>(this);
-  private _addColSignal: Signal<this, void> = new Signal<this, void>(this);
-  private _removeRowSignal: Signal<this, void> = new Signal<this, void>(this);
-  private _removeColSignal: Signal<this, void> = new Signal<this, void>(this);
+  private _changeModelSignal: Signal<this, string> = new Signal<this, string>(
+    this
+  );
 }
 
 // Override the CSVViewer's _updateGrid method to set the datagrid's model to an EditableDataModel
@@ -290,6 +419,24 @@ export class EditableCSVDocumentWidget extends DocumentWidget<
     content = content || new EditableCSVViewer({ context });
     reveal = Promise.all([reveal, content.revealed]);
     super({ context, content, reveal, ...other });
+
+    const saveData = new SaveButton({ selected: content.delimiter });
+    this.toolbar.addItem('save-data', saveData);
+
+    const undoChange = new UndoButton({ selected: content.delimiter });
+    this.toolbar.addItem('undo', undoChange);
+
+    const cutData = new CutButton({ selected: content.delimiter });
+    this.toolbar.addItem('cut-data', cutData);
+
+    const copyData = new CopyButton({ selected: content.delimiter });
+    this.toolbar.addItem('copy-data', copyData);
+
+    const pasteData = new PasteButton({ selected: content.delimiter });
+    this.toolbar.addItem('pastte-data', pasteData);
+
+    const filterData = new FilterButton({ selected: content.delimiter });
+    this.toolbar.addItem('filter-data', filterData);
   }
 
   /**

@@ -24,7 +24,7 @@ import { EditableCSVViewer, EditableCSVViewerFactory } from './widget';
 /**
  * The name of the factories that creates widgets.
  */
-const FACTORY_CSV = 'CSVTabularDataEditor';
+const FACTORY_CSV = 'Tabular Data Editor';
 // const FACTORY_TSV = 'TSVTable';
 
 /**
@@ -78,8 +78,8 @@ function activateCsv(
 
     if (ft) {
       widget.title.icon = ft.icon;
-      widget.title.iconClass = ft.iconClass;
-      widget.title.iconLabel = ft.iconLabel;
+      widget.title.iconClass = ft.iconClass || '';
+      widget.title.iconLabel = ft.iconLabel || '';
     }
     // Set the theme for the new widget.
     widget.content.style = style;
@@ -118,6 +118,9 @@ function activateCsv(
   addCommands(app, tracker);
 }
 
+/*
+Creates commands, adds them to the context menu, and adds keybindings for common functionality
+*/
 function addCommands(
   app: JupyterFrontEnd,
   tracker: WidgetTracker<IDocumentWidget<EditableCSVViewer>>
@@ -129,31 +132,68 @@ function addCommands(
     label: 'Add Row',
     execute: () => {
       // emit a signal to the EditableDSVModel
-      tracker.currentWidget.content.addRowSignal.emit(null);
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('add-row');
     }
   });
 
   commands.addCommand(CommandIDs.removeRow, {
     label: 'Remove Row',
     execute: () => {
-      tracker.currentWidget.content.removeRowSignal.emit(null);
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('remove-row');
     }
   });
 
   commands.addCommand(CommandIDs.addColumn, {
     label: 'Add Column',
     execute: () => {
-      tracker.currentWidget.content.addColSignal.emit(null);
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('add-column');
     }
   });
 
   commands.addCommand(CommandIDs.removeColumn, {
     label: 'Remove Column',
     execute: () => {
-      tracker.currentWidget.content.removeColSignal.emit(null);
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('remove-column');
     }
   });
 
+  commands.addCommand(CommandIDs.copy, {
+    label: 'Copy',
+    execute: () => {
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('copy-cells');
+    }
+  });
+
+  commands.addCommand(CommandIDs.cut, {
+    label: 'Cut',
+    execute: () => {
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('cut-cells');
+    }
+  });
+
+  commands.addCommand(CommandIDs.undo, {
+    label: 'Undo',
+    execute: () => {
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('undo');
+    }
+  });
+
+  commands.addCommand(CommandIDs.redo, {
+    label: 'Redo',
+    execute: () => {
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('redo');
+    }
+  });
+
+  // Add items to the context menu
   app.contextMenu.addItem({
     command: CommandIDs.addRow,
     selector: SELECTOR,
@@ -177,6 +217,45 @@ function addCommands(
     selector: SELECTOR,
     rank: 0
   });
+
+  app.contextMenu.addItem({
+    command: CommandIDs.copy,
+    selector: SELECTOR,
+    rank: 0
+  });
+
+  app.contextMenu.addItem({
+    command: CommandIDs.cut,
+    selector: SELECTOR,
+    rank: 0
+  });
+
+  // add keybindings
+  app.commands.addKeyBinding({
+    command: CommandIDs.copy,
+    args: {},
+    keys: ['Accel C'],
+    selector: SELECTOR
+  });
+
+  app.commands.addKeyBinding({
+    command: CommandIDs.cut,
+    args: {},
+    keys: ['Accel X'],
+    selector: SELECTOR
+  });
+  app.commands.addKeyBinding({
+    command: CommandIDs.undo,
+    args: {},
+    keys: ['Accel Z'],
+    selector: SELECTOR
+  });
+  app.commands.addKeyBinding({
+    command: CommandIDs.redo,
+    args: {},
+    keys: ['Accel Shift Z'],
+    selector: SELECTOR
+  });
 }
 
 export default [extension];
@@ -194,8 +273,8 @@ namespace Private {
     backgroundColor: 'white',
     headerBackgroundColor: '#EEEEEE',
     gridLineColor: 'rgba(20, 20, 20, 0.15)',
-    headerGridLineColor: 'rgba(20, 20, 20, 0.25)',
-    rowBackgroundColor: i => (i % 2 === 0 ? '#F5F5F5' : 'white')
+    headerGridLineColor: 'rgba(20, 20, 20, 0.25)'
+    //rowBackgroundColor: i => (i % 2 === 0 ? '#F5F5F5' : 'white')
   };
 
   /**
@@ -218,7 +297,7 @@ namespace Private {
     textColor: '#111111',
     matchBackgroundColor: '#FFFFE0',
     currentMatchBackgroundColor: '#FFFF00',
-    horizontalAlignment: 'right'
+    horizontalAlignment: 'center'
   };
 
   /**
@@ -233,8 +312,13 @@ namespace Private {
 }
 
 const CommandIDs = {
-  addColumn: 'tde:add-row',
-  addRow: 'tde:add-column',
+  addRow: 'tde:add-row',
+  addColumn: 'tde:add-column',
   removeRow: 'tde-remove-row',
-  removeColumn: 'tde:remove-column'
+  removeColumn: 'tde:remove-column',
+  copy: 'tde:copy',
+  paste: 'tde:paste',
+  cut: 'tde:cut',
+  undo: 'tde:undo',
+  redo: 'tde:redo'
 };
