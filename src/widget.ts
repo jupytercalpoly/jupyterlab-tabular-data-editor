@@ -26,7 +26,7 @@ import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget } from '@lumino/widgets';
 import EditableDSVModel from './model';
 // import { ICellSelection } from './model';
-import RichMouseHandler from './handler';
+import { RichMouseHandler } from './handler';
 import { numberToCharacter } from './_helper';
 import { toArray } from '@lumino/algorithm';
 
@@ -73,7 +73,7 @@ export class EditableCSVViewer extends Widget {
       headers: 'none',
       warningThreshold: 1e6
     };
-    const handler = new RichMouseHandler();
+    const handler = new RichMouseHandler({ grid: this._grid });
     this._grid.mouseHandler = handler;
     handler.rightClickSignal.connect(this._onRightClick, this);
 
