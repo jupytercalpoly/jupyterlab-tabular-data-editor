@@ -49,7 +49,9 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
     this._target = searchTarget;
     this._query = query;
     searchTarget.content.searchService.find(query);
-    return this.matches;
+    this._matches = searchTarget.content.searchService.matches;
+    this._currentMatch = searchTarget.content.searchService.currentMatch;
+    return this._matches;
   }
 
   /**
@@ -60,6 +62,8 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
    * begin a new search.
    */
   async endQuery(): Promise<void> {
+    this._matches = [];
+    this._currentMatch = null;
     this._target.content.searchService.clear();
   }
 
@@ -79,8 +83,10 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
    * @returns A promise that resolves once the action has completed.
    */
   async highlightNext(): Promise<ISearchMatch | undefined> {
-    this._target.content.searchService.find(this._query);
-    return undefined;
+    this._currentMatch = this._target.content.searchService.highlightNext(
+      false
+    );
+    return this._currentMatch;
   }
 
   /**
@@ -89,8 +95,8 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
    * @returns A promise that resolves once the action has completed.
    */
   async highlightPrevious(): Promise<ISearchMatch | undefined> {
-    this._target.content.searchService.find(this._query, true);
-    return undefined;
+    this._currentMatch = this._target.content.searchService.highlightNext(true);
+    return this._currentMatch;
   }
 
   /**
@@ -100,7 +106,17 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
    * @returns A promise that resolves once the action has completed.
    */
   async replaceCurrentMatch(newText: string): Promise<boolean> {
-    return false;
+    const row = this._target.content.searchService.row;
+    const column = this._target.content.searchService.column;
+    //console.log(this._target.content.searchService);
+    this._target.content.dataModel.setData('body', row, column, newText);
+
+    // requery since the target was updated
+    // TODO: refactor to just remove the element that was replaced instead of requerying all of the data
+    this.endQuery();
+    await this.startQuery(this._query, this._target);
+    //console.log(this._currentMatch);
+    return true;
   }
 
   /**
@@ -110,6 +126,10 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
    * @returns A promise that resolves once the action has completed.
    */
   async replaceAllMatches(newText: string): Promise<boolean> {
+    // TODO: Fix and debug
+    // while (this.matches.length > 0) {
+    //   this.replaceCurrentMatch(newText);
+    // }
     return false;
   }
 
@@ -121,14 +141,29 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
   }
 
   /**
-   * The same list of matches provided by the startQuery promise resoluton
+   * The same list of matches provided by the startQuery promise resolution
    */
-  readonly matches: ISearchMatch[] = [];
+  get matches(): ISearchMatch[] {
+    // Ensure that no other fn can overwrite matches index property
+    // We shallow clone each node
+    return this._matches
+      ? this._matches.map(m => Object.assign({}, m))
+      : this._matches;
+  }
 
   /**
    * The current index of the selected match.
    */
-  readonly currentMatchIndex: number | null = null;
+  get currentMatchIndex(): number | null {
+    if (!this._currentMatch) {
+      return null;
+    }
+    return this._currentMatch.index;
+  }
+
+  get currentMatch(): ISearchMatch | null {
+    return this._currentMatch;
+  }
 
   /**
    * Set to true if the widget under search is read-only, false
@@ -137,6 +172,8 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
    */
   readonly isReadOnly = false;
 
+  private _currentMatch: ISearchMatch | null;
+  private _matches: ISearchMatch[] = [];
   private _target: CSVDocumentWidget;
   private _query: RegExp;
   private _changed = new Signal<this, void>(this);
