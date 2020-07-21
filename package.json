@@ -52,7 +52,7 @@
     "@lumino/widgets": "^1.11.1",
     "@types/codemirror": "^0.0.96",
     "tde-csvviewer": "1.0.2",
-    "tde-datagrid": "1.0.2"
+    "tde-datagrid": "^1.0.4"
   },
   "devDependencies": {
     "@babel/core": "^7",
