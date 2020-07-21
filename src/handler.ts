@@ -248,32 +248,24 @@ export type RowMoveData = {
   /**
    * The descriminated type for the data.
    */
-  readonly type: 'row-move';
+  readonly type: 'move';
 
   /**
    * The row region which holds the section being resized.
    */
-  readonly region: DataModel.RowRegion;
+  readonly region: DataModel.CellRegion;
 
-  /**
-   * The index of the section being moved.
-   */
-  readonly index: number;
+  readonly row: number;
 
-  /**
-   * The original size of the section.
-   */
-  readonly size: number;
+  readonly column: number;
 
-  /**
-   * The original client Y position of the mouse.
-   */
-  readonly clientY: number;
-
-  /**
-   * The disposable to clear the cursor override.
-   */
   readonly override: IDisposable;
+
+  readonly localX: number;
+
+  readonly localY: number;
+
+  readonly timeout: number;
 };
 
 export declare namespace RichMouseHandler {
