@@ -436,15 +436,49 @@ export default class EditableDSVModel extends MutableDataModel {
     );
   }
 
-  moveRow(row: number): void {
+  moveRow(startRow: number, endRow: number): void {
     const model = this._dsvModel;
+    let rowValues: string;
+    // We need to order the operations so as not to disrupt getOffsetIndex
+    if (startRow < endRow) {
+      // we are moving a row down, insert below before deleting above
 
+      // get values from sliceOut without removing them
+      rowValues = this.sliceOut(model, { row: startRow }, false, true);
+
+      // see if the destination is the row end
+      if (endRow === this.rowCount() - 1) {
+        // rowValues should then start with rowDelimeter and not have trailing one
+        rowValues =
+          model.rowDelimiter +
+          rowValues.slice(0, rowValues.length - model.rowDelimiter.length);
+      }
+      // insert row Values at target row
+      this.insertAt(rowValues, model, { row: endRow + 1 });
+      // now we are safe to remove the row
+      this.sliceOut(model, { row: startRow });
+    } else {
+      // we are moving a row up, slice below before adding above
+      rowValues = this.sliceOut(model, { row: startRow });
+
+      // see if we are moving the end row up
+      if (startRow === this.rowCount() - 1) {
+        // need to remove begining row delimeter and add trailing row delimeter
+        rowValues =
+          rowValues.slice(model.rowDelimiter.length) + model.rowDelimiter;
+      }
+
+      // now we can insert the values in the target row
+      this.insertAt(rowValues, model, { row: endRow });
+    }
+
+    // emit the changes to the UI
     const change: DataModel.ChangedArgs = {
       type: 'rows-moved',
       region: 'body',
-      index: model.getOffsetIndex(0, 0), //model.getOffsetIndex(row, 0),
+      index: startRow,
       span: 1,
-      destination: model.getOffsetIndex(1, model.columnCount('body'))
+      destination: endRow
     };
 
     this.emitChanged(change);

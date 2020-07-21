@@ -4,7 +4,8 @@ import {
   BasicMouseHandler,
   DataGrid,
   DataModel,
-  ResizeHandle
+  ResizeHandle,
+  SelectionModel
 } from 'tde-datagrid';
 import { Drag } from '@lumino/dragdrop';
 import { Signal } from '@lumino/signaling';
@@ -70,29 +71,35 @@ export class RichMouseHandler extends BasicMouseHandler {
     return;
   }
 
+  release() {
+    if (this._moveData) {
+      this._moveData.override.dispose();
+      this._moveData = null;
+    }
+    super.release();
+  }
   handleGrabbing(): void {
     const hit = this._grid.hitTest(this._event.clientX, this._event.clientY);
-    const { region, row } = hit;
-    // Set up the resize data type.
-    const type: 'row-move' = 'row-move';
-
-    // Determine the row region.
-    const rgn: DataModel.RowRegion =
-      region === 'row-header' ? 'body' : 'column-header';
-
-    // Determine the section index.
-    const index = row; //handle === 'top' ? row - 1 : row;
-
-    // Fetch the section size.
-    const size = this._grid.rowSize(rgn, index);
+    const { region, row, column } = hit;
+    // if region is void, bail early
+    if (region === 'void') {
+      return;
+    }
+    const type = 'move';
 
     // Override the document cursor.
     const override = Drag.overrideCursor('grabbing');
 
-    // Create the temporary press data.
-    const clientY = this._event.clientY;
-    this._moveData = { type, region: rgn, index, size, clientY, override };
-    console.log(this._moveData);
+    this._moveData = {
+      type,
+      region,
+      row,
+      column,
+      override,
+      localX: -1,
+      localY: -1,
+      timeout: -1
+    };
     return;
   }
 
@@ -106,11 +113,84 @@ export class RichMouseHandler extends BasicMouseHandler {
   onMouseMove(grid: DataGrid, event: MouseEvent): void {
     // Fetch the press data.
     if (this._moveData) {
-      const model = grid.dataModel as EditableDSVModel;
-      model.moveRow(this._moveData.index);
-      this._moveData = null;
+      this.handleMove(grid, event);
+    } else {
+      super.onMouseMove(grid, event);
     }
-    super.onMouseMove(grid, event);
+    return;
+  }
+
+  /**
+   *
+   * @param grid
+   * @param event
+   */
+  handleMove(grid: DataGrid, event: MouseEvent) {
+    // TODO: handle UI stuff.
+
+    const model = grid.selectionModel;
+
+    // Map the position to virtual coordinates.
+    let { vx, vy } = grid.mapToVirtual(event.clientX, event.clientY);
+
+    // Clamp the coordinates to the limits.
+    vx = Math.max(0, Math.min(vx, grid.bodyWidth - 1));
+    vy = Math.max(0, Math.min(vy, grid.bodyHeight - 1));
+
+    // Set up the selection variables.
+    let r1: number;
+    let c1: number;
+    let r2: number;
+    let c2: number;
+    const cursorRow = model.cursorRow;
+    const cursorColumn = model.cursorColumn;
+    const clear: SelectionModel.ClearMode = 'current';
+
+    // Compute the selection based pressed region.
+    if (this._moveData.region === 'row-header') {
+      r1 = grid.rowAt('body', vy);
+      r2 = grid.rowAt('body', vy);
+      c1 = 0;
+      c2 = Infinity;
+    } else if (this._moveData.region === 'column-header') {
+      r1 = 0;
+      r2 = Infinity;
+      c1 = grid.columnAt('body', vx);
+      c2 = grid.columnAt('body', vx);
+    } else {
+      r1 = cursorRow;
+      r2 = grid.rowAt('body', vy);
+      c1 = cursorColumn;
+      c2 = grid.columnAt('body', vx);
+    }
+    // Make the selection.
+    model.select({ r1, c1, r2, c2, cursorRow, cursorColumn, clear });
+  }
+
+  /**
+   *
+   * @param grid
+   * @param event
+   */
+  onMouseUp(grid: DataGrid, event: MouseEvent): void {
+    if (this._moveData) {
+      let { vx, vy } = grid.mapToVirtual(event.clientX, event.clientY);
+      // Clamp the coordinates to the limits.
+      vx = Math.max(0, Math.min(vx, grid.bodyWidth - 1));
+      vy = Math.max(0, Math.min(vy, grid.bodyHeight - 1));
+      const model = grid.dataModel as EditableDSVModel;
+      if (this._moveData.region === 'column-header') {
+        console.log(vx);
+        // const startColumn = this._moveData.column;
+        // const endColumn = grid.columnAt("body", vx);
+        // model.moveColumn(startColumn, endColumn);
+      } else if (this._moveData.region === 'row-header') {
+        const startRow = this._moveData.row;
+        const endRow = grid.rowAt('body', vy);
+        model.moveRow(startRow, endRow);
+      }
+    }
+    this.release();
     return;
   }
 
@@ -130,40 +210,32 @@ export class RichMouseHandler extends BasicMouseHandler {
   private _grid: DataGrid;
   private _event: MouseEvent;
   private _cursor: string | null;
-  private _moveData: RowMoveData | null;
+  private _moveData: MoveData | null;
   private _rightClickSignal = new Signal<this, Array<number>>(this);
 }
 
-export type RowMoveData = {
+export type MoveData = {
   /**
    * The descriminated type for the data.
    */
-  readonly type: 'row-move';
+  readonly type: 'move';
 
   /**
    * The row region which holds the section being resized.
    */
-  readonly region: DataModel.RowRegion;
+  readonly region: DataModel.CellRegion;
 
-  /**
-   * The index of the section being moved.
-   */
-  readonly index: number;
+  readonly row: number;
 
-  /**
-   * The original size of the section.
-   */
-  readonly size: number;
+  readonly column: number;
 
-  /**
-   * The original client Y position of the mouse.
-   */
-  readonly clientY: number;
-
-  /**
-   * The disposable to clear the cursor override.
-   */
   readonly override: IDisposable;
+
+  readonly localX: number;
+
+  readonly localY: number;
+
+  readonly timeout: number;
 };
 
 export declare namespace RichMouseHandler {
