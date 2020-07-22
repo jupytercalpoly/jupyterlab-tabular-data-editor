@@ -48,7 +48,17 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
   ): Promise<ISearchMatch[]> {
     this._target = searchTarget;
     this._query = query;
+
+    // when changes are made to the datamodel, rerun the search
+    searchTarget.content.dataModel.onChangedSignal.connect(
+      this.rerunSearch,
+      this
+    );
+
+    // query for the matches in the model data
     searchTarget.content.searchService.find(query);
+
+    // update match variables in CSVSearchProvider
     this._matches = searchTarget.content.searchService.matches;
     this._currentMatch = searchTarget.content.searchService.currentMatch;
     return this._matches;
@@ -101,7 +111,6 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
 
   /**
    * Replace the currently selected match with the provided text
-   * Not implemented in the CSV viewer as it is read-only.
    *
    * @returns A promise that resolves once the action has completed.
    */
@@ -132,7 +141,13 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
     return false;
   }
 
-  async refreshQuery(): Promise<boolean> {
+  /**
+   * Reruns the search query when changes a made
+   * Used when changes are made to the data model
+   *
+   */
+  async rerunSearch(): Promise<boolean> {
+    //console.log('a change was made');
     this.endQuery();
     this.startQuery(this._query, this._target);
     return true;

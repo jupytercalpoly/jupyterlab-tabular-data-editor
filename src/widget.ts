@@ -199,7 +199,6 @@ export class GridSearchService {
     //     this._looping = true;
     //   }
     // }
-    // return this._matches.
     if (this._matches.length > 0) {
       this._currentMatch = this._matches[0];
     }
