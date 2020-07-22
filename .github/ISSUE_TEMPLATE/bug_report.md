@@ -2,7 +2,7 @@
 name: Bug report
 about: Create a report to help us improve the JupyterLab Tabular Data Editor extension
 title: ''
-labels: ''
+labels: 'bug'
 assignees: ''
 
 ---
