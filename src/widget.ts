@@ -197,6 +197,7 @@ export class GridSearchService {
     return this._query;
   }
 
+  // TODO: Select the cell that was highlighted
   highlightNext(reverse: boolean): ISearchMatch | undefined {
     if (this._matches.length === 0) {
       return undefined;
@@ -592,8 +593,6 @@ export class EditableCSVViewer extends Widget {
     this
   );
 }
-
-// Override the CSVViewer's _updateGrid method to set the datagrid's model to an EditableDataModel
 
 export class EditableCSVDocumentWidget extends DocumentWidget<
   EditableCSVViewer
