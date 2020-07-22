@@ -68,6 +68,12 @@ export class RichMouseHandler extends BasicMouseHandler {
       this._cursor = 'grabbing';
       this.handleGrabbing();
     }
+    let { left, top } = grid.viewport.node.getBoundingClientRect();
+    console.log('x', event.clientX, 'y', event.clientY);
+    left = Math.floor(left);
+    top = Math.floor(top);
+    console.log('x', left + grid.headerWidth + grid.columnOffset('body', 0));
+    console.log('top', top);
     return;
   }
 
@@ -127,7 +133,6 @@ export class RichMouseHandler extends BasicMouseHandler {
    */
   handleMove(grid: DataGrid, event: MouseEvent): void {
     // TODO: handle UI stuff.
-
     const model = grid.selectionModel;
 
     // Map the position to virtual coordinates.
@@ -180,7 +185,6 @@ export class RichMouseHandler extends BasicMouseHandler {
       vy = Math.max(0, Math.min(vy, grid.bodyHeight - 1));
       const model = grid.dataModel as EditableDSVModel;
       if (this._moveData.region === 'column-header') {
-        console.log(vx);
         const startColumn = this._moveData.column;
         const endColumn = grid.columnAt('body', vx);
         model.moveColumn(startColumn, endColumn);
