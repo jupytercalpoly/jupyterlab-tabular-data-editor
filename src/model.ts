@@ -345,6 +345,26 @@ export default class EditableDSVModel extends MutableDataModel {
           span: change.span
         };
         break;
+      case 'rows-moved':
+        model.rawData = modelData;
+        undoChange = {
+          type: 'rows-moved',
+          region: 'body',
+          index: change.destination,
+          destination: change.index,
+          span: change.span
+        };
+        break;
+      case 'columns-moved':
+        model.rawData = modelData;
+        undoChange = {
+          type: 'columns-moved',
+          region: 'body',
+          index: change.destination,
+          destination: change.index,
+          span: change.span
+        };
+        break;
     }
     this.handleEmits(undoChange);
   }
@@ -419,7 +439,7 @@ export default class EditableDSVModel extends MutableDataModel {
       span: 1,
       destination: endRow
     };
-
+    this.updateLitestore(change);
     this.handleEmits(change);
   }
 
@@ -501,7 +521,7 @@ export default class EditableDSVModel extends MutableDataModel {
       span: 1,
       destination: endColumn
     };
-
+    this.updateLitestore(change);
     this.handleEmits(change);
   }
 
