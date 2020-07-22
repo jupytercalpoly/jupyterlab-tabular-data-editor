@@ -2,7 +2,7 @@
 name: Feature request
 about: Suggest an idea for this JupyterLab Tabular Data Editor
 title: ''
-labels: ''
+labels: 'enhancement'
 assignees: ''
 
 ---
