@@ -83,6 +83,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
    */
   async endSearch(): Promise<void> {
     this._target.content.searchService.clear();
+    this._query = undefined;
   }
 
   /**
