@@ -1,4 +1,4 @@
-import { MutableDataModel, DataModel } from 'tde-datagrid';
+import { MutableDataModel, DataModel } from '@lumino/datagrid';
 import { DSVModel } from 'tde-csvviewer';
 import { Signal } from '@lumino/signaling';
 import { numberToCharacter } from './_helper';

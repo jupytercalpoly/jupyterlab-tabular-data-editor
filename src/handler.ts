@@ -6,7 +6,7 @@ import {
   DataModel,
   ResizeHandle,
   SelectionModel
-} from 'tde-datagrid';
+} from '@lumino/datagrid';
 import { Drag } from '@lumino/dragdrop';
 import { Signal } from '@lumino/signaling';
 import EditableDSVModel from './model';
