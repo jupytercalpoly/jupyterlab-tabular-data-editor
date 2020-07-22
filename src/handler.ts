@@ -125,7 +125,7 @@ export class RichMouseHandler extends BasicMouseHandler {
    * @param grid
    * @param event
    */
-  handleMove(grid: DataGrid, event: MouseEvent) {
+  handleMove(grid: DataGrid, event: MouseEvent): void {
     // TODO: handle UI stuff.
 
     const model = grid.selectionModel;
