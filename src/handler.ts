@@ -181,9 +181,9 @@ export class RichMouseHandler extends BasicMouseHandler {
       const model = grid.dataModel as EditableDSVModel;
       if (this._moveData.region === 'column-header') {
         console.log(vx);
-        // const startColumn = this._moveData.column;
-        // const endColumn = grid.columnAt("body", vx);
-        // model.moveColumn(startColumn, endColumn);
+        const startColumn = this._moveData.column;
+        const endColumn = grid.columnAt('body', vx);
+        model.moveColumn(startColumn, endColumn);
       } else if (this._moveData.region === 'row-header') {
         const startRow = this._moveData.row;
         const endRow = grid.rowAt('body', vy);

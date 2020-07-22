@@ -489,6 +489,93 @@ export default class EditableDSVModel extends MutableDataModel {
     );
   }
 
+  moveColumn(startColumn: number, endColumn: number): void {
+    const model = this._dsvModel;
+    // We need to order the operations so as not to disrupt getOffsetIndex
+    // this requires we perform the operation one value at a time
+    let value: string;
+    if (startColumn < endColumn) {
+      // we are moving a column left. Insert before deleting
+      // see if the destination is the final column
+      if (endColumn === this.columnCount() - 1) {
+        // define a function to send each value val, => ,val
+        const endForm = (val: string): string => {
+          return (
+            model.delimiter + val.slice(0, val.length - model.delimiter.length)
+          );
+        };
+        for (let row = this.rowCount() - 1; row >= 0; row--) {
+          value = this.sliceOut(
+            model,
+            { row: row, column: startColumn },
+            false,
+            true
+          );
+          // insert the value in the target column
+          this.insertAt(endForm(value), model, {
+            column: endColumn + 1,
+            row: row
+          });
+          // now we can slice out the value
+          this.sliceOut(model, { row: row, column: startColumn });
+        }
+      } else {
+        // otherwise, insert normally
+        for (let row = this.rowCount() - 1; row >= 0; row--) {
+          value = this.sliceOut(
+            model,
+            { row: row, column: startColumn },
+            false,
+            true
+          );
+          // insert the value in the target column
+          this.insertAt(value, model, { column: endColumn + 1, row: row });
+          // now we can slice out the value
+          this.sliceOut(model, { row: row, column: startColumn });
+        }
+      }
+    } else {
+      // see if we are moving the end column right
+      if (startColumn === this.columnCount() - 1) {
+        // define a function (,val) => val,
+        const undoEndFormat = (value: string): string => {
+          return value.slice(model.delimiter.length) + model.delimiter;
+        };
+        for (let row = this.rowCount() - 1; row >= 0; row--) {
+          value = this.sliceOut(model, { row: row, column: startColumn });
+          // insert the reformatted value in the target column
+          this.insertAt(undoEndFormat(value), model, {
+            column: endColumn,
+            row: row
+          });
+        }
+      } else {
+        // otherwise, insert normally
+        for (let row = this.rowCount() - 1; row >= 0; row--) {
+          value = this.sliceOut(model, { row: row, column: startColumn });
+          // insert the reformatted value in the target column
+          this.insertAt(value, model, { column: endColumn, row: row });
+        }
+      }
+    }
+
+    // emit the changes to the UI
+    const change: DataModel.ChangedArgs = {
+      type: 'columns-moved',
+      region: 'body',
+      index: startColumn,
+      span: 1,
+      destination: endColumn
+    };
+
+    this.emitChanged(change);
+    this._silenceDsvModel();
+    model.parseAsync();
+    this._onChangeSignal.emit(
+      this._dsvModel.rawData.slice(this.colHeaderLength)
+    );
+  }
+
   sliceOut(
     model: DSVModel,
     cellLoc: ICoordinates,
