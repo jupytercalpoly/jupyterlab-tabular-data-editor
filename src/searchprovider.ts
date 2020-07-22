@@ -106,15 +106,14 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
    * @returns A promise that resolves once the action has completed.
    */
   async replaceCurrentMatch(newText: string): Promise<boolean> {
-    const row = this._target.content.searchService.row;
-    const column = this._target.content.searchService.column;
+    const { line, column } = this._target.content.searchService.currentMatch;
     //console.log(this._target.content.searchService);
-    this._target.content.dataModel.setData('body', row, column, newText);
+    this._target.content.dataModel.setData('body', line, column, newText);
 
     // requery since the target was updated
     // TODO: refactor to just remove the element that was replaced instead of requerying all of the data
-    this.endQuery();
-    await this.startQuery(this._query, this._target);
+    // this.endQuery();
+    // await this.startQuery(this._query, this._target);
     //console.log(this._currentMatch);
     return true;
   }
@@ -131,6 +130,12 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
     //   this.replaceCurrentMatch(newText);
     // }
     return false;
+  }
+
+  async refreshQuery(): Promise<boolean> {
+    this.endQuery();
+    this.startQuery(this._query, this._target);
+    return true;
   }
 
   /**
