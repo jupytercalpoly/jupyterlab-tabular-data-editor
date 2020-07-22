@@ -50,10 +50,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
     this._query = query;
 
     // when changes are made to the datamodel, rerun the search
-    searchTarget.content.dataModel.onChangedSignal.connect(
-      this.rerunSearch,
-      this
-    );
+    searchTarget.content.dataModel.changed.connect(this.rerunSearch, this);
 
     // query for the matches in the model data
     searchTarget.content.searchService.find(query);
@@ -74,6 +71,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
   async endQuery(): Promise<void> {
     this._matches = [];
     this._currentMatch = null;
+    this._target.content.dataModel.changed.disconnect(this.rerunSearch, this);
     this._target.content.searchService.clear();
   }
 
@@ -116,14 +114,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
    */
   async replaceCurrentMatch(newText: string): Promise<boolean> {
     const { line, column } = this._target.content.searchService.currentMatch;
-    //console.log(this._target.content.searchService);
     this._target.content.dataModel.setData('body', line, column, newText);
-
-    // requery since the target was updated
-    // TODO: refactor to just remove the element that was replaced instead of requerying all of the data
-    // this.endQuery();
-    // await this.startQuery(this._query, this._target);
-    //console.log(this._currentMatch);
     return true;
   }
 
@@ -134,10 +125,10 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
    * @returns A promise that resolves once the action has completed.
    */
   async replaceAllMatches(newText: string): Promise<boolean> {
-    // TODO: Fix and debug
-    // while (this.matches.length > 0) {
-    //   this.replaceCurrentMatch(newText);
-    // }
+    // TODO: Handle litestore transaction so that replaceAll is grouped as one transaction
+    while (this.matches.length > 0) {
+      this.replaceCurrentMatch(newText);
+    }
     return false;
   }
 
@@ -146,10 +137,10 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
    * Used when changes are made to the data model
    *
    */
-  async rerunSearch(): Promise<boolean> {
-    //console.log('a change was made');
+  rerunSearch(): boolean {
     this.endQuery();
     this.startQuery(this._query, this._target);
+    this._changed.emit(undefined);
     return true;
   }
 

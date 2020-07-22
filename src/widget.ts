@@ -129,7 +129,6 @@ export class GridSearchService {
     this._query = query;
 
     // check if the match is in current viewport
-
     const minRow = this._grid.scrollY / this._grid.defaultSizes.rowHeight;
     const maxRow =
       (this._grid.scrollY + this._grid.pageHeight) /
@@ -173,6 +172,8 @@ export class GridSearchService {
           }
           this._row = row;
           this._column = col;
+
+          // create ISearchMatch and push it to the matches array
           const match = {
             text: query.source,
             fragment: cellData,
@@ -181,48 +182,16 @@ export class GridSearchService {
             index: this._matches.length
           };
           this._matches.push(match);
-          //return true;
         }
       }
       this._column = reverse ? columnCount - 1 : 0;
     }
-    // We've finished searching all the way to the limits of the grid. If this
-    // is the first time through (looping is true), wrap the indices and search
-    // again. Otherwise, give up.
-    // if (this._looping) {
-    //   this._looping = false;
-    //   this._row = reverse ? 0 : rowCount - 1;
-    //   this._wrapRows(reverse);
-    //   try {
-    //     return this.find(query, reverse);
-    //   } finally {
-    //     this._looping = true;
-    //   }
-    // }
+
     if (this._matches.length > 0) {
       this._currentMatch = this._matches[0];
     }
     return this._matches;
   }
-
-  /**
-   * Wrap indices if needed to just before the start or just after the end.
-   */
-  // private _wrapRows(reverse = false) {
-  //   const model = this._grid.dataModel!;
-  //   const rowCount = model.rowCount('body');
-  //   const columnCount = model.columnCount('body');
-
-  //   if (reverse && this._row <= 0) {
-  //     // if we are at the front, wrap to just past the end.
-  //     this._row = rowCount - 1;
-  //     this._column = columnCount;
-  //   } else if (!reverse && this._row >= rowCount - 1) {
-  //     // if we are at the end, wrap to just before the front.
-  //     this._row = 0;
-  //     this._column = -1;
-  //   }
-  // }
 
   get query(): RegExp | null {
     return this._query;
@@ -246,7 +215,6 @@ export class GridSearchService {
       this._currentMatch = this._matches[nextIndex];
     }
 
-    console.log(this._currentMatch);
     this._changed.emit(undefined);
     return this._currentMatch;
   }
@@ -257,7 +225,6 @@ export class GridSearchService {
   private _row: number;
   private _column: number;
   private _currentMatch: ISearchMatch;
-  // private _looping = true;
   private _changed = new Signal<GridSearchService, void>(this);
 }
 
@@ -597,7 +564,6 @@ export class EditableCSVViewer extends Widget {
     event.preventDefault();
     event.stopPropagation();
     const { r1, c1 } = this.getSelectedRange();
-    console.log(copiedText);
     this.dataModel.paste({ row: r1, column: c1 }, copiedText);
   }
 
