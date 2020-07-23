@@ -2,7 +2,7 @@ import { h, VirtualDOM } from '@lumino/virtualdom';
 import { Drag } from 'tde-dragdrop';
 import { MimeData } from '@lumino/coreutils';
 
-const SHADOW = '.lm-DataGrid-select-shadow';
+const SHADOW = 'lm-DataGrid-select-shadow';
 function createRectange(height: number, width: number): HTMLElement {
   return VirtualDOM.realize(
     h.div({
