@@ -289,10 +289,12 @@ export default class EditableDSVModel extends MutableDataModel {
       record: RECORD_ID
     });
 
+    // update model with data from the transaction
+    model.rawData = modelData;
+
     switch (change.type) {
       // TODO: select the cell that was edited upon undo
       case 'cells-changed':
-        model.rawData = modelData;
         undoChange = {
           type: 'cells-changed',
           region: 'body',
@@ -303,7 +305,6 @@ export default class EditableDSVModel extends MutableDataModel {
         };
         break;
       case 'rows-inserted':
-        model.rawData = modelData;
         undoChange = {
           type: 'rows-removed',
           region: 'body',
@@ -312,7 +313,6 @@ export default class EditableDSVModel extends MutableDataModel {
         };
         break;
       case 'columns-inserted':
-        model.rawData = modelData;
         // need to remove a letter from the header
         model.header.pop();
 
@@ -324,7 +324,6 @@ export default class EditableDSVModel extends MutableDataModel {
         };
         break;
       case 'rows-removed':
-        model.rawData = modelData;
         undoChange = {
           type: 'rows-inserted',
           region: 'body',
@@ -333,8 +332,6 @@ export default class EditableDSVModel extends MutableDataModel {
         };
         break;
       case 'columns-removed':
-        model.rawData = modelData;
-
         // add the next letter into the header
         model.header.push(numberToCharacter(model.header.length + 1));
 
@@ -346,7 +343,6 @@ export default class EditableDSVModel extends MutableDataModel {
         };
         break;
       case 'rows-moved':
-        model.rawData = modelData;
         undoChange = {
           type: 'rows-moved',
           region: 'body',
@@ -356,7 +352,6 @@ export default class EditableDSVModel extends MutableDataModel {
         };
         break;
       case 'columns-moved':
-        model.rawData = modelData;
         undoChange = {
           type: 'columns-moved',
           region: 'body',
