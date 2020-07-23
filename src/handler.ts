@@ -93,7 +93,7 @@ export class RichMouseHandler extends BasicMouseHandler {
     // get the left and top offsets of the grid viewport
     const { left, top } = this._grid.viewport.node.getBoundingClientRect();
     if (region === 'column-header') {
-      r1 = top;
+      r1 = top + this._grid.headerHeight;
       r2 =
         top +
         Math.min(
@@ -106,7 +106,7 @@ export class RichMouseHandler extends BasicMouseHandler {
     } else if (region === 'row-header') {
       r1 = top + this._grid.headerHeight + this._grid.rowOffset('body', row);
       r2 = r1 + this._grid.rowSize('body', row);
-      c1 = left;
+      c1 = left + this._grid.headerWidth;
       c2 =
         left +
         Math.min(
