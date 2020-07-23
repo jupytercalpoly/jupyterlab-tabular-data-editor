@@ -131,15 +131,15 @@ export class RichMouseHandler extends BasicMouseHandler {
       rB =
         left +
         Math.min(
-          this._grid.pageWidth,
-          this._grid.headerWidth + this._grid.bodyWidth
+          this._grid.pageWidth - (c2 - c1),
+          this._grid.headerWidth + this._grid.bodyWidth - (c2 - c1)
         );
     } else if (region === 'row-header') {
       lwB =
         top +
         Math.min(
-          this._grid.pageHeight,
-          this._grid.bodyHeight + this._grid.headerHeight
+          this._grid.pageHeight - (r2 - r1),
+          this._grid.bodyHeight + this._grid.headerHeight - (r2 - r1)
         );
       uB = top + this._grid.headerHeight;
       lB = rB = c1;

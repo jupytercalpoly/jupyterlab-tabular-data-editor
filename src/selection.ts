@@ -2,14 +2,14 @@ import { h, VirtualDOM } from '@lumino/virtualdom';
 import { Drag } from 'tde-dragdrop';
 import { MimeData } from '@lumino/coreutils';
 
+const SHADOW = '.lm-DataGrid-select-shadow';
 function createRectange(height: number, width: number): HTMLElement {
   return VirtualDOM.realize(
     h.div({
+      className: SHADOW,
       style: {
         width: width.toString() + 'px',
-        height: height.toString() + 'px',
-        border: 'solid 1px',
-        color: 'green'
+        height: height.toString() + 'px'
       }
     })
   );
