@@ -285,7 +285,6 @@ export class EditableDSVModel extends MutableDataModel {
     model.rawData = modelData;
 
     switch (change.type) {
-      // TODO: select the cell that was edited upon undo
       case 'cells-changed':
         undoChange = {
           type: 'cells-changed',
@@ -359,17 +358,8 @@ export class EditableDSVModel extends MutableDataModel {
   /*
   Utilizes the litestore to redo the last undo
   */
-  redo(): void {
+  redo(change: DataModel.ChangedArgs, modelData: string): void {
     const model = this._dsvModel;
-    this._litestore.redo();
-    const { change, modelData } = this._litestore.getRecord({
-      schema: DATAMODEL_SCHEMA,
-      record: RECORD_ID
-    });
-
-    if (!change) {
-      return;
-    }
 
     // need to update model header when making a change to columns
     if (change.type === 'columns-inserted') {
