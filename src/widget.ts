@@ -16,14 +16,15 @@ import {
   BasicSelectionModel,
   DataGrid,
   TextRenderer,
-  CellRenderer
+  CellRenderer,
+  SelectionModel
   // CellEditor,
   // ICellEditor
 } from '@lumino/datagrid';
 
 import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget } from '@lumino/widgets';
-import EditableDSVModel from './model';
+import { EditableDSVModel, DATAMODEL_SCHEMA, RECORD_ID } from './model';
 import { RichMouseHandler } from './handler';
 import { numberToCharacter } from './_helper';
 import { toArray } from '@lumino/algorithm';
@@ -38,6 +39,7 @@ import {
   FilterButton
 } from './toolbar';
 import { ISearchMatch } from '@jupyterlab/documentsearch';
+
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
 const RENDER_TIMEOUT = 1000;
@@ -531,7 +533,33 @@ export class EditableCSVViewer extends Widget {
         break;
       }
       case 'undo': {
-        this.dataModel.undo();
+        const { change } = this.dataModel.litestore.getRecord({
+          schema: DATAMODEL_SCHEMA,
+          record: RECORD_ID
+        });
+
+        if (!change) {
+          return;
+        }
+
+        // reselect the cell that was edited
+        if (change.type === 'cells-changed') {
+          const { row, column } = change;
+          console.log(row, column);
+          const select: SelectionModel.SelectArgs = {
+            r1: row,
+            r2: row,
+            c1: column,
+            c2: column,
+            cursorRow: row,
+            cursorColumn: column,
+            clear: 'all'
+          };
+          this._grid.selectionModel.select(select);
+        }
+
+        // undo changes in the model
+        this.dataModel.undo(change);
         break;
       }
       case 'redo': {
