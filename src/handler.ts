@@ -10,6 +10,7 @@ import {
 import { Drag } from '@lumino/dragdrop';
 import { Signal } from '@lumino/signaling';
 import EditableDSVModel from './model';
+import { renderSelection, IBoundingRegion } from './selection';
 
 export class RichMouseHandler extends BasicMouseHandler {
   constructor(options: RichMouseHandler.IOptions) {
@@ -68,16 +69,10 @@ export class RichMouseHandler extends BasicMouseHandler {
       this._cursor = 'grabbing';
       this.handleGrabbing();
     }
-    let { left, top } = grid.viewport.node.getBoundingClientRect();
-    console.log('x', event.clientX, 'y', event.clientY);
-    left = Math.floor(left);
-    top = Math.floor(top);
-    console.log('x', left + grid.headerWidth + grid.columnOffset('body', 0));
-    console.log('top', top);
     return;
   }
 
-  release() {
+  release(): void {
     if (this._moveData) {
       this._moveData.override.dispose();
       this._moveData = null;
@@ -87,6 +82,84 @@ export class RichMouseHandler extends BasicMouseHandler {
   handleGrabbing(): void {
     const hit = this._grid.hitTest(this._event.clientX, this._event.clientY);
     const { region, row, column } = hit;
+
+    // get row/column geometry
+    // the real parameters for the shadow rectangle
+    let r1: number;
+    let r2: number;
+    let c1: number;
+    let c2: number;
+
+    // get the left and top offsets of the grid viewport
+    const { left, top } = this._grid.viewport.node.getBoundingClientRect();
+    if (region === 'column-header') {
+      r1 = top;
+      r2 =
+        top +
+        Math.min(
+          this._grid.pageHeight,
+          this._grid.bodyHeight + this._grid.headerHeight
+        );
+      c1 =
+        left + this._grid.headerWidth + this._grid.columnOffset('body', column);
+      c2 = c1 + this._grid.columnSize('body', column);
+    } else if (region === 'row-header') {
+      r1 = top + this._grid.headerHeight + this._grid.rowOffset('body', row);
+      r2 = r1 + this._grid.rowSize('body', row);
+      c1 = left;
+      c2 =
+        left +
+        Math.min(
+          this._grid.pageWidth,
+          this._grid.headerWidth + this._grid.bodyWidth
+        );
+    }
+    // r1 = Math.floor(r1);
+    // r2 = Math.floor(r2);
+    // c1 = Math.floor(c1);
+    // c2 = Math.floor(c2);
+
+    // get the bounds for dragging
+
+    let lwB: number;
+    let uB: number;
+    let rB: number;
+    let lB: number;
+    if (region === 'column-header') {
+      lwB = uB = r1;
+      lB = left + this._grid.headerWidth;
+      rB =
+        left +
+        Math.min(
+          this._grid.pageWidth,
+          this._grid.headerWidth + this._grid.bodyWidth
+        );
+    } else if (region === 'row-header') {
+      lwB =
+        top +
+        Math.min(
+          this._grid.pageHeight,
+          this._grid.bodyHeight + this._grid.headerHeight
+        );
+      uB = top + this._grid.headerHeight;
+      lB = rB = c1;
+    }
+    const boundingRegion: IBoundingRegion = {
+      upperBound: uB,
+      lowerBound: lwB,
+      leftBound: lB,
+      rightBound: rB
+    };
+    renderSelection(
+      r1,
+      r2,
+      c1,
+      c2,
+      this._event.clientX,
+      this._event.clientY,
+      boundingRegion
+    );
+
     // if region is void, bail early
     if (region === 'void') {
       return;
