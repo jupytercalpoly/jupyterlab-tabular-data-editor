@@ -286,8 +286,9 @@ namespace Private {
     backgroundColor: '#111111',
     headerBackgroundColor: '#424242',
     gridLineColor: 'rgba(235, 235, 235, 0.15)',
-    headerGridLineColor: 'rgba(235, 235, 235, 0.25)',
-    rowBackgroundColor: i => (i % 2 === 0 ? '#212121' : '#111111')
+    headerGridLineColor: 'rgba(235, 235, 235, 0.25)'
+
+    //rowBackgroundColor: i => (i % 2 === 0 ? '#212121' : '#111111')
   };
 
   /**
@@ -295,8 +296,8 @@ namespace Private {
    */
   export const LIGHT_TEXT_CONFIG: TextRenderConfig = {
     textColor: '#111111',
-    matchBackgroundColor: '#FFFFE0',
-    currentMatchBackgroundColor: '#FFFF00',
+    matchBackgroundColor: '#FAE480',
+    currentMatchBackgroundColor: '#F5C800',
     horizontalAlignment: 'center'
   };
 
@@ -305,9 +306,9 @@ namespace Private {
    */
   export const DARK_TEXT_CONFIG: TextRenderConfig = {
     textColor: '#F5F5F5',
-    matchBackgroundColor: '#838423',
-    currentMatchBackgroundColor: '#A3807A',
-    horizontalAlignment: 'right'
+    matchBackgroundColor: '#F99C3D',
+    currentMatchBackgroundColor: '#F57C00',
+    horizontalAlignment: 'center'
   };
 }
 

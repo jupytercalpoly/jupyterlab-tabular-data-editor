@@ -19,6 +19,8 @@
 
 /*Inside the cell when double-clicked*/
 .lm-DataGrid-cellEditorWidget {
+  color: var(--jp-ui-font-color0);
+  background-color: var(--jp-cell-editor-active-background);
 }
 
 /*the input in the cell*/
@@ -45,7 +47,11 @@
 
 /*Shadow for moving rows & columns */
 .lm-DataGrid-select-shadow {
-  
+  background-color: #616161;
+  opacity: 25%;
+
+  /*dark theme styling
+  opacity: 50%;*/
 }
 
 /*TOOLBAR*/
