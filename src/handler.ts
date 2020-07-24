@@ -9,8 +9,8 @@ import {
 } from '@lumino/datagrid';
 import { Drag } from '@lumino/dragdrop';
 import { Signal } from '@lumino/signaling';
-import EditableDSVModel from './model';
 import { renderSelection, IBoundingRegion } from './selection';
+import { EditableDSVModel } from './model';
 
 export class RichMouseHandler extends BasicMouseHandler {
   constructor(options: RichMouseHandler.IOptions) {

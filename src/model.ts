@@ -6,7 +6,7 @@ import { Litestore } from './litestore';
 import { Fields } from '@lumino/datastore';
 // import { ClipBoardHandler } from './clipboard';
 
-export default class EditableDSVModel extends MutableDataModel {
+export class EditableDSVModel extends MutableDataModel {
   constructor(options: DSVModel.IOptions) {
     super();
     this._dsvModel = new DSVModel(options);
@@ -269,16 +269,8 @@ export default class EditableDSVModel extends MutableDataModel {
   /*
   Utilizes the litestore to undo the last change
   */
-  undo(): void {
+  undo(change: DataModel.ChangedArgs): void {
     const model = this._dsvModel;
-    const { change } = this._litestore.getRecord({
-      schema: DATAMODEL_SCHEMA,
-      record: RECORD_ID
-    });
-
-    if (!change) {
-      return;
-    }
 
     let undoChange: DataModel.ChangedArgs;
 
@@ -293,7 +285,6 @@ export default class EditableDSVModel extends MutableDataModel {
     model.rawData = modelData;
 
     switch (change.type) {
-      // TODO: select the cell that was edited upon undo
       case 'cells-changed':
         undoChange = {
           type: 'cells-changed',
@@ -367,17 +358,8 @@ export default class EditableDSVModel extends MutableDataModel {
   /*
   Utilizes the litestore to redo the last undo
   */
-  redo(): void {
+  redo(change: DataModel.ChangedArgs, modelData: string): void {
     const model = this._dsvModel;
-    this._litestore.redo();
-    const { change, modelData } = this._litestore.getRecord({
-      schema: DATAMODEL_SCHEMA,
-      record: RECORD_ID
-    });
-
-    if (!change) {
-      return;
-    }
 
     // need to update model header when making a change to columns
     if (change.type === 'columns-inserted') {
@@ -715,9 +697,9 @@ export interface ICellSelection {
   endRow: number;
 }
 
-const SCHEMA_ID = 'datamodel';
-const RECORD_ID = 'datamodel';
-const DATAMODEL_SCHEMA = {
+export const SCHEMA_ID = 'datamodel';
+export const RECORD_ID = 'datamodel';
+export const DATAMODEL_SCHEMA = {
   id: SCHEMA_ID,
   fields: {
     modelData: Fields.String(),

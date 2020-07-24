@@ -1,29 +1,24 @@
 import { ActivityMonitor } from '@jupyterlab/coreutils';
-
 import {
   ABCWidgetFactory,
   DocumentRegistry,
   IDocumentWidget,
   DocumentWidget
 } from '@jupyterlab/docregistry';
-
 import { PromiseDelegate } from '@lumino/coreutils';
 import { Signal } from '@lumino/signaling';
 import { TextRenderConfig } from 'tde-csvviewer';
-
 import {
   BasicKeyHandler,
   BasicSelectionModel,
   DataGrid,
   TextRenderer,
-  CellRenderer
-  // CellEditor,
-  // ICellEditor
+  CellRenderer,
+  SelectionModel
 } from '@lumino/datagrid';
-
 import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget } from '@lumino/widgets';
-import EditableDSVModel from './model';
+import { EditableDSVModel, DATAMODEL_SCHEMA, RECORD_ID } from './model';
 import { RichMouseHandler } from './handler';
 import { numberToCharacter } from './_helper';
 import { toArray } from '@lumino/algorithm';
@@ -38,6 +33,7 @@ import {
   FilterButton
 } from './toolbar';
 import { ISearchMatch } from '@jupyterlab/documentsearch';
+
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
 const RENDER_TIMEOUT = 1000;
@@ -197,7 +193,6 @@ export class GridSearchService {
     return this._query;
   }
 
-  // TODO: Select the cell that was highlighted
   highlightNext(reverse: boolean): ISearchMatch | undefined {
     if (this._matches.length === 0) {
       return undefined;
@@ -417,7 +412,7 @@ export class EditableCSVViewer extends Widget {
   /*
   Adds the a column header of alphabets to the top of the data (A..Z,AA..ZZ,AAA...)
   */
-  private _buildColHeader(colDelimiter: string): string {
+  protected _buildColHeader(colDelimiter: string): string {
     const rawData = this._context.model.toString();
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     // when the model is first created, we don't know how many columns or what the row delimeter is
@@ -497,6 +492,11 @@ export class EditableCSVViewer extends Widget {
     this._grid.editorController.cancel();
   }
 
+  /**
+   * Handles all changes to the data model
+   * @param emitter
+   * @param type
+   */
   private _changeModel(emitter: EditableCSVViewer, type: string): void {
     switch (type) {
       case 'add-row': {
@@ -531,14 +531,64 @@ export class EditableCSVViewer extends Widget {
         break;
       }
       case 'undo': {
-        this.dataModel.undo();
+        const { change } = this.dataModel.litestore.getRecord({
+          schema: DATAMODEL_SCHEMA,
+          record: RECORD_ID
+        });
+
+        if (!change) {
+          return;
+        }
+
+        // reselect the cell that was edited
+        if (change.type === 'cells-changed') {
+          const { row, column } = change;
+          this.selectSingleCell(row, column);
+        }
+
+        // undo changes in the model
+        this.dataModel.undo(change);
         break;
       }
       case 'redo': {
-        this.dataModel.redo();
+        this.dataModel.litestore.redo();
+        const { change, modelData } = this.dataModel.litestore.getRecord({
+          schema: DATAMODEL_SCHEMA,
+          record: RECORD_ID
+        });
+
+        if (!change) {
+          return;
+        }
+
+        // reselect the cell that was edited
+        if (change.type === 'cells-changed') {
+          const { row, column } = change;
+          this.selectSingleCell(row, column);
+        }
+
+        this.dataModel.redo(change, modelData);
         break;
       }
     }
+  }
+
+  /**
+   * Selects a certain cell using the selection model
+   * @param row The row being selected
+   * @param column The column being selected
+   */
+  public selectSingleCell(row: number, column: number): void {
+    const select: SelectionModel.SelectArgs = {
+      r1: row,
+      r2: row,
+      c1: column,
+      c2: column,
+      cursorRow: row,
+      cursorColumn: column,
+      clear: 'all'
+    };
+    this._grid.selectionModel.select(select);
   }
 
   protected getSelectedRange(): any {
