@@ -12,9 +12,13 @@ beforeEach(() => {
 });
 
 describe('table editing functions', () => {
-  // it('gets data', () => {
-  //   model.data();
-  // });
+  it('gets data', () => {
+    expect(model.data('body', 0, 0)).toBe('1');
+    expect(model.data('body', 1, 0)).toBe('abc');
+    expect(model.data('body', 1, 1)).toBe('5');
+    expect(model.data('body', 2, 1)).toBe('8');
+    expect(model.data('body', 2, 2)).toBe('9');
+  });
   describe('add', () => {
     describe('addRow function', () => {
       it('adds a row at the beginning of the model', () => {
