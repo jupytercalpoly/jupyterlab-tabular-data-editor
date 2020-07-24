@@ -296,8 +296,8 @@ namespace Private {
    */
   export const LIGHT_TEXT_CONFIG: TextRenderConfig = {
     textColor: '#111111',
-    matchBackgroundColor: '#FFFFE0',
-    currentMatchBackgroundColor: '#FFFF00',
+    matchBackgroundColor: '#FAE480',
+    currentMatchBackgroundColor: '#F5C800',
     horizontalAlignment: 'center'
   };
 
@@ -306,7 +306,7 @@ namespace Private {
    */
   export const DARK_TEXT_CONFIG: TextRenderConfig = {
     textColor: '#F5F5F5',
-    matchBackgroundColor: '#F89530',
+    matchBackgroundColor: '#F99C3D',
     currentMatchBackgroundColor: '#F57C00',
     horizontalAlignment: 'center'
   };
