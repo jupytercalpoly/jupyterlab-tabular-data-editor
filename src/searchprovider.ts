@@ -58,6 +58,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
     // update match variables in CSVSearchProvider
     this._matches = searchTarget.content.searchService.matches;
     this._currentMatch = searchTarget.content.searchService.currentMatch;
+    this.selectSingleCell();
     return this._matches;
   }
 
@@ -95,6 +96,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
     this._currentMatch = this._target.content.searchService.highlightNext(
       false
     );
+    this.selectSingleCell();
     return this._currentMatch;
   }
 
@@ -105,6 +107,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
    */
   async highlightPrevious(): Promise<ISearchMatch | undefined> {
     this._currentMatch = this._target.content.searchService.highlightNext(true);
+    this.selectSingleCell();
     return this._currentMatch;
   }
 
@@ -115,7 +118,8 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
    */
   async replaceCurrentMatch(newText: string): Promise<boolean> {
     const { line, column } = this._target.content.searchService.currentMatch;
-    this._target.content.dataModel.setData('body', line, column, newText);
+    await this._target.content.dataModel.setData('body', line, column, newText);
+    this.selectSingleCell();
     return true;
   }
 
@@ -136,13 +140,23 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
   /**
    * Reruns the search query when changes a made
    * Used when changes are made to the data model
-   *
    */
   rerunSearch(): boolean {
     this.endQuery();
     this.startQuery(this._query, this._target);
     this._changed.emit(undefined);
+    this.selectSingleCell();
     return true;
+  }
+
+  /**
+   * Selects the cell that is the current match
+   */
+  protected selectSingleCell(): void {
+    if (this._target) {
+      const { line, column } = this._currentMatch;
+      this._target.content.selectSingleCell(line, column);
+    }
   }
 
   /**
