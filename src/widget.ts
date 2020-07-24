@@ -536,12 +536,8 @@ export class EditableCSVViewer extends Widget {
           record: RECORD_ID
         });
 
-        if (!change) {
-          return;
-        }
-
         // reselect the cell that was edited
-        if (change.type === 'cells-changed') {
+        if (change && change.type === 'cells-changed') {
           const { row, column } = change;
           this.selectSingleCell(row, column);
         }
@@ -557,12 +553,8 @@ export class EditableCSVViewer extends Widget {
           record: RECORD_ID
         });
 
-        if (!change) {
-          return;
-        }
-
         // reselect the cell that was edited
-        if (change.type === 'cells-changed') {
+        if (change && change.type === 'cells-changed') {
           const { row, column } = change;
           this.selectSingleCell(row, column);
         }
