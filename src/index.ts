@@ -16,7 +16,12 @@ import {
 import { IDocumentWidget } from '@jupyterlab/docregistry';
 import { ISearchProviderRegistry } from '@jupyterlab/documentsearch';
 import { /*IEditMenu,*/ IMainMenu } from '@jupyterlab/mainmenu';
-import { undoIcon, redoIcon } from '@jupyterlab/ui-components';
+import {
+  undoIcon,
+  redoIcon,
+  cutIcon,
+  copyIcon
+} from '@jupyterlab/ui-components';
 import { DataGrid } from '@lumino/datagrid';
 import { EditableCSVViewer, EditableCSVViewerFactory } from './widget';
 import { CSVSearchProvider } from './searchprovider';
@@ -166,7 +171,10 @@ function addCommands(
   });
 
   commands.addCommand(CommandIDs.copy, {
-    label: 'Copy',
+    icon: copyIcon,
+    iconLabel: 'Copy',
+    className: 'jp-toolbar-copy',
+    caption: 'Copy',
     execute: () => {
       tracker.currentWidget &&
         tracker.currentWidget.content.changeModelSignal.emit('copy-cells');
@@ -174,7 +182,10 @@ function addCommands(
   });
 
   commands.addCommand(CommandIDs.cut, {
-    label: 'Cut',
+    icon: cutIcon,
+    iconLabel: 'Cut',
+    className: 'jp-toolbar-cut',
+    caption: 'Cut',
     execute: () => {
       tracker.currentWidget &&
         tracker.currentWidget.content.changeModelSignal.emit('cut-cells');
@@ -322,7 +333,7 @@ namespace Private {
   };
 }
 
-const CommandIDs = {
+export const CommandIDs = {
   addRow: 'tde:add-row',
   addColumn: 'tde:add-column',
   removeRow: 'tde-remove-row',

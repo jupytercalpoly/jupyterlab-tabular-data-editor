@@ -2,15 +2,12 @@
 // Distributed under the terms of the Modified BSD License.
 
 import { Widget } from '@lumino/widgets';
-import { CommandRegistry } from '@lumino/commands';
 import {
   saveIcon,
-  cutIcon,
-  copyIcon,
   pasteIcon
   /*filterListIcon*/
 } from '@jupyterlab/ui-components';
-import { ToolbarButton, CommandToolbarButton } from '@jupyterlab/apputils';
+import { ToolbarButton } from '@jupyterlab/apputils';
 
 export class SaveButton extends Widget {
   constructor(options: CSVToolbar.IOptions) {
@@ -27,45 +24,6 @@ export class SaveButton extends Widget {
       className: 'jp-toolbar-save'
     });
     return saveButton;
-  }
-}
-
-export class UndoButton extends Widget {
-  constructor(commands: CommandRegistry) {
-    super();
-    const id = 'tde:undo';
-    const undoButton = new CommandToolbarButton({ commands, id });
-    return undoButton;
-  }
-}
-
-export class CutButton extends Widget {
-  constructor(options: CSVToolbar.IOptions) {
-    super();
-    const cutButton = new ToolbarButton({
-      icon: cutIcon,
-      onClick: (): void => {
-        console.log('CUT');
-      },
-      tooltip: 'Cut',
-      className: 'jp-toolbar-cut'
-    });
-    return cutButton;
-  }
-}
-
-export class CopyButton extends Widget {
-  constructor(options: CSVToolbar.IOptions) {
-    super();
-    const copyButton = new ToolbarButton({
-      icon: copyIcon,
-      onClick: (): void => {
-        console.log('COPY');
-      },
-      tooltip: 'Copy',
-      className: 'jp-toolbar-copy'
-    });
-    return copyButton;
   }
 }
 
