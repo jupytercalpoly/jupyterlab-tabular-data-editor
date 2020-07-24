@@ -58,10 +58,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
     // update match variables in CSVSearchProvider
     this._matches = searchTarget.content.searchService.matches;
     this._currentMatch = searchTarget.content.searchService.currentMatch;
-<<<<<<< HEAD
     this.selectSingleCell();
-=======
->>>>>>> Search/replace functionality + working theme manager (#83)
     return this._matches;
   }
 
@@ -99,10 +96,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
     this._currentMatch = this._target.content.searchService.highlightNext(
       false
     );
-<<<<<<< HEAD
     this.selectSingleCell();
-=======
->>>>>>> Search/replace functionality + working theme manager (#83)
     return this._currentMatch;
   }
 
@@ -113,10 +107,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
    */
   async highlightPrevious(): Promise<ISearchMatch | undefined> {
     this._currentMatch = this._target.content.searchService.highlightNext(true);
-<<<<<<< HEAD
     this.selectSingleCell();
-=======
->>>>>>> Search/replace functionality + working theme manager (#83)
     return this._currentMatch;
   }
 
@@ -127,12 +118,8 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
    */
   async replaceCurrentMatch(newText: string): Promise<boolean> {
     const { line, column } = this._target.content.searchService.currentMatch;
-<<<<<<< HEAD
     await this._target.content.dataModel.setData('body', line, column, newText);
     this.selectSingleCell();
-=======
-    this._target.content.dataModel.setData('body', line, column, newText);
->>>>>>> Search/replace functionality + working theme manager (#83)
     return true;
   }
 
@@ -153,24 +140,16 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
   /**
    * Reruns the search query when changes a made
    * Used when changes are made to the data model
-<<<<<<< HEAD
-=======
-   *
->>>>>>> Search/replace functionality + working theme manager (#83)
    */
   rerunSearch(): boolean {
     this.endQuery();
     this.startQuery(this._query, this._target);
     this._changed.emit(undefined);
-<<<<<<< HEAD
     this.selectSingleCell();
-=======
->>>>>>> Search/replace functionality + working theme manager (#83)
     return true;
   }
 
   /**
-<<<<<<< HEAD
    * Selects the cell that is the current match
    */
   protected selectSingleCell(): void {
@@ -181,8 +160,6 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
   }
 
   /**
-=======
->>>>>>> Search/replace functionality + working theme manager (#83)
    * Signal indicating that something in the search has changed, so the UI should update
    */
   get changed(): ISignal<this, void> {

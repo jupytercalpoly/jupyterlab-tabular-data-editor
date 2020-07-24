@@ -1,8 +1,4 @@
 import { ActivityMonitor } from '@jupyterlab/coreutils';
-<<<<<<< HEAD
-=======
-
->>>>>>> Search/replace functionality + working theme manager (#83)
 import {
   ABCWidgetFactory,
   DocumentRegistry,
@@ -12,31 +8,20 @@ import {
 import { PromiseDelegate } from '@lumino/coreutils';
 import { Signal } from '@lumino/signaling';
 import { TextRenderConfig } from 'tde-csvviewer';
-<<<<<<< HEAD
-=======
-
->>>>>>> Search/replace functionality + working theme manager (#83)
 import {
   BasicKeyHandler,
   BasicSelectionModel,
   DataGrid,
   TextRenderer,
-<<<<<<< HEAD
   CellRenderer,
   SelectionModel
-=======
-  CellRenderer
-  // CellEditor,
-  // ICellEditor
->>>>>>> Search/replace functionality + working theme manager (#83)
 } from '@lumino/datagrid';
 import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget } from '@lumino/widgets';
-<<<<<<< HEAD
 import { EditableDSVModel, DATAMODEL_SCHEMA, RECORD_ID } from './model';
-=======
-import EditableDSVModel from './model';
->>>>>>> Search/replace functionality + working theme manager (#83)
+import { Message } from '@lumino/messaging';
+import { PanelLayout, Widget } from '@lumino/widgets';
+import { EditableDSVModel, DATAMODEL_SCHEMA, RECORD_ID } from './model';
 import { RichMouseHandler } from './handler';
 import { numberToCharacter } from './_helper';
 import { toArray } from '@lumino/algorithm';
@@ -51,10 +36,7 @@ import {
   /*FilterButton*/
 } from './toolbar';
 import { ISearchMatch } from '@jupyterlab/documentsearch';
-<<<<<<< HEAD
 
-=======
->>>>>>> Search/replace functionality + working theme manager (#83)
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
 const RENDER_TIMEOUT = 1000;
@@ -214,10 +196,6 @@ export class GridSearchService {
     return this._query;
   }
 
-<<<<<<< HEAD
-=======
-  // TODO: Select the cell that was highlighted
->>>>>>> Search/replace functionality + working theme manager (#83)
   highlightNext(reverse: boolean): ISearchMatch | undefined {
     if (this._matches.length === 0) {
       return undefined;
