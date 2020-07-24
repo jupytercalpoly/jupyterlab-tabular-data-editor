@@ -4,15 +4,15 @@ import {
   BasicMouseHandler,
   DataGrid,
   DataModel,
-  ResizeHandle,
-  SelectionModel
+  ResizeHandle
 } from '@lumino/datagrid';
 import { Drag } from '@lumino/dragdrop';
 import { Signal } from '@lumino/signaling';
-import { renderSelection, IBoundingRegion } from './selection';
+import { renderSelection, IBoundingRegion, BoundedDrag } from './selection';
 import { EditableDSVModel } from './model';
 
 export class RichMouseHandler extends BasicMouseHandler {
+  private _moveLine: BoundedDrag;
   constructor(options: RichMouseHandler.IOptions) {
     super();
     this._grid = options.grid;
@@ -85,39 +85,10 @@ export class RichMouseHandler extends BasicMouseHandler {
 
     // get row/column geometry
     // the real parameters for the shadow rectangle
-    let r1: number;
-    let r2: number;
-    let c1: number;
-    let c2: number;
+    let [r1, r2, c1, c2] = this.getShadowRegion(region, row, column);
 
     // get the left and top offsets of the grid viewport
     const { left, top } = this._grid.viewport.node.getBoundingClientRect();
-    if (region === 'column-header') {
-      r1 = top + this._grid.headerHeight;
-      r2 =
-        top +
-        Math.min(
-          this._grid.pageHeight,
-          this._grid.bodyHeight + this._grid.headerHeight
-        );
-      c1 =
-        left + this._grid.headerWidth + this._grid.columnOffset('body', column);
-      c2 = c1 + this._grid.columnSize('body', column);
-    } else if (region === 'row-header') {
-      r1 = top + this._grid.headerHeight + this._grid.rowOffset('body', row);
-      r2 = r1 + this._grid.rowSize('body', row);
-      c1 = left + this._grid.headerWidth;
-      c2 =
-        left +
-        Math.min(
-          this._grid.pageWidth,
-          this._grid.headerWidth + this._grid.bodyWidth
-        );
-    }
-    // r1 = Math.floor(r1);
-    // r2 = Math.floor(r2);
-    // c1 = Math.floor(c1);
-    // c2 = Math.floor(c2);
 
     // get the bounds for dragging
 
@@ -157,10 +128,29 @@ export class RichMouseHandler extends BasicMouseHandler {
       c2,
       this._event.clientX,
       this._event.clientY,
-      boundingRegion
+      boundingRegion,
+      'shadow'
     );
 
-    // if region is void, bail early
+    // initiate the dark line
+    [r1, r2, c1, c2] = this.getLineRegionFromShadowRegion(
+      r1,
+      r2,
+      c1,
+      c2,
+      this._event,
+      region
+    );
+    this._moveLine = renderSelection(
+      r1,
+      r2,
+      c1,
+      c2,
+      this._event.clientX,
+      this._event.clientY
+    );
+
+    // Create the move data
     if (region === 'void') {
       return;
     }
@@ -182,6 +172,43 @@ export class RichMouseHandler extends BasicMouseHandler {
     return;
   }
 
+  getShadowRegion(
+    region: DataModel.CellRegion | 'void',
+    row: number,
+    column: number
+  ): Array<number> {
+    let r1: number;
+    let r2: number;
+    let c1: number;
+    let c2: number;
+
+    // get the left and top offsets of the grid viewport
+    const { left, top } = this._grid.viewport.node.getBoundingClientRect();
+    if (region === 'column-header') {
+      r1 = top + this._grid.headerHeight;
+      r2 =
+        top +
+        Math.min(
+          this._grid.pageHeight,
+          this._grid.bodyHeight + this._grid.headerHeight
+        );
+      c1 =
+        left + this._grid.headerWidth + this._grid.columnOffset('body', column);
+      c2 = c1 + this._grid.columnSize('body', column);
+    } else if (region === 'row-header') {
+      r1 = top + this._grid.headerHeight + this._grid.rowOffset('body', row);
+      r2 = r1 + this._grid.rowSize('body', row);
+      c1 = left + this._grid.headerWidth;
+      c2 =
+        left +
+        Math.min(
+          this._grid.pageWidth,
+          this._grid.headerWidth + this._grid.bodyWidth
+        );
+    }
+    return [r1, r2, c1, c2];
+  }
+
   /**
    * Handle the mouse move event for the data grid.
    *
@@ -192,7 +219,7 @@ export class RichMouseHandler extends BasicMouseHandler {
   onMouseMove(grid: DataGrid, event: MouseEvent): void {
     // Fetch the press data.
     if (this._moveData) {
-      this.handleMove(grid, event);
+      this.updateLinePos(grid, event);
     } else {
       super.onMouseMove(grid, event);
     }
@@ -204,45 +231,39 @@ export class RichMouseHandler extends BasicMouseHandler {
    * @param grid
    * @param event
    */
-  handleMove(grid: DataGrid, event: MouseEvent): void {
-    // TODO: handle UI stuff.
-    const model = grid.selectionModel;
-
-    // Map the position to virtual coordinates.
-    let { vx, vy } = grid.mapToVirtual(event.clientX, event.clientY);
-
-    // Clamp the coordinates to the limits.
-    vx = Math.max(0, Math.min(vx, grid.bodyWidth - 1));
-    vy = Math.max(0, Math.min(vy, grid.bodyHeight - 1));
-
-    // Set up the selection variables.
-    let r1: number;
-    let c1: number;
-    let r2: number;
-    let c2: number;
-    const cursorRow = model.cursorRow;
-    const cursorColumn = model.cursorColumn;
-    const clear: SelectionModel.ClearMode = 'current';
-
-    // Compute the selection based pressed region.
-    if (this._moveData.region === 'row-header') {
-      r1 = grid.rowAt('body', vy);
-      r2 = grid.rowAt('body', vy);
-      c1 = 0;
-      c2 = Infinity;
-    } else if (this._moveData.region === 'column-header') {
-      r1 = 0;
-      r2 = Infinity;
-      c1 = grid.columnAt('body', vx);
-      c2 = grid.columnAt('body', vx);
-    } else {
-      r1 = cursorRow;
-      r2 = grid.rowAt('body', vy);
-      c1 = cursorColumn;
-      c2 = grid.columnAt('body', vx);
+  updateLinePos(grid: DataGrid, event: MouseEvent): void {
+    // reduce the sensitivity slightly
+    if (Math.abs(event.movementX) < 0.5 && Math.abs(event.movementY) < 0.5) {
+      return;
     }
-    // Make the selection.
-    model.select({ r1, c1, r2, c2, cursorRow, cursorColumn, clear });
+    const hit = grid.hitTest(event.clientX, event.clientY);
+    const { region, row, column } = hit;
+    let [r1, r2, c1, c2] = this.getShadowRegion(region, row, column);
+    [r1, r2, c1, c2] = this.getLineRegionFromShadowRegion(
+      r1,
+      r2,
+      c1,
+      c2,
+      event,
+      region
+    );
+    this._moveLine.manualPositionUpdate(c1, r1);
+  }
+
+  getLineRegionFromShadowRegion(
+    r1: number,
+    r2: number,
+    c1: number,
+    c2: number,
+    event: MouseEvent,
+    region: DataModel.CellRegion | 'void'
+  ) {
+    if (region === 'column-header') {
+      event.movementX > 0 ? (c1 = c2 + 1) : (c2 = c1 + 1);
+    } else if (region === 'row-header') {
+      event.movementY > 0 ? (r1 = r2 + 1) : (r2 = r1 + 1);
+    }
+    return [r1, r2, c1, c2];
   }
 
   /**
