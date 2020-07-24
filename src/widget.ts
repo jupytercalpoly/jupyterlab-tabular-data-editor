@@ -649,23 +649,18 @@ export class EditableCSVDocumentWidget extends DocumentWidget<
 
     const saveData = new SaveButton({ selected: content.delimiter });
     this.toolbar.addItem('save-data', saveData);
-    // saveData.saveButtonSignal.connect(this.toolbarActions, this);
 
-    const undoChange = new UndoButton({ selected: content.delimiter });
+    const undoChange = new UndoButton(commands);
     this.toolbar.addItem('undo', undoChange);
-    // undoChange.undoButtonSignal.connect(this.toolbarActions, this);
 
     const cutData = new CutButton({ selected: content.delimiter });
     this.toolbar.addItem('cut-data', cutData);
-    // cutData.cutButtonSignal.connect(this.toolbarActions, this);
 
     const copyData = new CopyButton({ selected: content.delimiter });
     this.toolbar.addItem('copy-data', copyData);
-    // copyData.copyButtonSignal.connect(this.toolbarActions, this);
 
     const pasteData = new PasteButton({ selected: content.delimiter });
     this.toolbar.addItem('paste-data', pasteData);
-    // pasteData.pasteButtonSignal.connect(this.toolbarActions, this);
 
     /* possible feature
     const filterData = new FilterButton({ selected: content.delimiter });

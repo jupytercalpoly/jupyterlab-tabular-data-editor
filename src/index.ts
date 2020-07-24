@@ -16,6 +16,7 @@ import {
 import { IDocumentWidget } from '@jupyterlab/docregistry';
 import { ISearchProviderRegistry } from '@jupyterlab/documentsearch';
 import { /*IEditMenu,*/ IMainMenu } from '@jupyterlab/mainmenu';
+import { undoIcon, redoIcon } from '@jupyterlab/ui-components';
 import { DataGrid } from '@lumino/datagrid';
 import { EditableCSVViewer, EditableCSVViewerFactory } from './widget';
 import { CSVSearchProvider } from './searchprovider';
@@ -181,7 +182,10 @@ function addCommands(
   });
 
   commands.addCommand(CommandIDs.undo, {
-    label: 'Undo',
+    icon: undoIcon,
+    iconLabel: 'Undo',
+    className: 'jp-toolbar-undo',
+    caption: 'Undo',
     execute: () => {
       tracker.currentWidget &&
         tracker.currentWidget.content.changeModelSignal.emit('undo');
@@ -189,7 +193,10 @@ function addCommands(
   });
 
   commands.addCommand(CommandIDs.redo, {
-    label: 'Redo',
+    icon: redoIcon,
+    iconLabel: 'Redo',
+    className: 'jp-toolbar-redo',
+    caption: 'Redo',
     execute: () => {
       tracker.currentWidget &&
         tracker.currentWidget.content.changeModelSignal.emit('redo');
