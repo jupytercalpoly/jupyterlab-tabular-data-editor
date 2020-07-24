@@ -6,7 +6,7 @@ import { Litestore } from './litestore';
 import { Fields } from '@lumino/datastore';
 // import { ClipBoardHandler } from './clipboard';
 
-export default class EditableDSVModel extends MutableDataModel {
+export class EditableDSVModel extends MutableDataModel {
   constructor(options: DSVModel.IOptions) {
     super();
     this._dsvModel = new DSVModel(options);
@@ -101,12 +101,7 @@ export default class EditableDSVModel extends MutableDataModel {
       columnSpan: 1
     };
     this.updateLitestore(change);
-    this.emitChanged(change);
-    this._silenceDsvModel();
-    model.parseAsync();
-    this._onChangeSignal.emit(
-      this._dsvModel.rawData.slice(this.colHeaderLength)
-    );
+    this.handleEmits(change);
     return true;
   }
 
@@ -121,13 +116,7 @@ export default class EditableDSVModel extends MutableDataModel {
       span: 1
     };
     this.updateLitestore(change);
-    this.emitChanged(change);
-    this._silenceDsvModel();
-    model.parseAsync();
-
-    this._onChangeSignal.emit(
-      this._dsvModel.rawData.slice(this.colHeaderLength)
-    );
+    this.handleEmits(change);
   }
 
   addColumn(column: number): void {
@@ -158,10 +147,7 @@ export default class EditableDSVModel extends MutableDataModel {
       span: 1
     };
     this.updateLitestore(change);
-    this.emitChanged(change);
-    this._silenceDsvModel();
-    model.parseAsync();
-    this._onChangeSignal.emit(this._dsvModel.rawData.slice(headerLength));
+    this.handleEmits(change);
   }
 
   removeRow(row: number): void {
@@ -176,12 +162,7 @@ export default class EditableDSVModel extends MutableDataModel {
     };
 
     this.updateLitestore(change);
-    this.emitChanged(change);
-    this._silenceDsvModel();
-    model.parseAsync();
-    this._onChangeSignal.emit(
-      this._dsvModel.rawData.slice(this.colHeaderLength)
-    );
+    this.handleEmits(change);
   }
 
   removeColumn(column: number): void {
@@ -216,11 +197,7 @@ export default class EditableDSVModel extends MutableDataModel {
     };
 
     this.updateLitestore(change);
-
-    this.emitChanged(change);
-    this._silenceDsvModel();
-    model.parseAsync();
-    this._onChangeSignal.emit(this._dsvModel.rawData.slice(headerLength));
+    this.handleEmits(change);
   }
 
   cut(selection: ICellSelection): void {
@@ -246,12 +223,7 @@ export default class EditableDSVModel extends MutableDataModel {
       rowSpan: numRows,
       columnSpan: numColumns
     };
-    this.emitChanged(change);
-    this._silenceDsvModel();
-    model.parseAsync();
-    this._onChangeSignal.emit(
-      this._dsvModel.rawData.slice(this.colHeaderLength)
-    );
+    this.handleEmits(change);
   }
 
   paste(startCoord: ICoordinates, data: string): void {
@@ -291,29 +263,19 @@ export default class EditableDSVModel extends MutableDataModel {
       rowSpan: rowSpan,
       columnSpan: columnSpan
     };
-    model.parseAsync();
-    this.emitChanged(change);
-    this._onChangeSignal.emit(
-      this._dsvModel.rawData.slice(this.colHeaderLength)
-    );
+    this.handleEmits(change);
   }
 
   /*
   Utilizes the litestore to undo the last change
   */
-  undo(): void {
+  undo(change: DataModel.ChangedArgs): void {
     const model = this._dsvModel;
-    const { change } = this._litestore.getRecord({
-      schema: DATAMODEL_SCHEMA,
-      record: RECORD_ID
-    });
+    let undoChange: DataModel.ChangedArgs;
 
     if (!change) {
       return;
     }
-
-    let undoChange: DataModel.ChangedArgs;
-    let headerLength = this.colHeaderLength;
 
     // undo first and then get the model data
     this._litestore.undo();
@@ -322,10 +284,11 @@ export default class EditableDSVModel extends MutableDataModel {
       record: RECORD_ID
     });
 
+    // update model with data from the transaction
+    model.rawData = modelData;
+
     switch (change.type) {
-      // TODO: select the cell that was edited upon undo
       case 'cells-changed':
-        model.rawData = modelData;
         undoChange = {
           type: 'cells-changed',
           region: 'body',
@@ -334,87 +297,72 @@ export default class EditableDSVModel extends MutableDataModel {
           rowSpan: change.rowSpan,
           columnSpan: change.columnSpan
         };
-        this.emitChanged(undoChange);
-        this._silenceDsvModel();
-        model.parseAsync();
-        this._onChangeSignal.emit(this._dsvModel.rawData.slice(headerLength));
         break;
       case 'rows-inserted':
-        model.rawData = modelData;
         undoChange = {
           type: 'rows-removed',
           region: 'body',
           index: change.index,
           span: change.span
         };
-        this.emitChanged(undoChange);
-        this._silenceDsvModel();
-        model.parseAsync();
-        this._onChangeSignal.emit(this._dsvModel.rawData.slice(headerLength));
         break;
       case 'columns-inserted':
-        model.rawData = modelData;
         // need to remove a letter from the header
         model.header.pop();
 
-        // recompute header length since header is updated
-        headerLength = this.colHeaderLength;
         undoChange = {
           type: 'columns-removed',
           region: 'body',
           index: change.index,
           span: change.span
         };
-        this.emitChanged(undoChange);
-        this._silenceDsvModel();
-        model.parseAsync();
-        this._onChangeSignal.emit(this._dsvModel.rawData.slice(headerLength));
         break;
       case 'rows-removed':
-        model.rawData = modelData;
         undoChange = {
           type: 'rows-inserted',
           region: 'body',
           index: change.index,
           span: change.span
         };
-        this.emitChanged(undoChange);
-        this._silenceDsvModel();
-        model.parseAsync();
-        this._onChangeSignal.emit(this._dsvModel.rawData.slice(headerLength));
         break;
       case 'columns-removed':
-        model.rawData = modelData;
-
         // add the next letter into the header
         model.header.push(numberToCharacter(model.header.length + 1));
 
-        // recompute header length since header is updated
-        headerLength = this.colHeaderLength;
         undoChange = {
           type: 'columns-inserted',
           region: 'body',
           index: change.index,
           span: change.span
         };
-        this.emitChanged(undoChange);
-        this._silenceDsvModel();
-        model.parseAsync();
-        this._onChangeSignal.emit(this._dsvModel.rawData.slice(headerLength));
+        break;
+      case 'rows-moved':
+        undoChange = {
+          type: 'rows-moved',
+          region: 'body',
+          index: change.destination,
+          destination: change.index,
+          span: change.span
+        };
+        break;
+      case 'columns-moved':
+        undoChange = {
+          type: 'columns-moved',
+          region: 'body',
+          index: change.destination,
+          destination: change.index,
+          span: change.span
+        };
         break;
     }
+    this.handleEmits(undoChange);
   }
 
   /*
   Utilizes the litestore to redo the last undo
   */
-  redo(): void {
+  redo(change: DataModel.ChangedArgs, modelData: string): void {
     const model = this._dsvModel;
-    this._litestore.redo();
-    const { change, modelData } = this._litestore.getRecord({
-      schema: DATAMODEL_SCHEMA,
-      record: RECORD_ID
-    });
 
     if (!change) {
       return;
@@ -428,9 +376,157 @@ export default class EditableDSVModel extends MutableDataModel {
     }
 
     model.rawData = modelData;
+    this.handleEmits(change);
+  }
+
+  moveRow(startRow: number, endRow: number): void {
+    // Bail early if there is nothing to move
+    if (startRow === endRow) {
+      return;
+    }
+    const model = this._dsvModel;
+    let rowValues: string;
+    // We need to order the operations so as not to disrupt getOffsetIndex
+    if (startRow < endRow) {
+      // we are moving a row down, insert below before deleting above
+
+      // get values from sliceOut without removing them
+      rowValues = this.sliceOut(model, { row: startRow }, false, true);
+
+      // see if the destination is the row end
+      if (endRow === this.rowCount() - 1) {
+        // rowValues should then start with rowDelimeter and not have trailing one
+        rowValues =
+          model.rowDelimiter +
+          rowValues.slice(0, rowValues.length - model.rowDelimiter.length);
+      }
+      // insert row Values at target row
+      this.insertAt(rowValues, model, { row: endRow + 1 });
+      // now we are safe to remove the row
+      this.sliceOut(model, { row: startRow });
+    } else {
+      // we are moving a row up, slice below before adding above
+      rowValues = this.sliceOut(model, { row: startRow });
+
+      // see if we are moving the end row up
+      if (startRow === this.rowCount() - 1) {
+        // need to remove begining row delimeter and add trailing row delimeter
+        rowValues =
+          rowValues.slice(model.rowDelimiter.length) + model.rowDelimiter;
+      }
+
+      // now we can insert the values in the target row
+      this.insertAt(rowValues, model, { row: endRow });
+    }
+
+    // emit the changes to the UI
+    const change: DataModel.ChangedArgs = {
+      type: 'rows-moved',
+      region: 'body',
+      index: startRow,
+      span: 1,
+      destination: endRow
+    };
+    this.updateLitestore(change);
+    this.handleEmits(change);
+  }
+
+  moveColumn(startColumn: number, endColumn: number): void {
+    // bail early if there is nothing to move
+    if (startColumn === endColumn) {
+      return;
+    }
+    const model = this._dsvModel;
+    // We need to order the operations so as not to disrupt getOffsetIndex
+    // this requires we perform the operation one value at a time
+    let value: string;
+    if (startColumn < endColumn) {
+      // we are moving a column left. Insert before deleting
+      // see if the destination is the final column
+      if (endColumn === this.columnCount() - 1) {
+        // define a function to send each value val, => ,val
+        const endForm = (val: string): string => {
+          return (
+            model.delimiter + val.slice(0, val.length - model.delimiter.length)
+          );
+        };
+        for (let row = this.rowCount() - 1; row >= 0; row--) {
+          value = this.sliceOut(
+            model,
+            { row: row, column: startColumn },
+            false,
+            true
+          );
+          // insert the value in the target column
+          this.insertAt(endForm(value), model, {
+            column: endColumn + 1,
+            row: row
+          });
+          // now we can slice out the value
+          this.sliceOut(model, { row: row, column: startColumn });
+        }
+      } else {
+        // otherwise, insert normally
+        for (let row = this.rowCount() - 1; row >= 0; row--) {
+          value = this.sliceOut(
+            model,
+            { row: row, column: startColumn },
+            false,
+            true
+          );
+          // insert the value in the target column
+          this.insertAt(value, model, { column: endColumn + 1, row: row });
+          // now we can slice out the value
+          this.sliceOut(model, { row: row, column: startColumn });
+        }
+      }
+    } else {
+      // see if we are moving the end column right
+      if (startColumn === this.columnCount() - 1) {
+        // define a function (,val) => val,
+        const undoEndFormat = (value: string): string => {
+          return value.slice(model.delimiter.length) + model.delimiter;
+        };
+        for (let row = this.rowCount() - 1; row >= 0; row--) {
+          value = this.sliceOut(model, { row: row, column: startColumn });
+          // insert the reformatted value in the target column
+          this.insertAt(undoEndFormat(value), model, {
+            column: endColumn,
+            row: row
+          });
+        }
+      } else {
+        // otherwise, insert normally
+        for (let row = this.rowCount() - 1; row >= 0; row--) {
+          value = this.sliceOut(model, { row: row, column: startColumn });
+          // insert the reformatted value in the target column
+          this.insertAt(value, model, { column: endColumn, row: row });
+        }
+      }
+    }
+
+    // emit the changes to the UI
+    const change: DataModel.ChangedArgs = {
+      type: 'columns-moved',
+      region: 'body',
+      index: startColumn,
+      span: 1,
+      destination: endColumn
+    };
+    this.updateLitestore(change);
+    this.handleEmits(change);
+  }
+
+  /**
+   * Handles all singal emitting and model parsing after the raw data is manipulated
+   */
+  handleEmits(change: DataModel.ChangedArgs): void {
+    // Emits the updates to the DataModel to the DataGrid for rerender
     this.emitChanged(change);
     this._silenceDsvModel();
-    model.parseAsync();
+    this._dsvModel.parseAsync();
+
+    // Emits the updated raw data to the CSVViewer
     this._onChangeSignal.emit(
       this._dsvModel.rawData.slice(this.colHeaderLength)
     );
@@ -616,9 +712,9 @@ export interface ICellSelection {
   endRow: number;
 }
 
-const SCHEMA_ID = 'datamodel';
-const RECORD_ID = 'datamodel';
-const DATAMODEL_SCHEMA = {
+export const SCHEMA_ID = 'datamodel';
+export const RECORD_ID = 'datamodel';
+export const DATAMODEL_SCHEMA = {
   id: SCHEMA_ID,
   fields: {
     modelData: Fields.String(),

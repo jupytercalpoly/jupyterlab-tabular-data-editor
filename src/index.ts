@@ -4,9 +4,7 @@ import {
   ILayoutRestorer
 } from '@jupyterlab/application';
 import {
-  // CSVViewer,
   TextRenderConfig
-  // CSVViewerFactory
   // TSVViewerFactory
 } from 'tde-csvviewer';
 import {
@@ -16,10 +14,11 @@ import {
   // InputDialog
 } from '@jupyterlab/apputils';
 import { IDocumentWidget } from '@jupyterlab/docregistry';
-// import { ISearchProviderRegistry } from '@jupyterlab/documentsearch';
+import { ISearchProviderRegistry } from '@jupyterlab/documentsearch';
 import { /*IEditMenu,*/ IMainMenu } from '@jupyterlab/mainmenu';
 import { DataGrid } from '@lumino/datagrid';
 import { EditableCSVViewer, EditableCSVViewerFactory } from './widget';
+import { CSVSearchProvider } from './searchprovider';
 
 /**
  * The name of the factories that creates widgets.
@@ -33,15 +32,17 @@ const FACTORY_CSV = 'Tabular Data Editor';
 const extension: JupyterFrontEndPlugin<void> = {
   id: 'jupyterlab-tabular-data-editor',
   autoStart: true,
-  activate: activateCsv
+  activate: activateCsv,
+  requires: [],
+  optional: [ILayoutRestorer, IThemeManager, IMainMenu, ISearchProviderRegistry]
 };
 
 function activateCsv(
   app: JupyterFrontEnd,
   restorer: ILayoutRestorer | null,
   themeManager: IThemeManager | null,
-  mainMenu: IMainMenu | null
-  // searchregistry: ISearchProviderRegistry | null
+  mainMenu: IMainMenu | null,
+  searchregistry: ISearchProviderRegistry | null
 ): void {
   const factory = new EditableCSVViewerFactory({
     name: FACTORY_CSV,
@@ -110,10 +111,9 @@ function activateCsv(
   //   addMenuEntries(mainMenu, tracker);
   // }
 
-  //TODO: Error when using the search registry
-  // if (searchregistry) {
-  //   searchregistry.register('csv', CSVSearchProvider);
-  // }
+  if (searchregistry) {
+    searchregistry.register('csv', CSVSearchProvider);
+  }
 
   addCommands(app, tracker);
 }
@@ -286,8 +286,9 @@ namespace Private {
     backgroundColor: '#111111',
     headerBackgroundColor: '#424242',
     gridLineColor: 'rgba(235, 235, 235, 0.15)',
-    headerGridLineColor: 'rgba(235, 235, 235, 0.25)',
-    rowBackgroundColor: i => (i % 2 === 0 ? '#212121' : '#111111')
+    headerGridLineColor: 'rgba(235, 235, 235, 0.25)'
+
+    //rowBackgroundColor: i => (i % 2 === 0 ? '#212121' : '#111111')
   };
 
   /**
@@ -295,8 +296,8 @@ namespace Private {
    */
   export const LIGHT_TEXT_CONFIG: TextRenderConfig = {
     textColor: '#111111',
-    matchBackgroundColor: '#FFFFE0',
-    currentMatchBackgroundColor: '#FFFF00',
+    matchBackgroundColor: '#FAE480',
+    currentMatchBackgroundColor: '#F5C800',
     horizontalAlignment: 'center'
   };
 
@@ -305,9 +306,9 @@ namespace Private {
    */
   export const DARK_TEXT_CONFIG: TextRenderConfig = {
     textColor: '#F5F5F5',
-    matchBackgroundColor: '#838423',
-    currentMatchBackgroundColor: '#A3807A',
-    horizontalAlignment: 'right'
+    matchBackgroundColor: '#F99C3D',
+    currentMatchBackgroundColor: '#F57C00',
+    horizontalAlignment: 'center'
   };
 }
 

@@ -1,46 +1,228 @@
 import { ActivityMonitor } from '@jupyterlab/coreutils';
-// import { toArray } from '@lumino/algorithm';
-
 import {
   ABCWidgetFactory,
   DocumentRegistry,
   IDocumentWidget,
   DocumentWidget
 } from '@jupyterlab/docregistry';
-
 import { PromiseDelegate } from '@lumino/coreutils';
 import { Signal } from '@lumino/signaling';
-import { GridSearchService, TextRenderConfig } from 'tde-csvviewer';
-
+import { TextRenderConfig } from 'tde-csvviewer';
 import {
   BasicKeyHandler,
-  // BasicMouseHandler,
   BasicSelectionModel,
   DataGrid,
-  TextRenderer
-  // CellEditor,
-  // ICellEditor
+  TextRenderer,
+  CellRenderer,
+  SelectionModel
 } from '@lumino/datagrid';
-
 import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget } from '@lumino/widgets';
-import EditableDSVModel from './model';
-// import { ICellSelection } from './model';
-import RichMouseHandler from './handler';
+import { EditableDSVModel, DATAMODEL_SCHEMA, RECORD_ID } from './model';
+import { RichMouseHandler } from './handler';
 import { numberToCharacter } from './_helper';
 import { toArray } from '@lumino/algorithm';
+import { ISignal } from '@lumino/signaling';
 
 import {
   SaveButton,
   UndoButton,
   CutButton,
   CopyButton,
-  PasteButton,
-  FilterButton
+  PasteButton
+  /*FilterButton*/
 } from './toolbar';
+import { ISearchMatch } from '@jupyterlab/documentsearch';
+
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
 const RENDER_TIMEOUT = 1000;
+
+/**
+ * Search service remembers the search state and the location of the last
+ * match, for incremental searching.
+ * Search service is also responsible of providing a cell renderer function
+ * to set the background color of cells matching the search text.
+ */
+export class GridSearchService {
+  constructor(grid: DataGrid) {
+    this._grid = grid;
+    this._query = null;
+    this._row = 0;
+    this._column = -1;
+  }
+
+  /**
+   * A signal fired when the grid changes.
+   */
+  get changed(): ISignal<GridSearchService, void> {
+    return this._changed;
+  }
+
+  get row(): number {
+    return this._row - 1;
+  }
+  get column(): number {
+    return this._column;
+  }
+
+  get matches(): ISearchMatch[] {
+    return this._matches;
+  }
+
+  get currentMatch(): ISearchMatch {
+    return this._currentMatch;
+  }
+
+  /**
+   * Returns a cellrenderer config function to render each cell background.
+   * If cell match, background is matchBackgroundColor, if it's the current
+   * match, background is currentMatchBackgroundColor.
+   */
+  cellBackgroundColorRendererFunc(
+    config: TextRenderConfig
+  ): CellRenderer.ConfigFunc<string> {
+    return ({ value, row, column }) => {
+      if (this._query) {
+        if ((value as string).match(this._query)) {
+          if (
+            this._currentMatch.line === row &&
+            this._currentMatch.column === column
+          ) {
+            return config.currentMatchBackgroundColor;
+          }
+          return config.matchBackgroundColor;
+        }
+      }
+      return '';
+    };
+  }
+
+  /**
+   * Clear the search.
+   */
+  clear() {
+    this._query = null;
+    this._row = 0;
+    this._column = -1;
+    this._changed.emit(undefined);
+  }
+
+  /**
+   * incrementally look for searchText.
+   */
+  find(query: RegExp, reverse = false): ISearchMatch[] | boolean {
+    const model = this._grid.dataModel!;
+    const rowCount = model.rowCount('body');
+    const columnCount = model.columnCount('body');
+
+    if (this._query !== query) {
+      // reset search
+      this._row = 0;
+      this._column = -1;
+      this._matches = [];
+    }
+    this._query = query;
+
+    // check if the match is in current viewport
+    const minRow = this._grid.scrollY / this._grid.defaultSizes.rowHeight;
+    const maxRow =
+      (this._grid.scrollY + this._grid.pageHeight) /
+      this._grid.defaultSizes.rowHeight;
+    const minColumn =
+      this._grid.scrollX / this._grid.defaultSizes.columnHeaderHeight;
+    const maxColumn =
+      (this._grid.scrollX + this._grid.pageWidth) /
+      this._grid.defaultSizes.columnHeaderHeight;
+    const isInViewport = (row: number, column: number) => {
+      return (
+        row >= minRow &&
+        row <= maxRow &&
+        column >= minColumn &&
+        column <= maxColumn
+      );
+    };
+
+    const increment = reverse ? -1 : 1;
+    this._column += increment;
+    for (
+      let row = this._row;
+      reverse ? row >= 0 : row < rowCount;
+      row += increment
+    ) {
+      for (
+        let col = this._column;
+        reverse ? col >= 0 : col < columnCount;
+        col += increment
+      ) {
+        const cellData = model.data('body', row, col) as string;
+        if (cellData.match(query)) {
+          // to update the background of matching cells.
+
+          // TODO: we only really need to invalidate the previous and current
+          // cell rects, not the entire grid.
+          this._changed.emit(undefined);
+
+          if (!isInViewport(row, col)) {
+            this._grid.scrollToRow(row);
+          }
+          this._row = row;
+          this._column = col;
+
+          // create ISearchMatch and push it to the matches array
+          const match = {
+            text: query.source,
+            fragment: cellData,
+            line: row,
+            column: col,
+            index: this._matches.length
+          };
+          this._matches.push(match);
+        }
+      }
+      this._column = reverse ? columnCount - 1 : 0;
+    }
+
+    if (this._matches.length > 0) {
+      this._currentMatch = this._matches[0];
+    }
+    return this._matches;
+  }
+
+  get query(): RegExp | null {
+    return this._query;
+  }
+
+  highlightNext(reverse: boolean): ISearchMatch | undefined {
+    if (this._matches.length === 0) {
+      return undefined;
+    }
+    if (!this._currentMatch) {
+      this._currentMatch = reverse
+        ? this._matches[this.matches.length - 1]
+        : this._matches[0];
+    } else {
+      let nextIndex = reverse
+        ? this._currentMatch.index - 1
+        : this._currentMatch.index + 1;
+
+      // Cheap way to make this a circular buffer
+      nextIndex = (nextIndex + this._matches.length) % this._matches.length;
+      this._currentMatch = this._matches[nextIndex];
+    }
+
+    this._changed.emit(undefined);
+    return this._currentMatch;
+  }
+
+  private _grid: DataGrid;
+  private _query: RegExp | null;
+  private _matches: ISearchMatch[] = [];
+  private _row: number;
+  private _column: number;
+  private _currentMatch: ISearchMatch;
+  private _changed = new Signal<GridSearchService, void>(this);
+}
 
 export class EditableCSVViewer extends Widget {
   /**
@@ -73,7 +255,7 @@ export class EditableCSVViewer extends Widget {
       headers: 'none',
       warningThreshold: 1e6
     };
-    const handler = new RichMouseHandler();
+    const handler = new RichMouseHandler({ grid: this._grid });
     this._grid.mouseHandler = handler;
     handler.rightClickSignal.connect(this._onRightClick, this);
 
@@ -230,7 +412,7 @@ export class EditableCSVViewer extends Widget {
   /*
   Adds the a column header of alphabets to the top of the data (A..Z,AA..ZZ,AAA...)
   */
-  private _buildColHeader(colDelimiter: string): string {
+  protected _buildColHeader(colDelimiter: string): string {
     const rawData = this._context.model.toString();
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     // when the model is first created, we don't know how many columns or what the row delimeter is
@@ -310,6 +492,11 @@ export class EditableCSVViewer extends Widget {
     this._grid.editorController.cancel();
   }
 
+  /**
+   * Handles all changes to the data model
+   * @param emitter
+   * @param type
+   */
   private _changeModel(emitter: EditableCSVViewer, type: string): void {
     switch (type) {
       case 'add-row': {
@@ -344,14 +531,56 @@ export class EditableCSVViewer extends Widget {
         break;
       }
       case 'undo': {
-        this.dataModel.undo();
+        const { change } = this.dataModel.litestore.getRecord({
+          schema: DATAMODEL_SCHEMA,
+          record: RECORD_ID
+        });
+
+        // reselect the cell that was edited
+        if (change && change.type === 'cells-changed') {
+          const { row, column } = change;
+          this.selectSingleCell(row, column);
+        }
+
+        // undo changes in the model
+        this.dataModel.undo(change);
         break;
       }
       case 'redo': {
-        this.dataModel.redo();
+        this.dataModel.litestore.redo();
+        const { change, modelData } = this.dataModel.litestore.getRecord({
+          schema: DATAMODEL_SCHEMA,
+          record: RECORD_ID
+        });
+
+        // reselect the cell that was edited
+        if (change && change.type === 'cells-changed') {
+          const { row, column } = change;
+          this.selectSingleCell(row, column);
+        }
+
+        this.dataModel.redo(change, modelData);
         break;
       }
     }
+  }
+
+  /**
+   * Selects a certain cell using the selection model
+   * @param row The row being selected
+   * @param column The column being selected
+   */
+  public selectSingleCell(row: number, column: number): void {
+    const select: SelectionModel.SelectArgs = {
+      r1: row,
+      r2: row,
+      c1: column,
+      c2: column,
+      cursorRow: row,
+      cursorColumn: column,
+      clear: 'all'
+    };
+    this._grid.selectionModel.select(select);
   }
 
   protected getSelectedRange(): any {
@@ -378,7 +607,6 @@ export class EditableCSVViewer extends Widget {
     event.preventDefault();
     event.stopPropagation();
     const { r1, c1 } = this.getSelectedRange();
-    console.log(copiedText);
     this.dataModel.paste({ row: r1, column: c1 }, copiedText);
   }
 
@@ -408,8 +636,6 @@ export class EditableCSVViewer extends Widget {
   );
 }
 
-// Override the CSVViewer's _updateGrid method to set the datagrid's model to an EditableDataModel
-
 export class EditableCSVDocumentWidget extends DocumentWidget<
   EditableCSVViewer
 > {
@@ -422,21 +648,32 @@ export class EditableCSVDocumentWidget extends DocumentWidget<
 
     const saveData = new SaveButton({ selected: content.delimiter });
     this.toolbar.addItem('save-data', saveData);
+    // saveData.saveButtonSignal.connect(this.toolbarActions, this);
 
     const undoChange = new UndoButton({ selected: content.delimiter });
     this.toolbar.addItem('undo', undoChange);
+    // undoChange.undoButtonSignal.connect(this.toolbarActions, this);
 
     const cutData = new CutButton({ selected: content.delimiter });
     this.toolbar.addItem('cut-data', cutData);
+    // cutData.cutButtonSignal.connect(this.toolbarActions, this);
 
     const copyData = new CopyButton({ selected: content.delimiter });
     this.toolbar.addItem('copy-data', copyData);
+    // copyData.copyButtonSignal.connect(this.toolbarActions, this);
 
     const pasteData = new PasteButton({ selected: content.delimiter });
-    this.toolbar.addItem('pastte-data', pasteData);
+    this.toolbar.addItem('paste-data', pasteData);
+    // pasteData.pasteButtonSignal.connect(this.toolbarActions, this);
 
+    /* possible feature
     const filterData = new FilterButton({ selected: content.delimiter });
     this.toolbar.addItem('filter-data', filterData);
+    */
+  }
+
+  toolbarActions(emittter: any, message: string): void {
+    console.log('GOOD MORNING');
   }
 
   /**
