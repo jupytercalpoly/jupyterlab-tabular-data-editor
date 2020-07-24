@@ -271,8 +271,11 @@ export class EditableDSVModel extends MutableDataModel {
   */
   undo(change: DataModel.ChangedArgs): void {
     const model = this._dsvModel;
-
     let undoChange: DataModel.ChangedArgs;
+
+    if (!change) {
+      return;
+    }
 
     // undo first and then get the model data
     this._litestore.undo();
@@ -360,6 +363,10 @@ export class EditableDSVModel extends MutableDataModel {
   */
   redo(change: DataModel.ChangedArgs, modelData: string): void {
     const model = this._dsvModel;
+
+    if (!change) {
+      return;
+    }
 
     // need to update model header when making a change to columns
     if (change.type === 'columns-inserted') {
