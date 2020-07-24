@@ -19,9 +19,6 @@ import {
 import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget } from '@lumino/widgets';
 import { EditableDSVModel, DATAMODEL_SCHEMA, RECORD_ID } from './model';
-import { Message } from '@lumino/messaging';
-import { PanelLayout, Widget } from '@lumino/widgets';
-import { EditableDSVModel, DATAMODEL_SCHEMA, RECORD_ID } from './model';
 import { RichMouseHandler } from './handler';
 import { numberToCharacter } from './_helper';
 import { toArray } from '@lumino/algorithm';
