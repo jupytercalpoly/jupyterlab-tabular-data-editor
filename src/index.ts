@@ -44,12 +44,15 @@ function activateCsv(
   mainMenu: IMainMenu | null,
   searchregistry: ISearchProviderRegistry | null
 ): void {
-  const factory = new EditableCSVViewerFactory({
-    name: FACTORY_CSV,
-    fileTypes: ['csv'],
-    defaultFor: ['csv'],
-    readOnly: true
-  });
+  const factory = new EditableCSVViewerFactory(
+    {
+      name: FACTORY_CSV,
+      fileTypes: ['csv'],
+      defaultFor: ['csv'],
+      readOnly: true
+    },
+    app.commands
+  );
   const tracker = new WidgetTracker<IDocumentWidget<EditableCSVViewer>>({
     namespace: 'editablecsvviewer'
   });

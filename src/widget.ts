@@ -22,6 +22,7 @@ import { EditableDSVModel, DATAMODEL_SCHEMA, RECORD_ID } from './model';
 import { RichMouseHandler } from './handler';
 import { numberToCharacter } from './_helper';
 import { toArray } from '@lumino/algorithm';
+import { CommandRegistry } from '@lumino/commands';
 import { ISignal } from '@lumino/signaling';
 
 import {
@@ -641,7 +642,7 @@ export class EditableCSVDocumentWidget extends DocumentWidget<
 > {
   constructor(options: EditableCSVDocumentWidget.IOptions) {
     let { content, reveal } = options;
-    const { context, ...other } = options;
+    const { context, commands, ...other } = options;
     content = content || new EditableCSVViewer({ context });
     reveal = Promise.all([reveal, content.revealed]);
     super({ context, content, reveal, ...other });
@@ -705,17 +706,29 @@ export declare namespace EditableCSVDocumentWidget {
   interface IOptions
     extends DocumentWidget.IOptionsOptionalContent<EditableCSVViewer> {
     delimiter?: string;
+    commands: CommandRegistry;
   }
 }
 
 export class EditableCSVViewerFactory extends ABCWidgetFactory<
   IDocumentWidget<EditableCSVViewer>
 > {
+  constructor(
+    options: DocumentRegistry.IWidgetFactoryOptions<IDocumentWidget>,
+    commands: CommandRegistry
+  ) {
+    super(options);
+    this._commands = commands;
+  }
+
   createNewWidget(
     context: DocumentRegistry.Context
   ): IDocumentWidget<EditableCSVViewer> {
-    return new EditableCSVDocumentWidget({ context });
+    const commands = this._commands;
+    return new EditableCSVDocumentWidget({ context, commands });
   }
+
+  private _commands: CommandRegistry;
 }
 export namespace EditableCSVViewer {
   /**
