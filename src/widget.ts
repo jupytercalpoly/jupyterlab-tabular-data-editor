@@ -578,7 +578,7 @@ export class EditableCSVViewer extends Widget {
    * @param row The row being selected
    * @param column The column being selected
    */
-  protected selectSingleCell(row: number, column: number): void {
+  public selectSingleCell(row: number, column: number): void {
     const select: SelectionModel.SelectArgs = {
       r1: row,
       r2: row,
