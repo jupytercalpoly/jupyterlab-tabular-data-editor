@@ -23,6 +23,14 @@ An account of tasks and features planned and completed
 ### 07/20/20 - 07/24/20
 - Search and replace functionality - Kalen
 - Theme manager (light/dark) - Kalen
+- CSS Styling changes to dark theme - Ryan
+- CSS Styling changes to moving row/column shadow - Ryan
+
+**Design Exploration - Ryan**
+- Ghost columns/ rows
+- No formula bar
+- Insert drop down menu toolbar
+- Simplified context menus
 
 ### 07/13/20 - 07/17/20
 - Set up Jest framework for testing - Kalen, Logan
