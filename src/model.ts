@@ -522,11 +522,10 @@ export class EditableDSVModel extends MutableDataModel {
    */
   handleEmits(change: DataModel.ChangedArgs): void {
     // Emits the updates to the DataModel to the DataGrid for rerender
-    this.emitChanged(change);
     this._silenceDsvModel();
     this._dsvModel.parseAsync();
-
     // Emits the updated raw data to the CSVViewer
+    this.emitChanged(change);
     this._onChangeSignal.emit(
       this._dsvModel.rawData.slice(this.colHeaderLength)
     );
