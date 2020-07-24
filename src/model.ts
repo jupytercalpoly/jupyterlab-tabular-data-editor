@@ -7,6 +7,7 @@ import { Fields } from '@lumino/datastore';
 // import { ClipBoardHandler } from './clipboard';
 
 export class EditableDSVModel extends MutableDataModel {
+  private _clipBoardArr: any;
   constructor(options: DSVModel.IOptions) {
     super();
     this._dsvModel = new DSVModel(options);
@@ -200,19 +201,27 @@ export class EditableDSVModel extends MutableDataModel {
     this.handleEmits(change);
   }
 
-  cut(selection: ICellSelection): void {
+  cutAndCopy(selection: ICellSelection, mode: 'cut' | 'copy' = 'cut'): void {
     // this._cellSelection = selection;
+    const keepingValue = mode === 'copy' ? true : false;
     const model = this.dsvModel;
     const { startRow, startColumn, endRow, endColumn } = selection;
     const numRows = endRow - startRow + 1;
     const numColumns = endColumn - startColumn + 1;
+    this._clipBoardArr = new Array(numRows).map(() => new Array(numColumns));
+
     let row: number;
     let column: number;
     for (let i = numRows - 1; i >= 0; i--) {
       row = startRow + i;
       for (let j = numColumns - 1; j >= 0; j--) {
         column = startColumn + j;
-        this.sliceOut(model, { row: row, column: column }, true);
+        this._clipBoardArr[i][j] = this.sliceOut(
+          model,
+          { row: row, column: column },
+          true,
+          keepingValue
+        );
       }
     }
     const change: DataModel.ChangedArgs = {
@@ -226,12 +235,24 @@ export class EditableDSVModel extends MutableDataModel {
     this.handleEmits(change);
   }
 
-  paste(startCoord: ICoordinates, data: string): void {
-    this._cancelEditingSignal.emit(null);
+  paste(startCoord: ICoordinates, data: string | null = null): void {
+    let clipboardArray: Array<Array<string>>;
     const model = this.dsvModel;
-    // convert the copied data to an array
-    const clipboardArray = data.split('\n').map(elem => elem.split('\t'));
 
+    // stop the UI from auto-selecting the cell after paste
+    this._cancelEditingSignal.emit(null);
+
+    // see if we have stored it in our local array
+    if (this._clipBoardArr) {
+      clipboardArray = this._clipBoardArr;
+      // Otherwise, if we have data, get it into an array
+    } else if (data) {
+      // convert the copied data to an array
+      clipboardArray = data.split('\n').map(elem => elem.split('\t'));
+    } else {
+      // we have no data, so bail
+      return;
+    }
     // get the rows we will be adding
     const rowSpan = Math.min(
       clipboardArray.length,
