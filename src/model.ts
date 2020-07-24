@@ -380,6 +380,10 @@ export class EditableDSVModel extends MutableDataModel {
   }
 
   moveRow(startRow: number, endRow: number): void {
+    // Bail early if there is nothing to move
+    if (startRow === endRow) {
+      return;
+    }
     const model = this._dsvModel;
     let rowValues: string;
     // We need to order the operations so as not to disrupt getOffsetIndex
@@ -428,6 +432,10 @@ export class EditableDSVModel extends MutableDataModel {
   }
 
   moveColumn(startColumn: number, endColumn: number): void {
+    // bail early if there is nothing to move
+    if (startColumn === endColumn) {
+      return;
+    }
     const model = this._dsvModel;
     // We need to order the operations so as not to disrupt getOffsetIndex
     // this requires we perform the operation one value at a time
