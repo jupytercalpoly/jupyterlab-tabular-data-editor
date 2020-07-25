@@ -2,27 +2,22 @@
 // Distributed under the terms of the Modified BSD License.
 
 import { Widget } from '@lumino/widgets';
-
 import {
   saveIcon,
-  undoIcon,
-  cutIcon,
-  copyIcon,
   pasteIcon
   /*filterListIcon*/
 } from '@jupyterlab/ui-components';
-
-// import { Signal } from '@lumino/signaling';
-
 import { ToolbarButton } from '@jupyterlab/apputils';
 
 export class SaveButton extends Widget {
   constructor(options: CSVToolbar.IOptions) {
+    //, commands: CommandRegistry) {
     super();
+    //let id = 'docmanager:save';
+    // const saveButton = new CommandToolbarButton({ commands, id });
     const saveButton = new ToolbarButton({
       icon: saveIcon,
       onClick: (): void => {
-        // this._saveButtonSignal.emit('save');
         console.log('FILE IS SAVED');
       },
       tooltip: 'Save',
@@ -30,82 +25,6 @@ export class SaveButton extends Widget {
     });
     return saveButton;
   }
-  // get saveButtonSignal(): Signal<this, string> {
-  //   return this._saveButtonSignal;
-  // }
-  // private _saveButtonSignal: Signal<this, string> = new Signal<this, string>(
-  //   this
-  // );
-}
-
-export class UndoButton extends Widget {
-  constructor(options: CSVToolbar.IOptions) {
-    super();
-    const undoButton = new ToolbarButton({
-      icon: undoIcon,
-      onClick: (): void => {
-        /*does something here*/
-        // this._undoButtonSignal.emit('undo');
-        console.log('UNDO');
-      },
-      tooltip: 'Undo',
-      className: 'jp-toolbar-undo'
-    });
-    return undoButton;
-  }
-  // get undoButtonSignal(): Signal<this, string> {
-  //   return this._undoButtonSignal;
-  // }
-  // private _undoButtonSignal: Signal<this, string> = new Signal<this, string>(
-  //   this
-  // );
-}
-
-export class CutButton extends Widget {
-  constructor(options: CSVToolbar.IOptions) {
-    super();
-    const cutButton = new ToolbarButton({
-      icon: cutIcon,
-      onClick: (): void => {
-        /*does something here*/
-        // this._cutButtonSignal.emit('cut');
-        console.log('CUT');
-      },
-      tooltip: 'Cut',
-      className: 'jp-toolbar-cut'
-    });
-    return cutButton;
-  }
-  // get cutButtonSignal(): Signal<this, string> {
-  //   return this._cutButtonSignal;
-  // }
-  // private _cutButtonSignal: Signal<this, string> = new Signal<this, string>(
-  //   this
-  // );
-}
-
-export class CopyButton extends Widget {
-  constructor(options: CSVToolbar.IOptions) {
-    super();
-    const copyButton = new ToolbarButton({
-      icon: copyIcon,
-      onClick: (): void => {
-        /*does something here*/
-        // this._copyButtonSignal.emit('copy');
-        console.log('COPY');
-      },
-      tooltip: 'Copy',
-      className: 'jp-toolbar-copy'
-    });
-    return copyButton;
-  }
-
-  // get copyButtonSignal(): Signal<this, string> {
-  //   return this._copyButtonSignal;
-  // }
-  // private _copyButtonSignal: Signal<this, string> = new Signal<this, string>(
-  //   this
-  // );
 }
 
 export class PasteButton extends Widget {
@@ -123,12 +42,6 @@ export class PasteButton extends Widget {
     });
     return pasteButton;
   }
-  // get pasteButtonSignal(): Signal<this, string> {
-  //   return this._pasteButtonSignal;
-  // }
-  // private _pasteButtonSignal: Signal<this, string> = new Signal<this, string>(
-  //   this
-  // );
 }
 
 /* POSSIBLE FUTURE FEATURE

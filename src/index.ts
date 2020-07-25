@@ -16,6 +16,12 @@ import {
 import { IDocumentWidget } from '@jupyterlab/docregistry';
 import { ISearchProviderRegistry } from '@jupyterlab/documentsearch';
 import { /*IEditMenu,*/ IMainMenu } from '@jupyterlab/mainmenu';
+import {
+  undoIcon,
+  redoIcon,
+  cutIcon,
+  copyIcon
+} from '@jupyterlab/ui-components';
 import { DataGrid } from '@lumino/datagrid';
 import { EditableCSVViewer, EditableCSVViewerFactory } from './widget';
 import { CSVSearchProvider } from './searchprovider';
@@ -44,12 +50,15 @@ function activateCsv(
   mainMenu: IMainMenu | null,
   searchregistry: ISearchProviderRegistry | null
 ): void {
-  const factory = new EditableCSVViewerFactory({
-    name: FACTORY_CSV,
-    fileTypes: ['csv'],
-    defaultFor: ['csv'],
-    readOnly: true
-  });
+  const factory = new EditableCSVViewerFactory(
+    {
+      name: FACTORY_CSV,
+      fileTypes: ['csv'],
+      defaultFor: ['csv'],
+      readOnly: true
+    },
+    app.commands
+  );
   const tracker = new WidgetTracker<IDocumentWidget<EditableCSVViewer>>({
     namespace: 'editablecsvviewer'
   });
@@ -162,7 +171,10 @@ function addCommands(
   });
 
   commands.addCommand(CommandIDs.copy, {
-    label: 'Copy',
+    icon: copyIcon,
+    iconLabel: 'Copy',
+    className: 'jp-toolbar-copy',
+    caption: 'Copy',
     execute: () => {
       tracker.currentWidget &&
         tracker.currentWidget.content.changeModelSignal.emit('copy-cells');
@@ -170,7 +182,10 @@ function addCommands(
   });
 
   commands.addCommand(CommandIDs.cut, {
-    label: 'Cut',
+    icon: cutIcon,
+    iconLabel: 'Cut',
+    className: 'jp-toolbar-cut',
+    caption: 'Cut',
     execute: () => {
       tracker.currentWidget &&
         tracker.currentWidget.content.changeModelSignal.emit('cut-cells');
@@ -178,7 +193,10 @@ function addCommands(
   });
 
   commands.addCommand(CommandIDs.undo, {
-    label: 'Undo',
+    icon: undoIcon,
+    iconLabel: 'Undo',
+    className: 'jp-toolbar-undo',
+    caption: 'Undo',
     execute: () => {
       tracker.currentWidget &&
         tracker.currentWidget.content.changeModelSignal.emit('undo');
@@ -186,7 +204,10 @@ function addCommands(
   });
 
   commands.addCommand(CommandIDs.redo, {
-    label: 'Redo',
+    icon: redoIcon,
+    iconLabel: 'Redo',
+    className: 'jp-toolbar-redo',
+    caption: 'Redo',
     execute: () => {
       tracker.currentWidget &&
         tracker.currentWidget.content.changeModelSignal.emit('redo');
@@ -312,7 +333,7 @@ namespace Private {
   };
 }
 
-const CommandIDs = {
+export const CommandIDs = {
   addRow: 'tde:add-row',
   addColumn: 'tde:add-column',
   removeRow: 'tde-remove-row',

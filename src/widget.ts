@@ -1,3 +1,4 @@
+import { CommandToolbarButton } from '@jupyterlab/apputils';
 import { ActivityMonitor } from '@jupyterlab/coreutils';
 import {
   ABCWidgetFactory,
@@ -22,17 +23,15 @@ import { EditableDSVModel, DATAMODEL_SCHEMA, RECORD_ID } from './model';
 import { RichMouseHandler } from './handler';
 import { numberToCharacter } from './_helper';
 import { toArray } from '@lumino/algorithm';
+import { CommandRegistry } from '@lumino/commands';
 import { ISignal } from '@lumino/signaling';
-
 import {
   SaveButton,
-  UndoButton,
-  CutButton,
-  CopyButton,
   PasteButton
   /*FilterButton*/
 } from './toolbar';
 import { ISearchMatch } from '@jupyterlab/documentsearch';
+import { CommandIDs } from './index';
 
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
@@ -641,39 +640,45 @@ export class EditableCSVDocumentWidget extends DocumentWidget<
 > {
   constructor(options: EditableCSVDocumentWidget.IOptions) {
     let { content, reveal } = options;
-    const { context, ...other } = options;
+    const { context, commandRegistry, ...other } = options;
     content = content || new EditableCSVViewer({ context });
     reveal = Promise.all([reveal, content.revealed]);
     super({ context, content, reveal, ...other });
 
+    // add commands to the toolbar
+    const commands = commandRegistry;
+    const { undo, redo, cut, copy } = CommandIDs;
     const saveData = new SaveButton({ selected: content.delimiter });
     this.toolbar.addItem('save-data', saveData);
-    // saveData.saveButtonSignal.connect(this.toolbarActions, this);
 
-    const undoChange = new UndoButton({ selected: content.delimiter });
-    this.toolbar.addItem('undo', undoChange);
-    // undoChange.undoButtonSignal.connect(this.toolbarActions, this);
-
-    const cutData = new CutButton({ selected: content.delimiter });
-    this.toolbar.addItem('cut-data', cutData);
-    // cutData.cutButtonSignal.connect(this.toolbarActions, this);
-
-    const copyData = new CopyButton({ selected: content.delimiter });
-    this.toolbar.addItem('copy-data', copyData);
-    // copyData.copyButtonSignal.connect(this.toolbarActions, this);
+    // this.toolbar.addItem(
+    //   'save',
+    //   new CommandToolbarButton({ commands, id: 'docmanager:save' })
+    // );
+    this.toolbar.addItem(
+      'undo',
+      new CommandToolbarButton({ commands, id: undo })
+    );
+    this.toolbar.addItem(
+      'redo',
+      new CommandToolbarButton({ commands, id: redo })
+    );
+    this.toolbar.addItem(
+      'cut',
+      new CommandToolbarButton({ commands, id: cut })
+    );
+    this.toolbar.addItem(
+      'copy',
+      new CommandToolbarButton({ commands, id: copy })
+    );
 
     const pasteData = new PasteButton({ selected: content.delimiter });
     this.toolbar.addItem('paste-data', pasteData);
-    // pasteData.pasteButtonSignal.connect(this.toolbarActions, this);
 
     /* possible feature
     const filterData = new FilterButton({ selected: content.delimiter });
     this.toolbar.addItem('filter-data', filterData);
     */
-  }
-
-  toolbarActions(emittter: any, message: string): void {
-    console.log('GOOD MORNING');
   }
 
   /**
@@ -705,17 +710,29 @@ export declare namespace EditableCSVDocumentWidget {
   interface IOptions
     extends DocumentWidget.IOptionsOptionalContent<EditableCSVViewer> {
     delimiter?: string;
+    commandRegistry: CommandRegistry;
   }
 }
 
 export class EditableCSVViewerFactory extends ABCWidgetFactory<
   IDocumentWidget<EditableCSVViewer>
 > {
+  constructor(
+    options: DocumentRegistry.IWidgetFactoryOptions<IDocumentWidget>,
+    commandRegistry: CommandRegistry
+  ) {
+    super(options);
+    this._commandReigstry = commandRegistry;
+  }
+
   createNewWidget(
     context: DocumentRegistry.Context
   ): IDocumentWidget<EditableCSVViewer> {
-    return new EditableCSVDocumentWidget({ context });
+    const commandRegistry = this._commandReigstry;
+    return new EditableCSVDocumentWidget({ context, commandRegistry });
   }
+
+  private _commandReigstry: CommandRegistry;
 }
 export namespace EditableCSVViewer {
   /**
