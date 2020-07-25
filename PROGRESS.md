@@ -25,7 +25,7 @@ An account of tasks and features planned and completed
 - Theme manager (light/dark) - Kalen
 - CSS Styling changes to dark theme - Ryan
 - CSS Styling changes to moving row/column shadow - Ryan
-- move columns and rows - Logan
+- Move columns and rows - Logan
 
 **Design Exploration - Ryan**
 - Ghost columns/ rows
