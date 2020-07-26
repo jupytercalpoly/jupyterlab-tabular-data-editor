@@ -34,12 +34,7 @@ export class EditableDSVModel extends MutableDataModel {
 
   get colHeaderLength(): number {
     const model = this._dsvModel;
-    const headerLength = model.header.join('').length;
-    return (
-      headerLength +
-      (headerLength - 1) * model.delimiter.length +
-      model.rowDelimiter.length
-    );
+    return (model.header.join(model.delimiter) + model.rowDelimiter).length;
   }
 
   get litestore(): Litestore {
@@ -48,7 +43,7 @@ export class EditableDSVModel extends MutableDataModel {
 
   private _silenceDsvModel(): void {
     this._transmitting = false;
-    window.setTimeout(() => (this._transmitting = true), 30);
+    window.setTimeout(() => (this._transmitting = true), 1000);
   }
 
   private _passMessage(
@@ -122,9 +117,52 @@ export class EditableDSVModel extends MutableDataModel {
 
   addColumn(column: number): void {
     const model = this.dsvModel;
-    let row: number;
-    for (row = this.rowCount() - 1; row >= 0; row--) {
-      this.insertAt(model.delimiter, model, { row: row, column: column });
+
+    // initialize an array to hold the "internal" slices
+    // ie the ones between the first entry of the column
+    // and the last entry of the column
+    const replaceArray: Array<string | 0> = new Array(this.rowCount() - 1).fill(
+      0
+    );
+
+    // a vectorized column addition
+    // 2 cases for adding a column. We are either
+    // adding to the end or adding within.
+    if (column < this.columnCount()) {
+      // we are inserting in a "normal place".
+      model.rawData =
+        model.rawData.slice(0, model.getOffsetIndex(1, column)) +
+        model.delimiter +
+        replaceArray
+          .map((elem, index) => {
+            return model.rawData.slice(
+              model.getOffsetIndex(index + 1, column),
+              model.getOffsetIndex(index + 2, column)
+            );
+          })
+          .join(model.delimiter) +
+        model.delimiter +
+        model.rawData.slice(model.getOffsetIndex(this.rowCount(), column));
+    } else {
+      // we are inserting at the end
+
+      // avoid asking for a row which doesn't exist by poping last elem of the array
+      replaceArray.pop();
+
+      const rt = model.rowDelimiter.length;
+      model.rawData =
+        model.rawData.slice(0, model.getOffsetIndex(2, 0) - rt) +
+        model.delimiter +
+        replaceArray
+          .map((elem, index) => {
+            return model.rawData.slice(
+              model.getOffsetIndex(index + 2, 0) - rt,
+              model.getOffsetIndex(index + 3, 0) - rt
+            );
+          })
+          .join(model.delimiter) +
+        model.delimiter +
+        model.rawData.slice(model.getOffsetIndex(this.rowCount(), 0) - rt);
     }
     const prevNumCol = this.columnCount();
     const nextLetter = numberToCharacter(prevNumCol + 1);
@@ -168,9 +206,42 @@ export class EditableDSVModel extends MutableDataModel {
 
   removeColumn(column: number): void {
     const model = this.dsvModel;
-    let row: number;
-    for (row = this.rowCount() - 1; row >= 0; row--) {
-      this.sliceOut(model, { row: row, column: column });
+    // Vectorized column removal.
+    // 2 cases: removing a column which is not the end column or removing the end column
+
+    // initialize the replacement array
+    const replaceArray: Array<string | 0> = new Array(this.rowCount() - 1).fill(
+      0
+    );
+
+    if (column < this.columnCount() - 1) {
+      // removing in a normal place
+      model.rawData =
+        model.rawData.slice(0, model.getOffsetIndex(1, column)) +
+        replaceArray
+          .map((elem, index) => {
+            return model.rawData.slice(
+              model.getOffsetIndex(index + 1, column + 1),
+              model.getOffsetIndex(index + 2, column)
+            );
+          })
+          .join('') +
+        model.rawData.slice(model.getOffsetIndex(this.rowCount(), column + 1));
+    } else {
+      // get the trim value
+      const lt = model.delimiter.length;
+      // removing the end column
+      model.rawData =
+        model.rawData.slice(0, model.getOffsetIndex(1, column) - lt) +
+        model.rowDelimiter +
+        replaceArray
+          .map((elem, index) => {
+            return model.rawData.slice(
+              model.getOffsetIndex(index + 2, 0),
+              model.getOffsetIndex(index + 2, column) - lt
+            );
+          })
+          .join(model.rowDelimiter);
     }
 
     // update rawData and header (header handles immediate update, rawData handles parseAsync)
@@ -457,87 +528,132 @@ export class EditableDSVModel extends MutableDataModel {
     this.handleEmits(change);
   }
 
-  moveColumn(startColumn: number, endColumn: number): void {
-    // bail early if there is nothing to move
-    if (startColumn === endColumn) {
+  moveColumn(start: number, end: number): void {
+    // bail early if we aren't moving anywhere
+    if (start === end) {
       return;
     }
-    const model = this._dsvModel;
-    // We need to order the operations so as not to disrupt getOffsetIndex
-    // this requires we perform the operation one value at a time
-    let value: string;
-    if (startColumn < endColumn) {
-      // we are moving a column left. Insert before deleting
-      // see if the destination is the final column
-      if (endColumn === this.columnCount() - 1) {
-        // define a function to send each value val, => ,val
-        const endForm = (val: string): string => {
+    const model = this.dsvModel;
+    // initialize an array to map from.
+    const mapArray: Array<string | 0> = new Array(this.rowCount()).fill(0);
+    // intialize the callback we will use to map the array to the row values
+    let mapper: (elem: any, index: number) => string;
+    // 3 cases:
+    //   1. start normal, destination normal
+    //      A: This breaks into two cases depending
+    //         on whether start < destination
+    //   2. start on end, destination normal
+    //   3. start normal, destination on end
+    if (start < this.columnCount() - 1 && end < this.columnCount() - 1) {
+      // both remove point and insertion point are normal. Need to determine which
+      // is first
+      if (start < end) {
+        // define the callback function to handle this case
+        mapper = (elem: any, index: number) => {
           return (
-            model.delimiter + val.slice(0, val.length - model.delimiter.length)
+            model.rawData.slice(
+              model.getOffsetIndex(index + 1, 0),
+              model.getOffsetIndex(index + 1, start)
+            ) +
+            model.rawData.slice(
+              model.getOffsetIndex(index + 1, start + 1),
+              model.getOffsetIndex(index + 1, end + 1)
+            ) +
+            model.rawData.slice(
+              model.getOffsetIndex(index + 1, start),
+              model.getOffsetIndex(index + 1, start + 1)
+            ) +
+            model.rawData.slice(
+              model.getOffsetIndex(index + 1, end + 1),
+              this.rowEnd(index)
+            )
           );
         };
-        for (let row = this.rowCount() - 1; row >= 0; row--) {
-          value = this.sliceOut(
-            model,
-            { row: row, column: startColumn },
-            false,
-            true
-          );
-          // insert the value in the target column
-          this.insertAt(endForm(value), model, {
-            column: endColumn + 1,
-            row: row
-          });
-          // now we can slice out the value
-          this.sliceOut(model, { row: row, column: startColumn });
-        }
+        model.rawData =
+          model.rawData.slice(0, this.colHeaderLength) +
+          mapArray.map(mapper).join(model.rowDelimiter);
       } else {
-        // otherwise, insert normally
-        for (let row = this.rowCount() - 1; row >= 0; row--) {
-          value = this.sliceOut(
-            model,
-            { row: row, column: startColumn },
-            false,
-            true
-          );
-          // insert the value in the target column
-          this.insertAt(value, model, { column: endColumn + 1, row: row });
-          // now we can slice out the value
-          this.sliceOut(model, { row: row, column: startColumn });
-        }
-      }
-    } else {
-      // see if we are moving the end column right
-      if (startColumn === this.columnCount() - 1) {
-        // define a function (,val) => val,
-        const undoEndFormat = (value: string): string => {
-          return value.slice(model.delimiter.length) + model.delimiter;
-        };
-        for (let row = this.rowCount() - 1; row >= 0; row--) {
-          value = this.sliceOut(model, { row: row, column: startColumn });
-          // insert the reformatted value in the target column
-          this.insertAt(undoEndFormat(value), model, {
-            column: endColumn,
-            row: row
-          });
-        }
-      } else {
-        // otherwise, insert normally
-        for (let row = this.rowCount() - 1; row >= 0; row--) {
-          value = this.sliceOut(model, { row: row, column: startColumn });
-          // insert the reformatted value in the target column
-          this.insertAt(value, model, { column: endColumn, row: row });
-        }
-      }
-    }
+        // start after end
 
+        // define mapper for this case
+        mapper = (elem: any, index: number) => {
+          return (
+            model.rawData.slice(
+              model.getOffsetIndex(index + 1, 0),
+              model.getOffsetIndex(index + 1, end)
+            ) +
+            model.rawData.slice(
+              model.getOffsetIndex(index + 1, start),
+              model.getOffsetIndex(index + 1, start + 1)
+            ) +
+            model.rawData.slice(
+              model.getOffsetIndex(index + 1, end),
+              model.getOffsetIndex(index + 1, start)
+            ) +
+            model.rawData.slice(
+              model.getOffsetIndex(index + 1, start + 1),
+              this.rowEnd(index)
+            )
+          );
+        };
+        model.rawData =
+          model.rawData.slice(0, this.colHeaderLength) +
+          mapArray.map(mapper).join(model.rowDelimiter);
+      }
+    } else if (end === this.columnCount() - 1) {
+      // destination is the end column. Set up mapper to handle
+      // this case
+
+      mapper = (elem: any, index: number) => {
+        return (
+          model.rawData.slice(
+            model.getOffsetIndex(index + 1, 0),
+            model.getOffsetIndex(index + 1, start)
+          ) +
+          model.rawData.slice(
+            model.getOffsetIndex(index + 1, start + 1),
+            this.rowEnd(index)
+          ) +
+          model.delimiter +
+          model.rawData.slice(
+            model.getOffsetIndex(index + 1, start),
+            model.getOffsetIndex(index + 1, start + 1) - model.delimiter.length
+          )
+        );
+      };
+      model.rawData =
+        model.rawData.slice(0, this.colHeaderLength) +
+        mapArray.map(mapper).join(model.rowDelimiter);
+    } else {
+      // start is at the end. Define mapper to handle this case
+      mapper = (elem: any, index: number) => {
+        return (
+          model.rawData.slice(
+            model.getOffsetIndex(index + 1, 0),
+            model.getOffsetIndex(index + 1, end)
+          ) +
+          model.rawData.slice(
+            model.getOffsetIndex(index + 1, start),
+            this.rowEnd(index)
+          ) +
+          model.delimiter +
+          model.rawData.slice(
+            model.getOffsetIndex(index + 1, end),
+            model.getOffsetIndex(index + 1, start) - model.delimiter.length
+          )
+        );
+      };
+      model.rawData =
+        model.rawData.slice(0, this.colHeaderLength) +
+        mapArray.map(mapper).join(model.rowDelimiter);
+    }
     // emit the changes to the UI
     const change: DataModel.ChangedArgs = {
       type: 'columns-moved',
       region: 'body',
-      index: startColumn,
+      index: start,
       span: 1,
-      destination: endColumn
+      destination: end
     };
     this.updateLitestore(change);
     this.handleEmits(change);
