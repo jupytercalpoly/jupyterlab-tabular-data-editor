@@ -362,7 +362,6 @@ namespace Private {
     headerBackgroundColor: '#424242',
     gridLineColor: 'rgba(235, 235, 235, 0.15)',
     headerGridLineColor: 'rgba(235, 235, 235, 0.25)'
-
     //rowBackgroundColor: i => (i % 2 === 0 ? '#212121' : '#111111')
   };
 

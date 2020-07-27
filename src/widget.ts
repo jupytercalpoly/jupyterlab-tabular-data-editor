@@ -365,10 +365,10 @@ export class EditableCSVViewer extends Widget {
     this.node.focus();
   }
 
-  /*
-  Guess the row delimiter if it was not supplied. 
-  This will be fooled if a different line delimiter possibility appears in the first row.
-  */
+  /**
+   * Guess the row delimiter if it was not supplied.
+   * This will be fooled if a different line delimiter possibility appears in the first row.
+   */
   private _guessRowDelimeter(data: string): string {
     const i = data.slice(0, 5000).indexOf('\r');
     if (i === -1) {
@@ -380,9 +380,9 @@ export class EditableCSVViewer extends Widget {
     }
   }
 
-  /*
-  Counts the occurrences of a substring from a given string
-  */
+  /**
+   * Counts the occurrences of a substring from a given string
+   */
   private _countOccurrences(
     string: string,
     substring: string,
@@ -403,9 +403,10 @@ export class EditableCSVViewer extends Widget {
     return numCol + 1;
   }
 
-  /*
-  Adds the a column header of alphabets to the top of the data (A..Z,AA..ZZ,AAA...)
-  */
+  /**
+   * Adds the a column header of alphabets to the top of the data (A..Z,AA..ZZ,AAA...)
+   * @param colDelimiter The delimiter used to separated columns (commas, tabs, spaces)
+   */
   protected _buildColHeader(colDelimiter: string): string {
     const rawData = this._context.model.toString();
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -478,10 +479,18 @@ export class EditableCSVViewer extends Widget {
     });
   }
 
+  /**
+   * Updates the file based on the data model
+   * @param emitter
+   * @param data The raw data used to update the model
+   */
   private _updateModel(emitter: EditableDSVModel, data: string): void {
     this.context.model.fromString(data);
   }
 
+  /**
+   * Saves the file
+   */
   private _save(): void {
     this.context.save();
   }
@@ -601,12 +610,6 @@ export class EditableCSVViewer extends Widget {
   protected onAfterAttach(msg: Message): void {
     super.onAfterAttach(msg);
     this.node.addEventListener('paste', this._handlePaste.bind(this));
-    // this._grid.node.addEventListener("paste", function(ev) {
-    //   const data = ev.clipboardData.getData('text/plain');
-    //   console.log(data)
-    //   ev.preventDefault();
-    //   ev.stopPropagation();
-    // })
   }
   private _handlePaste(event: ClipboardEvent): void {
     const copiedText: string = event.clipboardData.getData('text/plain');

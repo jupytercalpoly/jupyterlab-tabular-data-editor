@@ -1,4 +1,3 @@
-/* eslint-disable no-inner-declarations */
 import { IDisposable } from '@lumino/disposable';
 import {
   BasicMouseHandler,
@@ -92,34 +91,34 @@ export class RichMouseHandler extends BasicMouseHandler {
 
     // get the bounds for dragging
 
-    let lwB: number;
-    let uB: number;
-    let rB: number;
-    let lB: number;
+    let lowerBound: number;
+    let upperBound: number;
+    let rightBound: number;
+    let leftBound: number;
     if (region === 'column-header') {
-      lwB = uB = r1;
-      lB = left + this._grid.headerWidth;
-      rB =
+      lowerBound = upperBound = r1;
+      leftBound = left + this._grid.headerWidth;
+      rightBound =
         left +
         Math.min(
           this._grid.pageWidth - (c2 - c1),
           this._grid.headerWidth + this._grid.bodyWidth - (c2 - c1)
         );
     } else if (region === 'row-header') {
-      lwB =
+      lowerBound =
         top +
         Math.min(
           this._grid.pageHeight - (r2 - r1),
           this._grid.bodyHeight + this._grid.headerHeight - (r2 - r1)
         );
-      uB = top + this._grid.headerHeight;
-      lB = rB = c1;
+      upperBound = top + this._grid.headerHeight;
+      leftBound = rightBound = c1;
     }
     const boundingRegion: IBoundingRegion = {
-      upperBound: uB,
-      lowerBound: lwB,
-      leftBound: lB,
-      rightBound: rB
+      upperBound: upperBound,
+      lowerBound: lowerBound,
+      leftBound: leftBound,
+      rightBound: rightBound
     };
     renderSelection(
       r1,
@@ -227,7 +226,7 @@ export class RichMouseHandler extends BasicMouseHandler {
   }
 
   /**
-   *
+   * Moves the line based on the position of the cursor and shadow
    * @param grid
    * @param event
    */
@@ -257,7 +256,7 @@ export class RichMouseHandler extends BasicMouseHandler {
     c2: number,
     event: MouseEvent,
     region: DataModel.CellRegion | 'void'
-  ) {
+  ): Array<number> {
     if (region === 'column-header') {
       event.movementX > 0 ? (c1 = c2 + 1) : (c2 = c1 + 1);
     } else if (region === 'row-header') {
@@ -341,30 +340,6 @@ export declare namespace RichMouseHandler {
     grid: DataGrid;
   }
 }
-
-export type RowMoveData = {
-  /**
-   * The descriminated type for the data.
-   */
-  readonly type: 'move';
-
-  /**
-   * The row region which holds the section being resized.
-   */
-  readonly region: DataModel.CellRegion;
-
-  readonly row: number;
-
-  readonly column: number;
-
-  readonly override: IDisposable;
-
-  readonly localX: number;
-
-  readonly localY: number;
-
-  readonly timeout: number;
-};
 
 export declare namespace RichMouseHandler {
   export interface IOptions {

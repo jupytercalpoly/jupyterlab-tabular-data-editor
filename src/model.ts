@@ -4,7 +4,6 @@ import { Signal } from '@lumino/signaling';
 import { numberToCharacter } from './_helper';
 import { Litestore } from './litestore';
 import { Fields } from '@lumino/datastore';
-// import { ClipBoardHandler } from './clipboard';
 
 export class EditableDSVModel extends MutableDataModel {
   private _clipBoardArr: any;
@@ -78,7 +77,6 @@ export class EditableDSVModel extends MutableDataModel {
   // Could we make some assumptions that would lead to a faster update?
   // Ex. We know that a row-header is close to row 0.
   // calling setData with value = null performs an inversion if the last operation was a setData operation.
-
   setData(
     region: DataModel.CellRegion,
     row: number,
@@ -101,6 +99,10 @@ export class EditableDSVModel extends MutableDataModel {
     return true;
   }
 
+  /**
+   * Adds a row to the body of the model
+   * @param row The index of the row to be inserted (0-indexed)
+   */
   addRow(row: number): void {
     const model = this.dsvModel;
     const newRow = this.blankRow(model, row);
@@ -115,6 +117,10 @@ export class EditableDSVModel extends MutableDataModel {
     this.handleEmits(change);
   }
 
+  /**
+   * Adds a column to the body of the model
+   * @param column The index of the column to be inserted (0-indexed)
+   */
   addColumn(column: number): void {
     const model = this.dsvModel;
     const data = this.dsvModel.rawData;
@@ -124,7 +130,7 @@ export class EditableDSVModel extends MutableDataModel {
     let mapper: (elem: any, index: number) => string;
     if (column < this.columnCount()) {
       // we are inserting in a "normal place".
-      mapper = (elem: any, index: number) => {
+      mapper = (elem: any, index: number): string => {
         return (
           data.slice(
             model.getOffsetIndex(index + 1, 0),
@@ -139,7 +145,7 @@ export class EditableDSVModel extends MutableDataModel {
       };
     } else {
       // we are inserting at the end
-      mapper = (elem: any, index: number) => {
+      mapper = (elem: any, index: number): string => {
         return (
           data.slice(model.getOffsetIndex(index + 1, 0), this.rowEnd(index)) +
           model.delimiter
@@ -174,6 +180,10 @@ export class EditableDSVModel extends MutableDataModel {
     this.handleEmits(change);
   }
 
+  /**
+   * Removes a row from the body of the model
+   * @param row The index of the row removed (0-indexed)
+   */
   removeRow(row: number): void {
     const model = this.dsvModel;
     this.sliceOut(model, { row: row });
@@ -189,6 +199,10 @@ export class EditableDSVModel extends MutableDataModel {
     this.handleEmits(change);
   }
 
+  /**
+   * Removes a column from the body of the model
+   * @param column The index of the column removed (0-indexed)
+   */
   removeColumn(column: number): void {
     const model = this.dsvModel;
     const data = this.dsvModel.rawData;
@@ -198,7 +212,7 @@ export class EditableDSVModel extends MutableDataModel {
     let mapper: (elem: any, index: number) => string;
     if (column < this.columnCount() - 1) {
       // removing in a normal place
-      mapper = (elem: any, index: number) => {
+      mapper = (elem: any, index: number): string => {
         return (
           data.slice(
             model.getOffsetIndex(index + 1, 0),
@@ -212,7 +226,7 @@ export class EditableDSVModel extends MutableDataModel {
       };
     } else {
       // removing at the end
-      mapper = (elem: any, index: number) => {
+      mapper = (elem: any, index: number): string => {
         return data.slice(
           model.getOffsetIndex(index + 1, 0),
           model.getOffsetIndex(index + 1, column) - model.delimiter.length
@@ -247,11 +261,15 @@ export class EditableDSVModel extends MutableDataModel {
     this.handleEmits(change);
   }
 
+  /**
+   * Copies the current selection and potential removes it (cut)
+   * @param selection The current selction
+   * @param mode 'cut-cells' or 'copy-cells'
+   */
   cutAndCopy(
     selection: ICellSelection,
     mode: 'cut-cells' | 'copy-cells' = 'cut-cells'
   ): void {
-    // this._cellSelection = selection;
     const keepingValue = mode === 'copy-cells' ? true : false;
     const model = this.dsvModel;
     const { startRow, startColumn, endRow, endColumn } = selection;
@@ -287,6 +305,11 @@ export class EditableDSVModel extends MutableDataModel {
     this.handleEmits(change);
   }
 
+  /**
+   * Pastes the current data from the clipboard
+   * @param startCoord The start coordinates of the paste
+   * @param data The data being pasted
+   */
   paste(startCoord: ICoordinates, data: string | null = null): void {
     let clipboardArray = this._clipBoardArr;
     const model = this.dsvModel;
@@ -340,9 +363,10 @@ export class EditableDSVModel extends MutableDataModel {
     this.handleEmits(change);
   }
 
-  /*
-  Utilizes the litestore to undo the last change
-  */
+  /**
+   * Utilizes the litestore to undo the last change
+   * @param change The arguments of the last change
+   */
   undo(change: DataModel.ChangedArgs): void {
     const model = this._dsvModel;
     let undoChange: DataModel.ChangedArgs;
@@ -432,9 +456,10 @@ export class EditableDSVModel extends MutableDataModel {
     this.handleEmits(undoChange);
   }
 
-  /*
-  Utilizes the litestore to redo the last undo
-  */
+  /**
+   * Utilizes the litestore to redo the last undo
+   * @param change The arguments of the change to be redone
+   */
   redo(change: DataModel.ChangedArgs, modelData: string): void {
     const model = this._dsvModel;
 
@@ -453,6 +478,11 @@ export class EditableDSVModel extends MutableDataModel {
     this.handleEmits(change);
   }
 
+  /**
+   * Swaps the data between two rows
+   * @param startRow The index of the row to be moved (0-indexed)
+   * @param endRow The index of the other row to be moved (0-indexed)
+   */
   moveRow(startRow: number, endRow: number): void {
     // Bail early if there is nothing to move
     if (startRow === endRow) {
@@ -505,9 +535,14 @@ export class EditableDSVModel extends MutableDataModel {
     this.handleEmits(change);
   }
 
-  moveColumn(start: number, end: number): void {
+  /**
+   * Swaps the data between two columns
+   * @param startColumn The index of the column to be moved (0-indexed)
+   * @param endColumn The index of the other column to be moved (0-indexed)
+   */
+  moveColumn(startColumn: number, endColumn: number): void {
     // bail early if we aren't moving anywhere
-    if (start === end) {
+    if (startColumn === endColumn) {
       return;
     }
     const model = this.dsvModel;
@@ -522,92 +557,97 @@ export class EditableDSVModel extends MutableDataModel {
     //         on whether start < destination
     //   2. start on end, destination normal
     //   3. start normal, destination on end
-    if (start < this.columnCount() - 1 && end < this.columnCount() - 1) {
+    if (
+      startColumn < this.columnCount() - 1 &&
+      endColumn < this.columnCount() - 1
+    ) {
       // both remove point and insertion point are normal. Need to determine which
       // is first
-      if (start < end) {
+      if (startColumn < endColumn) {
         // define the callback function to handle this case
-        mapper = (elem: any, index: number) => {
+        mapper = (elem: any, index: number): string => {
           return (
             data.slice(
               model.getOffsetIndex(index + 1, 0),
-              model.getOffsetIndex(index + 1, start)
+              model.getOffsetIndex(index + 1, startColumn)
             ) +
             data.slice(
-              model.getOffsetIndex(index + 1, start + 1),
-              model.getOffsetIndex(index + 1, end + 1)
+              model.getOffsetIndex(index + 1, startColumn + 1),
+              model.getOffsetIndex(index + 1, endColumn + 1)
             ) +
             data.slice(
-              model.getOffsetIndex(index + 1, start),
-              model.getOffsetIndex(index + 1, start + 1)
+              model.getOffsetIndex(index + 1, startColumn),
+              model.getOffsetIndex(index + 1, startColumn + 1)
             ) +
             data.slice(
-              model.getOffsetIndex(index + 1, end + 1),
+              model.getOffsetIndex(index + 1, endColumn + 1),
               this.rowEnd(index)
             )
           );
         };
       } else {
-        // start after end
+        // startColumn after end
 
         // define mapper for this case
-        mapper = (elem: any, index: number) => {
+        mapper = (elem: any, index: number): string => {
           return (
             data.slice(
               model.getOffsetIndex(index + 1, 0),
-              model.getOffsetIndex(index + 1, end)
+              model.getOffsetIndex(index + 1, endColumn)
             ) +
             data.slice(
-              model.getOffsetIndex(index + 1, start),
-              model.getOffsetIndex(index + 1, start + 1)
+              model.getOffsetIndex(index + 1, startColumn),
+              model.getOffsetIndex(index + 1, startColumn + 1)
             ) +
             data.slice(
-              model.getOffsetIndex(index + 1, end),
-              model.getOffsetIndex(index + 1, start)
+              model.getOffsetIndex(index + 1, endColumn),
+              model.getOffsetIndex(index + 1, startColumn)
             ) +
             data.slice(
-              model.getOffsetIndex(index + 1, start + 1),
+              model.getOffsetIndex(index + 1, startColumn + 1),
               this.rowEnd(index)
             )
           );
         };
       }
-    } else if (end === this.columnCount() - 1) {
+    } else if (endColumn === this.columnCount() - 1) {
       // destination is the end column. Set up mapper to handle
       // this case
-      mapper = (elem: any, index: number) => {
+      mapper = (elem: any, index: number): string => {
         return (
           data.slice(
             model.getOffsetIndex(index + 1, 0),
-            model.getOffsetIndex(index + 1, start)
+            model.getOffsetIndex(index + 1, startColumn)
           ) +
           data.slice(
-            model.getOffsetIndex(index + 1, start + 1),
+            model.getOffsetIndex(index + 1, startColumn + 1),
             this.rowEnd(index)
           ) +
           model.delimiter +
           data.slice(
-            model.getOffsetIndex(index + 1, start),
-            model.getOffsetIndex(index + 1, start + 1) - model.delimiter.length
+            model.getOffsetIndex(index + 1, startColumn),
+            model.getOffsetIndex(index + 1, startColumn + 1) -
+              model.delimiter.length
           )
         );
       };
     } else {
-      // start is at the end. Define mapper to handle this case
-      mapper = (elem: any, index: number) => {
+      // startColumn is at the end. Define mapper to handle this case
+      mapper = (elem: any, index: number): string => {
         return (
           data.slice(
             model.getOffsetIndex(index + 1, 0),
-            model.getOffsetIndex(index + 1, end)
+            model.getOffsetIndex(index + 1, endColumn)
           ) +
           data.slice(
-            model.getOffsetIndex(index + 1, start),
+            model.getOffsetIndex(index + 1, startColumn),
             this.rowEnd(index)
           ) +
           model.delimiter +
           data.slice(
-            model.getOffsetIndex(index + 1, end),
-            model.getOffsetIndex(index + 1, start) - model.delimiter.length
+            model.getOffsetIndex(index + 1, endColumn),
+            model.getOffsetIndex(index + 1, startColumn) -
+              model.delimiter.length
           )
         );
       };
@@ -619,9 +659,9 @@ export class EditableDSVModel extends MutableDataModel {
     const change: DataModel.ChangedArgs = {
       type: 'columns-moved',
       region: 'body',
-      index: start,
+      index: startColumn,
       span: 1,
-      destination: end
+      destination: endColumn
     };
     this.updateLitestore(change);
     this.handleEmits(change);
@@ -629,6 +669,7 @@ export class EditableDSVModel extends MutableDataModel {
 
   /**
    * Handles all singal emitting and model parsing after the raw data is manipulated
+   * @param change The current change to be emitted to the Datagrid
    */
   handleEmits(change: DataModel.ChangedArgs): void {
     this._silenceDsvModel();
@@ -687,6 +728,11 @@ export class EditableDSVModel extends MutableDataModel {
       model.rawData.slice(insertionIndex);
   }
 
+  /**
+   * Returns a blank row with the correct numbers of columns and correct delimiters
+   * @param model The DSV model being used
+   * @param row The index of the row being inserted (determines whether to add a row delimiter or not)
+   */
   blankRow(model: DSVModel, row: number): string {
     const rows = this.rowCount();
     if (row > rows - 1) {
@@ -698,7 +744,6 @@ export class EditableDSVModel extends MutableDataModel {
   }
 
   /**
-   *
    * @param coords: the coordinates of the cell.
    */
   firstIndex(coords: ICoordinates): number {
@@ -778,9 +823,10 @@ export class EditableDSVModel extends MutableDataModel {
     }
   }
 
-  /*
-  Creates a new transaction containing the raw data, header, and changeArgs
-  */
+  /**
+   * Creates a new transaction containing the raw data, header, and changeArgs
+   * @param change The change args for the Datagrid (may be null)
+   */
   updateLitestore(change?: DataModel.ChangedArgs): void {
     const model = this._dsvModel;
     this._litestore.beginTransaction();
@@ -807,7 +853,6 @@ export class EditableDSVModel extends MutableDataModel {
     this
   );
   private _litestore: Litestore;
-  // private _cellSelection: ICellSelection | null;
 }
 
 interface ICoordinates {
