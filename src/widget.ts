@@ -26,8 +26,7 @@ import { toArray } from '@lumino/algorithm';
 import { CommandRegistry } from '@lumino/commands';
 import { ISignal } from '@lumino/signaling';
 import {
-  SaveButton,
-  PasteButton
+  SaveButton
   /*FilterButton*/
 } from './toolbar';
 import { ISearchMatch } from '@jupyterlab/documentsearch';
@@ -514,19 +513,25 @@ export class EditableCSVViewer extends Widget {
         this.dataModel.removeColumn(this._column);
         break;
       }
+      case 'cut-cells':
       case 'copy-cells': {
         this._grid.copyToClipboard();
+        const { r1, c1, r2, c2 } = this.getSelectedRange();
+        this.dataModel.cutAndCopy(
+          {
+            startRow: r1,
+            startColumn: c1,
+            endRow: r2,
+            endColumn: c2
+          },
+          type
+        );
         break;
       }
-      case 'cut-cells': {
-        this._grid.copyToClipboard();
-        const { r1, c1, r2, c2 } = this.getSelectedRange();
-        this.dataModel.cut({
-          startRow: r1,
-          startColumn: c1,
-          endRow: r2,
-          endColumn: c2
-        });
+      case 'paste-cells': {
+        // we will determine the location based on the current selection
+        const { r1, c1 } = this.getSelectedRange();
+        this.dataModel.paste({ row: r1, column: c1 });
         break;
       }
       case 'undo': {
@@ -647,7 +652,7 @@ export class EditableCSVDocumentWidget extends DocumentWidget<
 
     // add commands to the toolbar
     const commands = commandRegistry;
-    const { undo, redo, cut, copy } = CommandIDs;
+    const { undo, redo, cutToolbar, copyToolbar, pasteToolbar } = CommandIDs;
     const saveData = new SaveButton({ selected: content.delimiter });
     this.toolbar.addItem('save-data', saveData);
 
@@ -665,15 +670,16 @@ export class EditableCSVDocumentWidget extends DocumentWidget<
     );
     this.toolbar.addItem(
       'cut',
-      new CommandToolbarButton({ commands, id: cut })
+      new CommandToolbarButton({ commands, id: cutToolbar })
     );
     this.toolbar.addItem(
       'copy',
-      new CommandToolbarButton({ commands, id: copy })
+      new CommandToolbarButton({ commands, id: copyToolbar })
     );
-
-    const pasteData = new PasteButton({ selected: content.delimiter });
-    this.toolbar.addItem('paste-data', pasteData);
+    this.toolbar.addItem(
+      'paste',
+      new CommandToolbarButton({ commands, id: pasteToolbar })
+    );
 
     /* possible feature
     const filterData = new FilterButton({ selected: content.delimiter });

@@ -158,17 +158,32 @@ describe('table editing functions', () => {
   });
   describe('cut function', () => {
     it('cut a value', () => {
-      model.cut({ startRow: 0, endRow: 0, startColumn: 0, endColumn: 0 });
+      model.cutAndCopy({
+        startRow: 0,
+        endRow: 0,
+        startColumn: 0,
+        endColumn: 0
+      });
       const expectedData = 'A,B,C\n,2,3\nabc,5,6\n7,8,9';
       expect(model.dsvModel.rawData).toBe(expectedData);
     });
     it('cut end row', () => {
-      model.cut({ startRow: 2, endRow: 2, startColumn: 0, endColumn: 2 });
+      model.cutAndCopy({
+        startRow: 2,
+        endRow: 2,
+        startColumn: 0,
+        endColumn: 2
+      });
       const expectedData = 'A,B,C\n1,2,3\nabc,5,6\n,,';
       expect(model.dsvModel.rawData).toBe(expectedData);
     });
     it('cut end column', () => {
-      model.cut({ startRow: 0, endRow: 2, startColumn: 2, endColumn: 2 });
+      model.cutAndCopy({
+        startRow: 0,
+        endRow: 2,
+        startColumn: 2,
+        endColumn: 2
+      });
       const expectedData = 'A,B,C\n1,2,\nabc,5,\n7,8,';
       expect(model.dsvModel.rawData).toBe(expectedData);
     });
