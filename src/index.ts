@@ -21,7 +21,8 @@ import {
   redoIcon,
   cutIcon,
   copyIcon,
-  pasteIcon
+  pasteIcon,
+  saveIcon
 } from '@jupyterlab/ui-components';
 import { DataGrid } from '@lumino/datagrid';
 import { EditableCSVViewer, EditableCSVViewerFactory } from './widget';
@@ -250,6 +251,17 @@ function addCommands(
     }
   });
 
+  commands.addCommand(CommandIDs.save, {
+    icon: saveIcon,
+    iconLabel: 'Save',
+    className: 'jp-toolbar-save',
+    caption: 'Redo',
+    execute: () => {
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('save');
+    }
+  });
+
   // Add items to the context menu
   app.contextMenu.addItem({
     command: CommandIDs.addRow,
@@ -387,5 +399,6 @@ export const CommandIDs = {
   cutToolbar: 'tde:cut-tb',
   pasteToolbar: 'tde:paste-tb',
   undo: 'tde:undo',
-  redo: 'tde:redo'
+  redo: 'tde:redo',
+  save: 'tde-save'
 };

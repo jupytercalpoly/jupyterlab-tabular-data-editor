@@ -25,10 +25,6 @@ import { numberToCharacter } from './_helper';
 import { toArray } from '@lumino/algorithm';
 import { CommandRegistry } from '@lumino/commands';
 import { ISignal } from '@lumino/signaling';
-import {
-  SaveButton
-  /*FilterButton*/
-} from './toolbar';
 import { ISearchMatch } from '@jupyterlab/documentsearch';
 import { CommandIDs } from './index';
 
@@ -486,6 +482,10 @@ export class EditableCSVViewer extends Widget {
     this.context.model.fromString(data);
   }
 
+  private _save(): void {
+    this.context.save();
+  }
+
   private _cancelEditing(emitter: EditableDSVModel): void {
     this._grid.editorController.cancel();
   }
@@ -566,6 +566,9 @@ export class EditableCSVViewer extends Widget {
         this.dataModel.redo(change, modelData);
         break;
       }
+      case 'save':
+        this._save();
+        break;
     }
   }
 
@@ -652,14 +655,19 @@ export class EditableCSVDocumentWidget extends DocumentWidget<
 
     // add commands to the toolbar
     const commands = commandRegistry;
-    const { undo, redo, cutToolbar, copyToolbar, pasteToolbar } = CommandIDs;
-    const saveData = new SaveButton({ selected: content.delimiter });
-    this.toolbar.addItem('save-data', saveData);
+    const {
+      save,
+      undo,
+      redo,
+      cutToolbar,
+      copyToolbar,
+      pasteToolbar
+    } = CommandIDs;
 
-    // this.toolbar.addItem(
-    //   'save',
-    //   new CommandToolbarButton({ commands, id: 'docmanager:save' })
-    // );
+    this.toolbar.addItem(
+      'save',
+      new CommandToolbarButton({ commands, id: save })
+    );
     this.toolbar.addItem(
       'undo',
       new CommandToolbarButton({ commands, id: undo })
