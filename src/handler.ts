@@ -189,7 +189,7 @@ export class RichMouseHandler extends BasicMouseHandler {
       r2 =
         top +
         Math.min(
-          this._grid.pageHeight,
+          this._grid.pageHeight + this._grid.headerHeight,
           this._grid.bodyHeight + this._grid.headerHeight
         );
       c1 =
@@ -202,7 +202,7 @@ export class RichMouseHandler extends BasicMouseHandler {
       c2 =
         left +
         Math.min(
-          this._grid.pageWidth,
+          this._grid.pageWidth + this._grid.headerWidth,
           this._grid.headerWidth + this._grid.bodyWidth
         );
     }
