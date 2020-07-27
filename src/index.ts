@@ -264,13 +264,13 @@ function addCommands(
 
   // Add items to the context menu
   app.contextMenu.addItem({
-    command: CommandIDs.copyContextMenu,
+    command: CommandIDs.cutContextMenu,
     selector: SELECTOR,
     rank: 0
   });
 
   app.contextMenu.addItem({
-    command: CommandIDs.cutContextMenu,
+    command: CommandIDs.copyContextMenu,
     selector: SELECTOR,
     rank: 0
   });
