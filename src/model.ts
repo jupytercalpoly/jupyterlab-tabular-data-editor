@@ -147,21 +147,18 @@ export class EditableDSVModel extends MutableDataModel {
       };
     }
 
-    // replace the raw data
-    model.rawData =
-      data.slice(0, this.colHeaderLength) +
-      mapArray.map(mapper).join(model.rowDelimiter);
-
     const prevNumCol = this.columnCount();
     const nextLetter = numberToCharacter(prevNumCol + 1);
 
     let headerLength = this.colHeaderLength;
 
+    // replace the raw data
     model.rawData =
       model.rawData.slice(0, headerLength - 1) +
       model.delimiter +
       nextLetter +
-      model.rawData.slice(headerLength - 1);
+      model.rowDelimiter +
+      mapArray.map(mapper).join(model.rowDelimiter);
 
     headerLength += model.delimiter.length + nextLetter.length;
     // need to push the letter to the header here so that it updates
@@ -194,44 +191,34 @@ export class EditableDSVModel extends MutableDataModel {
 
   removeColumn(column: number): void {
     const model = this.dsvModel;
-    // Vectorized column removal.
-    // 2 cases: removing a column which is not the end column or removing the end column
-
+    const data = this.dsvModel.rawData;
     // initialize the replacement array
-    const replaceArray: Array<string | 0> = new Array(this.rowCount() - 1).fill(
-      0
-    );
-
+    const mapArray: Array<string | 0> = new Array(this.rowCount()).fill(0);
+    // initialize a callback for the map method
+    let mapper: (elem: any, index: number) => string;
     if (column < this.columnCount() - 1) {
       // removing in a normal place
-      model.rawData =
-        model.rawData.slice(0, model.getOffsetIndex(1, column)) +
-        replaceArray
-          .map((elem, index) => {
-            return model.rawData.slice(
-              model.getOffsetIndex(index + 1, column + 1),
-              model.getOffsetIndex(index + 2, column)
-            );
-          })
-          .join('') +
-        model.rawData.slice(model.getOffsetIndex(this.rowCount(), column + 1));
+      mapper = (elem: any, index: number) => {
+        return (
+          data.slice(
+            model.getOffsetIndex(index + 1, 0),
+            model.getOffsetIndex(index + 1, column)
+          ) +
+          data.slice(
+            model.getOffsetIndex(index + 1, column + 1),
+            this.rowEnd(index)
+          )
+        );
+      };
     } else {
-      // get the trim value
-      const lt = model.delimiter.length;
-      // removing the end column
-      model.rawData =
-        model.rawData.slice(0, model.getOffsetIndex(1, column) - lt) +
-        model.rowDelimiter +
-        replaceArray
-          .map((elem, index) => {
-            return model.rawData.slice(
-              model.getOffsetIndex(index + 2, 0),
-              model.getOffsetIndex(index + 2, column) - lt
-            );
-          })
-          .join(model.rowDelimiter);
+      // removing at the end
+      mapper = (elem: any, index: number) => {
+        return data.slice(
+          model.getOffsetIndex(index + 1, 0),
+          model.getOffsetIndex(index + 1, column) - model.delimiter.length
+        );
+      };
     }
-
     // update rawData and header (header handles immediate update, rawData handles parseAsync)
     // slice out the last letter in the column header
     let headerLength = this.colHeaderLength;
@@ -243,7 +230,7 @@ export class EditableDSVModel extends MutableDataModel {
     model.rawData =
       model.rawData.slice(0, headerIndex) +
       model.rowDelimiter +
-      model.rawData.slice(headerLength);
+      mapArray.map(mapper).join(model.rowDelimiter);
 
     // need to remove the last letter from the header
     const removedLetter = model.header.pop();
