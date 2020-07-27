@@ -283,6 +283,7 @@ export class EditableDSVModel extends MutableDataModel {
       rowSpan: numRows,
       columnSpan: numColumns
     };
+    this.updateLitestore(change);
     this.handleEmits(change);
   }
 
@@ -335,6 +336,7 @@ export class EditableDSVModel extends MutableDataModel {
       rowSpan: rowSpan,
       columnSpan: columnSpan
     };
+    this.updateLitestore(change);
     this.handleEmits(change);
   }
 
