@@ -512,6 +512,7 @@ export class EditableDSVModel extends MutableDataModel {
     // initialize an array to map from.
     const mapArray: Array<string | 0> = new Array(this.rowCount()).fill(0);
     // intialize the callback we will use to map the array to the row values
+    const data = this.dsvModel.rawData;
     let mapper: (elem: any, index: number) => string;
     // 3 cases:
     //   1. start normal, destination normal
@@ -526,102 +527,92 @@ export class EditableDSVModel extends MutableDataModel {
         // define the callback function to handle this case
         mapper = (elem: any, index: number) => {
           return (
-            model.rawData.slice(
+            data.slice(
               model.getOffsetIndex(index + 1, 0),
               model.getOffsetIndex(index + 1, start)
             ) +
-            model.rawData.slice(
+            data.slice(
               model.getOffsetIndex(index + 1, start + 1),
               model.getOffsetIndex(index + 1, end + 1)
             ) +
-            model.rawData.slice(
+            data.slice(
               model.getOffsetIndex(index + 1, start),
               model.getOffsetIndex(index + 1, start + 1)
             ) +
-            model.rawData.slice(
+            data.slice(
               model.getOffsetIndex(index + 1, end + 1),
               this.rowEnd(index)
             )
           );
         };
-        model.rawData =
-          model.rawData.slice(0, this.colHeaderLength) +
-          mapArray.map(mapper).join(model.rowDelimiter);
       } else {
         // start after end
 
         // define mapper for this case
         mapper = (elem: any, index: number) => {
           return (
-            model.rawData.slice(
+            data.slice(
               model.getOffsetIndex(index + 1, 0),
               model.getOffsetIndex(index + 1, end)
             ) +
-            model.rawData.slice(
+            data.slice(
               model.getOffsetIndex(index + 1, start),
               model.getOffsetIndex(index + 1, start + 1)
             ) +
-            model.rawData.slice(
+            data.slice(
               model.getOffsetIndex(index + 1, end),
               model.getOffsetIndex(index + 1, start)
             ) +
-            model.rawData.slice(
+            data.slice(
               model.getOffsetIndex(index + 1, start + 1),
               this.rowEnd(index)
             )
           );
         };
-        model.rawData =
-          model.rawData.slice(0, this.colHeaderLength) +
-          mapArray.map(mapper).join(model.rowDelimiter);
       }
     } else if (end === this.columnCount() - 1) {
       // destination is the end column. Set up mapper to handle
       // this case
-
       mapper = (elem: any, index: number) => {
         return (
-          model.rawData.slice(
+          data.slice(
             model.getOffsetIndex(index + 1, 0),
             model.getOffsetIndex(index + 1, start)
           ) +
-          model.rawData.slice(
+          data.slice(
             model.getOffsetIndex(index + 1, start + 1),
             this.rowEnd(index)
           ) +
           model.delimiter +
-          model.rawData.slice(
+          data.slice(
             model.getOffsetIndex(index + 1, start),
             model.getOffsetIndex(index + 1, start + 1) - model.delimiter.length
           )
         );
       };
-      model.rawData =
-        model.rawData.slice(0, this.colHeaderLength) +
-        mapArray.map(mapper).join(model.rowDelimiter);
     } else {
       // start is at the end. Define mapper to handle this case
       mapper = (elem: any, index: number) => {
         return (
-          model.rawData.slice(
+          data.slice(
             model.getOffsetIndex(index + 1, 0),
             model.getOffsetIndex(index + 1, end)
           ) +
-          model.rawData.slice(
+          data.slice(
             model.getOffsetIndex(index + 1, start),
             this.rowEnd(index)
           ) +
           model.delimiter +
-          model.rawData.slice(
+          data.slice(
             model.getOffsetIndex(index + 1, end),
             model.getOffsetIndex(index + 1, start) - model.delimiter.length
           )
         );
       };
-      model.rawData =
-        model.rawData.slice(0, this.colHeaderLength) +
-        mapArray.map(mapper).join(model.rowDelimiter);
     }
+    model.rawData =
+      model.rawData.slice(0, this.colHeaderLength) +
+      mapArray.map(mapper).join(model.rowDelimiter);
     // emit the changes to the UI
     const change: DataModel.ChangedArgs = {
       type: 'columns-moved',
