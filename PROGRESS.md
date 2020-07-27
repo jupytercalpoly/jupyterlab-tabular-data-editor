@@ -6,17 +6,32 @@ An account of tasks and features planned and completed
 - [x] Save
 - [x] Add rows/columns
 - [x] Delete rows/columns
-- [ ] Move rows/columns
+- [x] Move rows/columns
 - [x] Undo/redo capabilities
 - [x] Copy, paste, cut
 - [ ] Toolbar for editing functions
+- [ ] Search and Replace
+---
+**Potential Future Features**
 - [ ] Filter
 - [ ] Sort
-- [ ] Search and Replace
 - [ ] Creating a new csv from launcher
 - [ ] Referencing other cells in formulas (relative positioning)
 
 ## Current Progress
+
+### 07/20/20 - 07/24/20
+- Search and replace functionality - Kalen
+- Theme manager (light/dark) - Kalen
+- CSS Styling changes to dark theme - Ryan
+- CSS Styling changes to moving row/column shadow - Ryan
+- Move columns and rows - Logan
+
+**Design Exploration - Ryan**
+- Ghost columns/ rows
+- No formula bar
+- Insert drop down menu toolbar
+- Simplified context menus
 
 ### 07/13/20 - 07/17/20
 - Set up Jest framework for testing - Kalen, Logan
