@@ -264,30 +264,6 @@ function addCommands(
 
   // Add items to the context menu
   app.contextMenu.addItem({
-    command: CommandIDs.addRow,
-    selector: SELECTOR,
-    rank: 0
-  });
-
-  app.contextMenu.addItem({
-    command: CommandIDs.removeRow,
-    selector: SELECTOR,
-    rank: 0
-  });
-
-  app.contextMenu.addItem({
-    command: CommandIDs.addColumn,
-    selector: SELECTOR,
-    rank: 0
-  });
-
-  app.contextMenu.addItem({
-    command: CommandIDs.removeColumn,
-    selector: SELECTOR,
-    rank: 0
-  });
-
-  app.contextMenu.addItem({
     command: CommandIDs.copyContextMenu,
     selector: SELECTOR,
     rank: 0
@@ -301,6 +277,42 @@ function addCommands(
 
   app.contextMenu.addItem({
     command: CommandIDs.pasteContextMenu,
+    selector: SELECTOR,
+    rank: 0
+  });
+
+  app.contextMenu.addItem({
+    selector: SELECTOR,
+    rank: 0,
+    type: 'separator'
+  });
+
+  app.contextMenu.addItem({
+    command: CommandIDs.addRow,
+    selector: SELECTOR,
+    rank: 0
+  });
+
+  app.contextMenu.addItem({
+    command: CommandIDs.removeRow,
+    selector: SELECTOR,
+    rank: 0
+  });
+
+  app.contextMenu.addItem({
+    selector: SELECTOR,
+    rank: 0,
+    type: 'separator'
+  });
+
+  app.contextMenu.addItem({
+    command: CommandIDs.addColumn,
+    selector: SELECTOR,
+    rank: 0
+  });
+
+  app.contextMenu.addItem({
+    command: CommandIDs.removeColumn,
     selector: SELECTOR,
     rank: 0
   });
@@ -319,6 +331,14 @@ function addCommands(
     keys: ['Accel X'],
     selector: SELECTOR
   });
+
+  app.commands.addKeyBinding({
+    command: CommandIDs.pasteContextMenu,
+    args: {},
+    keys: ['Accel V'],
+    selector: SELECTOR
+  });
+
   app.commands.addKeyBinding({
     command: CommandIDs.undo,
     args: {},
