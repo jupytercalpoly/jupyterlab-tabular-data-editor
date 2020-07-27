@@ -20,7 +20,8 @@ import {
   undoIcon,
   redoIcon,
   cutIcon,
-  copyIcon
+  copyIcon,
+  pasteIcon
 } from '@jupyterlab/ui-components';
 import { DataGrid } from '@lumino/datagrid';
 import { EditableCSVViewer, EditableCSVViewerFactory } from './widget';
@@ -170,7 +171,7 @@ function addCommands(
     }
   });
 
-  commands.addCommand(CommandIDs.copy, {
+  commands.addCommand(CommandIDs.copyToolbar, {
     icon: copyIcon,
     iconLabel: 'Copy',
     className: 'jp-toolbar-copy',
@@ -181,7 +182,7 @@ function addCommands(
     }
   });
 
-  commands.addCommand(CommandIDs.cut, {
+  commands.addCommand(CommandIDs.cutToolbar, {
     icon: cutIcon,
     iconLabel: 'Cut',
     className: 'jp-toolbar-cut',
@@ -189,6 +190,41 @@ function addCommands(
     execute: () => {
       tracker.currentWidget &&
         tracker.currentWidget.content.changeModelSignal.emit('cut-cells');
+    }
+  });
+
+  commands.addCommand(CommandIDs.pasteToolbar, {
+    icon: pasteIcon,
+    iconLabel: 'Paste',
+    className: 'jp-toolbar-paste',
+    caption: 'Paste',
+    execute: () => {
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('paste-cells');
+    }
+  });
+
+  commands.addCommand(CommandIDs.copyContextMenu, {
+    label: 'Copy',
+    execute: () => {
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('copy-cells');
+    }
+  });
+
+  commands.addCommand(CommandIDs.cutContextMenu, {
+    label: 'Cut',
+    execute: () => {
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('cut-cells');
+    }
+  });
+
+  commands.addCommand(CommandIDs.pasteContextMenu, {
+    label: 'Paste',
+    execute: () => {
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('paste-cells');
     }
   });
 
@@ -240,27 +276,33 @@ function addCommands(
   });
 
   app.contextMenu.addItem({
-    command: CommandIDs.copy,
+    command: CommandIDs.copyContextMenu,
     selector: SELECTOR,
     rank: 0
   });
 
   app.contextMenu.addItem({
-    command: CommandIDs.cut,
+    command: CommandIDs.cutContextMenu,
+    selector: SELECTOR,
+    rank: 0
+  });
+
+  app.contextMenu.addItem({
+    command: CommandIDs.pasteContextMenu,
     selector: SELECTOR,
     rank: 0
   });
 
   // add keybindings
   app.commands.addKeyBinding({
-    command: CommandIDs.copy,
+    command: CommandIDs.copyContextMenu,
     args: {},
     keys: ['Accel C'],
     selector: SELECTOR
   });
 
   app.commands.addKeyBinding({
-    command: CommandIDs.cut,
+    command: CommandIDs.cutContextMenu,
     args: {},
     keys: ['Accel X'],
     selector: SELECTOR
@@ -338,9 +380,12 @@ export const CommandIDs = {
   addColumn: 'tde:add-column',
   removeRow: 'tde-remove-row',
   removeColumn: 'tde:remove-column',
-  copy: 'tde:copy',
-  paste: 'tde:paste',
-  cut: 'tde:cut',
+  copyContextMenu: 'tde:copy',
+  cutContextMenu: 'tde:cut',
+  pasteContextMenu: 'tde:paste-cm',
+  copyToolbar: 'tde:copy-tb',
+  cutToolbar: 'tde:cut-tb',
+  pasteToolbar: 'tde:paste-tb',
   undo: 'tde:undo',
   redo: 'tde:redo'
 };

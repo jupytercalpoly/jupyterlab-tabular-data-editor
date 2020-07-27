@@ -201,14 +201,19 @@ export class EditableDSVModel extends MutableDataModel {
     this.handleEmits(change);
   }
 
-  cutAndCopy(selection: ICellSelection, mode: 'cut' | 'copy' = 'cut'): void {
+  cutAndCopy(
+    selection: ICellSelection,
+    mode: 'cut-cells' | 'copy-cells' = 'cut-cells'
+  ): void {
     // this._cellSelection = selection;
-    const keepingValue = mode === 'copy' ? true : false;
+    const keepingValue = mode === 'copy-cells' ? true : false;
     const model = this.dsvModel;
     const { startRow, startColumn, endRow, endColumn } = selection;
     const numRows = endRow - startRow + 1;
     const numColumns = endColumn - startColumn + 1;
-    this._clipBoardArr = new Array(numRows).map(() => new Array(numColumns));
+    this._clipBoardArr = new Array(numRows)
+      .fill(0)
+      .map(() => new Array(numColumns).fill(0));
 
     let row: number;
     let column: number;
@@ -236,7 +241,7 @@ export class EditableDSVModel extends MutableDataModel {
   }
 
   paste(startCoord: ICoordinates, data: string | null = null): void {
-    let clipboardArray: Array<Array<string>>;
+    let clipboardArray = this._clipBoardArr;
     const model = this.dsvModel;
 
     // stop the UI from auto-selecting the cell after paste
@@ -246,7 +251,7 @@ export class EditableDSVModel extends MutableDataModel {
     if (this._clipBoardArr) {
       clipboardArray = this._clipBoardArr;
       // Otherwise, if we have data, get it into an array
-    } else if (data) {
+    } else if (data !== null) {
       // convert the copied data to an array
       clipboardArray = data.split('\n').map(elem => elem.split('\t'));
     } else {
