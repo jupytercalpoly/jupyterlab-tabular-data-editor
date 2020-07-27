@@ -150,7 +150,7 @@ export class EditableDSVModel extends MutableDataModel {
 
     // replace the raw data
     model.rawData =
-      data.slice(0, headerLength - 1) +
+      model.rawData.slice(0, headerLength - 1) +
       model.delimiter +
       nextLetter +
       model.rowDelimiter +
