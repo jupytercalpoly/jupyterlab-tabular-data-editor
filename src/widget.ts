@@ -95,7 +95,7 @@ export class GridSearchService {
   /**
    * Clear the search.
    */
-  clear() {
+  clear(): void {
     this._query = null;
     this._row = 0;
     this._column = -1;
@@ -106,7 +106,7 @@ export class GridSearchService {
    * incrementally look for searchText.
    */
   find(query: RegExp, reverse = false): ISearchMatch[] | boolean {
-    const model = this._grid.dataModel!;
+    const model = this._grid.dataModel;
     const rowCount = model.rowCount('body');
     const columnCount = model.columnCount('body');
 
@@ -128,7 +128,7 @@ export class GridSearchService {
     const maxColumn =
       (this._grid.scrollX + this._grid.pageWidth) /
       this._grid.defaultSizes.columnHeaderHeight;
-    const isInViewport = (row: number, column: number) => {
+    const isInViewport = (row: number, column: number): boolean => {
       return (
         row >= minRow &&
         row <= maxRow &&

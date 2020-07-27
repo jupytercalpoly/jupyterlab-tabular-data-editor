@@ -5,6 +5,7 @@ import { EditableCSVViewer } from './widget';
 import { DocumentWidget } from '@jupyterlab/docregistry';
 import { Signal, ISignal } from '@lumino/signaling';
 import { Widget } from '@lumino/widgets';
+import { DATAMODEL_SCHEMA, RECORD_ID } from './model';
 
 // The type for which canSearchFor returns true
 export type CSVDocumentWidget = DocumentWidget<EditableCSVViewer>;
@@ -117,9 +118,18 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
    *
    * @returns A promise that resolves once the action has completed.
    */
-  async replaceCurrentMatch(newText: string): Promise<boolean> {
+  async replaceCurrentMatch(
+    newText: string,
+    useLitestore = true
+  ): Promise<boolean> {
     const { line, column } = this._target.content.searchService.currentMatch;
-    await this._target.content.dataModel.setData('body', line, column, newText);
+    await this._target.content.dataModel.setData(
+      'body',
+      line,
+      column,
+      newText,
+      useLitestore
+    );
     this.selectSingleCell();
     return true;
   }
@@ -131,11 +141,45 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
    * @returns A promise that resolves once the action has completed.
    */
   async replaceAllMatches(newText: string): Promise<boolean> {
-    // TODO: Handle litestore transaction so that replaceAll is grouped as one transaction
+    const model = this._target.content.dataModel.dsvModel;
+    const litestore = this._target.content.dataModel.litestore;
+    const searchService = this._target.content.searchService;
+    const startRow = searchService.currentMatch.line;
+    const startColumn = searchService.currentMatch.column;
+    let endRow, endColumn: number;
+
+    litestore.beginTransaction();
+
+    // replace every match individually
     while (this.matches.length > 0) {
-      this.replaceCurrentMatch(newText);
+      // when we have one match left, get the last row and column being edited
+      if (this.matches.length === 1) {
+        endRow = searchService.currentMatch.line;
+        endColumn = searchService.currentMatch.column;
+      }
+      this.replaceCurrentMatch(newText, false);
     }
-    return false;
+    litestore.updateRecord(
+      {
+        schema: DATAMODEL_SCHEMA,
+        record: RECORD_ID
+      },
+      {
+        modelData: model.rawData,
+        modelHeader: model.header,
+        change: {
+          type: 'cells-changed',
+          region: 'body',
+          // the range of cells being edited
+          row: startRow,
+          column: startColumn,
+          rowSpan: endRow - startRow,
+          columnSpan: endColumn - startColumn
+        }
+      }
+    );
+    litestore.endTransaction();
+    return true;
   }
 
   /**

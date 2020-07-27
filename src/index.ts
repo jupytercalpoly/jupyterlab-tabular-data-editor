@@ -333,13 +333,6 @@ function addCommands(
   });
 
   app.commands.addKeyBinding({
-    command: CommandIDs.pasteContextMenu,
-    args: {},
-    keys: ['Accel V'],
-    selector: SELECTOR
-  });
-
-  app.commands.addKeyBinding({
     command: CommandIDs.undo,
     args: {},
     keys: ['Accel Z'],
