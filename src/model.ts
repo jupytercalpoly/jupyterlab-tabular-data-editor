@@ -117,63 +117,51 @@ export class EditableDSVModel extends MutableDataModel {
 
   addColumn(column: number): void {
     const model = this.dsvModel;
-
-    // initialize an array to hold the "internal" slices
-    // ie the ones between the first entry of the column
-    // and the last entry of the column
-    const replaceArray: Array<string | 0> = new Array(this.rowCount() - 1).fill(
-      0
-    );
-
-    // a vectorized column addition
-    // 2 cases for adding a column. We are either
-    // adding to the end or adding within.
+    const data = this.dsvModel.rawData;
+    // initalize an array to hold each row
+    const mapArray: Array<string | 0> = new Array(this.rowCount()).fill(0);
+    // initialize a callback for the map method
+    let mapper: (elem: any, index: number) => string;
     if (column < this.columnCount()) {
       // we are inserting in a "normal place".
-      model.rawData =
-        model.rawData.slice(0, model.getOffsetIndex(1, column)) +
-        model.delimiter +
-        replaceArray
-          .map((elem, index) => {
-            return model.rawData.slice(
-              model.getOffsetIndex(index + 1, column),
-              model.getOffsetIndex(index + 2, column)
-            );
-          })
-          .join(model.delimiter) +
-        model.delimiter +
-        model.rawData.slice(model.getOffsetIndex(this.rowCount(), column));
+      mapper = (elem: any, index: number) => {
+        return (
+          data.slice(
+            model.getOffsetIndex(index + 1, 0),
+            model.getOffsetIndex(index + 1, column)
+          ) +
+          model.delimiter +
+          data.slice(
+            model.getOffsetIndex(index + 1, column),
+            this.rowEnd(index)
+          )
+        );
+      };
     } else {
       // we are inserting at the end
-
-      // avoid asking for a row which doesn't exist by poping last elem of the array
-      replaceArray.pop();
-
-      const rt = model.rowDelimiter.length;
-      model.rawData =
-        model.rawData.slice(0, model.getOffsetIndex(2, 0) - rt) +
-        model.delimiter +
-        replaceArray
-          .map((elem, index) => {
-            return model.rawData.slice(
-              model.getOffsetIndex(index + 2, 0) - rt,
-              model.getOffsetIndex(index + 3, 0) - rt
-            );
-          })
-          .join(model.delimiter) +
-        model.delimiter +
-        model.rawData.slice(model.getOffsetIndex(this.rowCount(), 0) - rt);
+      mapper = (elem: any, index: number) => {
+        return (
+          data.slice(model.getOffsetIndex(index + 1, 0), this.rowEnd(index)) +
+          model.delimiter
+        );
+      };
     }
+
+    // replace the raw data
+    model.rawData =
+      data.slice(0, this.colHeaderLength) +
+      mapArray.map(mapper).join(model.rowDelimiter);
+
     const prevNumCol = this.columnCount();
     const nextLetter = numberToCharacter(prevNumCol + 1);
 
     let headerLength = this.colHeaderLength;
 
     model.rawData =
-      model.rawData.slice(0, headerLength - 1) +
+      data.slice(0, headerLength - 1) +
       model.delimiter +
       nextLetter +
-      model.rawData.slice(headerLength - 1);
+      data.slice(headerLength - 1);
 
     headerLength += model.delimiter.length + nextLetter.length;
     // need to push the letter to the header here so that it updates
