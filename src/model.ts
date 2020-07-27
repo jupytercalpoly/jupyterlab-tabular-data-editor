@@ -81,7 +81,8 @@ export class EditableDSVModel extends MutableDataModel {
     region: DataModel.CellRegion,
     row: number,
     column: number,
-    value: any
+    value: any,
+    useLitestore = true
   ): boolean {
     const model = this.dsvModel;
     this.sliceOut(model, { row: row, column: column }, true);
@@ -94,7 +95,9 @@ export class EditableDSVModel extends MutableDataModel {
       rowSpan: 1,
       columnSpan: 1
     };
-    this.updateLitestore(change);
+    if (useLitestore) {
+      this.updateLitestore(change);
+    }
     this.handleEmits(change);
     return true;
   }
