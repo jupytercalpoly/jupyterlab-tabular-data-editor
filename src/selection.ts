@@ -2,6 +2,7 @@ import { h, VirtualDOM } from '@lumino/virtualdom';
 import { Drag } from 'tde-dragdrop';
 import { MimeData } from '@lumino/coreutils';
 
+// Class names for the shadow/line
 const SHADOW = 'lm-DataGrid-select-shadow';
 const LINE = 'lm-DataGrid-select-line';
 
@@ -106,7 +107,7 @@ export class BoundedDrag extends Drag {
     return [x, y];
   }
 
-  manualPositionUpdate(xLocation: number, yLocation: number) {
+  manualPositionUpdate(xLocation: number, yLocation: number): void {
     // Bail early if there is already a bounding region
     if (this._boundingRegion) {
       return;
