@@ -158,10 +158,10 @@ export class EditableDSVModel extends MutableDataModel {
     let headerLength = this.colHeaderLength;
 
     model.rawData =
-      data.slice(0, headerLength - 1) +
+      model.rawData.slice(0, headerLength - 1) +
       model.delimiter +
       nextLetter +
-      data.slice(headerLength - 1);
+      model.rawData.slice(headerLength - 1);
 
     headerLength += model.delimiter.length + nextLetter.length;
     // need to push the letter to the header here so that it updates
