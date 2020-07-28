@@ -1,5 +1,5 @@
 import { h, VirtualDOM } from '@lumino/virtualdom';
-import { Drag } from '@lumino/dragdrop';
+import { Drag } from 'tde-dragdrop';
 import { MimeData } from '@lumino/coreutils';
 
 // Class names for the shadow/line
