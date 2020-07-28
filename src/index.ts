@@ -137,9 +137,21 @@ function addCommands(
   tracker: WidgetTracker<IDocumentWidget<EditableCSVViewer>>
 ): void {
   const { commands } = app;
-  const SELECTOR = '.jp-CSVViewer-grid';
+  const GLOBAL_SELECTOR = '.jp-CSVViewer';
+  const BODY_SELECTOR = '.jp-background';
+  const COLUMN_HEADER_SELECTOR = '.jp-column-header';
+  const ROW_HEADER_SELECTOR = '.jp-row-header';
 
-  commands.addCommand(CommandIDs.addRow, {
+  commands.addCommand(CommandIDs.insertRowAbove, {
+    label: 'Add Row',
+    execute: () => {
+      // emit a signal to the EditableDSVModel
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('add-row');
+    }
+  });
+
+  commands.addCommand(CommandIDs.insertRowBelow, {
     label: 'Add Row',
     execute: () => {
       // emit a signal to the EditableDSVModel
@@ -156,13 +168,21 @@ function addCommands(
     }
   });
 
-  commands.addCommand(CommandIDs.addColumn, {
-    label: 'Add Column',
+  commands.addCommand(CommandIDs.insertColumnLeft, {
+    label: 'Insert Column Left',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('add-column');
+        tracker.currentWidget.content.changeModelSignal.emit('insert-column-left');
     }
   });
+
+  commands.addCommand(CommandIDs.insertColumnRight, {
+    label: 'Insert Column Right',
+    execute: () => {
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('insert-column-right')
+    }
+  })
 
   commands.addCommand(CommandIDs.removeColumn, {
     label: 'Remove Column',
@@ -262,58 +282,155 @@ function addCommands(
     }
   });
 
-  // Add items to the context menu
+  // Add context menu items for the body
+
   app.contextMenu.addItem({
     command: CommandIDs.cutContextMenu,
-    selector: SELECTOR,
+    selector: BODY_SELECTOR,
     rank: 0
   });
 
   app.contextMenu.addItem({
     command: CommandIDs.copyContextMenu,
-    selector: SELECTOR,
+    selector: BODY_SELECTOR,
     rank: 0
   });
 
   app.contextMenu.addItem({
     command: CommandIDs.pasteContextMenu,
-    selector: SELECTOR,
+    selector: BODY_SELECTOR,
     rank: 0
   });
 
   app.contextMenu.addItem({
-    selector: SELECTOR,
+    selector: BODY_SELECTOR,
     rank: 0,
     type: 'separator'
   });
 
   app.contextMenu.addItem({
-    command: CommandIDs.addRow,
-    selector: SELECTOR,
+    command: CommandIDs.insertRowAbove,
+    selector: BODY_SELECTOR,
     rank: 0
+  });
+
+  
+
+  app.contextMenu.addItem({
+    command: CommandIDs.insertRowBelow,
+    selector: BODY_SELECTOR,
+    rank: 0
+  });
+
+  app.contextMenu.addItem({
+    selector: BODY_SELECTOR,
+    rank: 0,
+    type: 'separator'
   });
 
   app.contextMenu.addItem({
     command: CommandIDs.removeRow,
-    selector: SELECTOR,
+    selector: BODY_SELECTOR,
+    rank: 0
+  });
+
+  // column header items
+
+  app.contextMenu.addItem({
+    command: CommandIDs.cutContextMenu,
+    selector: COLUMN_HEADER_SELECTOR,
     rank: 0
   });
 
   app.contextMenu.addItem({
-    selector: SELECTOR,
+    command: CommandIDs.copyContextMenu,
+    selector: COLUMN_HEADER_SELECTOR,
+    rank: 0
+  });
+
+  app.contextMenu.addItem({
+    command: CommandIDs.pasteContextMenu,
+    selector: COLUMN_HEADER_SELECTOR,
+    rank: 0
+  });
+
+  app.contextMenu.addItem({
+    selector: COLUMN_HEADER_SELECTOR,
     rank: 0,
     type: 'separator'
   });
 
   app.contextMenu.addItem({
-    command: CommandIDs.addColumn,
-    selector: SELECTOR,
+    command: CommandIDs.insertColumnLeft,
+    selector: COLUMN_HEADER_SELECTOR,
     rank: 0
   });
 
   app.contextMenu.addItem({
+    command: CommandIDs.insertColumnRight,
+    selector: COLUMN_HEADER_SELECTOR,
+    rank: 0
+  });
+
+  app.contextMenu.addItem({
+    selector: COLUMN_HEADER_SELECTOR,
+    rank: 0,
+    type: 'separator'
+  });
+
+  app.contextMenu.addItem({
     command: CommandIDs.removeColumn,
-    selector: SELECTOR,
+    selector: COLUMN_HEADER_SELECTOR,
+    rank: 0
+  });
+
+  // row header items
+
+  app.contextMenu.addItem({
+    command: CommandIDs.cutContextMenu,
+    selector: ROW_HEADER_SELECTOR,
+    rank: 0
+  });
+
+  app.contextMenu.addItem({
+    command: CommandIDs.copyContextMenu,
+    selector: ROW_HEADER_SELECTOR,
+    rank: 0
+  });
+
+  app.contextMenu.addItem({
+    command: CommandIDs.pasteContextMenu,
+    selector: ROW_HEADER_SELECTOR,
+    rank: 0
+  });
+
+  app.contextMenu.addItem({
+    selector: ROW_HEADER_SELECTOR,
+    rank: 0,
+    type: 'separator'
+  });
+
+  app.contextMenu.addItem({
+    command: CommandIDs.insertRowAbove,
+    selector: ROW_HEADER_SELECTOR,
+    rank: 0
+  });
+
+  app.contextMenu.addItem({
+    command: CommandIDs.insertRowBelow,
+    selector: ROW_HEADER_SELECTOR,
+    rank: 0
+  });
+
+  app.contextMenu.addItem({
+    selector: ROW_HEADER_SELECTOR,
+    rank: 0,
+    type: 'separator'
+  });
+
+  app.contextMenu.addItem({
+    command: CommandIDs.removeRow,
+    selector: ROW_HEADER_SELECTOR,
     rank: 0
   });
 
@@ -322,27 +439,27 @@ function addCommands(
     command: CommandIDs.copyContextMenu,
     args: {},
     keys: ['Accel C'],
-    selector: SELECTOR
+    selector: BODY_SELECTOR
   });
 
   app.commands.addKeyBinding({
     command: CommandIDs.cutContextMenu,
     args: {},
     keys: ['Accel X'],
-    selector: SELECTOR
+    selector: GLOBAL_SELECTOR
   });
 
   app.commands.addKeyBinding({
     command: CommandIDs.undo,
     args: {},
     keys: ['Accel Z'],
-    selector: SELECTOR
+    selector: BODY_SELECTOR
   });
   app.commands.addKeyBinding({
     command: CommandIDs.redo,
     args: {},
     keys: ['Accel Shift Z'],
-    selector: SELECTOR
+    selector: BODY_SELECTOR
   });
 }
 
@@ -400,8 +517,10 @@ namespace Private {
 }
 
 export const CommandIDs = {
-  addRow: 'tde:add-row',
-  addColumn: 'tde:add-column',
+  insertColumnLeft: 'tde:insert-column-left',
+  insertColumnRight: 'tde:insert-column-right',
+  insertRowAbove: 'tde:insert-row-above',
+  insertRowBelow: 'tde:insert-row-below',
   removeRow: 'tde-remove-row',
   removeColumn: 'tde:remove-column',
   copyContextMenu: 'tde:copy',
