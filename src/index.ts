@@ -192,6 +192,14 @@ function addCommands(
     }
   });
 
+  commands.addCommand(CommandIDs.insertColumnRight, {
+    label: 'Insert Column Right',
+    execute: () => {
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('insert-column-right')
+    }
+  })
+
   commands.addCommand(CommandIDs.removeColumn, {
     label: 'Remove Column',
     execute: () => {
@@ -326,6 +334,20 @@ function addCommands(
     command: CommandIDs.insertRowBelow,
     selector: BODY_SELECTOR,
     rank: 0
+  });
+
+  
+
+  app.contextMenu.addItem({
+    command: CommandIDs.insertRowBelow,
+    selector: BODY_SELECTOR,
+    rank: 0
+  });
+
+  app.contextMenu.addItem({
+    selector: BODY_SELECTOR,
+    rank: 0,
+    type: 'separator'
   });
 
   app.contextMenu.addItem({
