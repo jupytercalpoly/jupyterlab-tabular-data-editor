@@ -1,5 +1,5 @@
 import { h, VirtualDOM } from '@lumino/virtualdom';
-import { Drag } from '@lumino/dragdrop';
+import { Drag } from 'tde-dragdrop';
 import { MimeData } from '@lumino/coreutils';
 
 // Class names for the shadow/line
@@ -70,8 +70,8 @@ export class BoundedDrag extends Drag {
     this._mouseOffsetX = options.mouseOffsetX;
     this._mouseOffsetY = options.mouseOffsetY;
     this._initializing = true;
+    this.moveDragImage;
   }
-
   moveDragImage(clientX: number, clientY: number): void {
     // see if we lack a drag image or if drag image is udpdate-less
     if (!this.dragImage) {
