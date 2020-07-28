@@ -555,6 +555,7 @@ export class EditableCSVViewer extends Widget {
       }
       case 'insert-row-below': {
         this.dataModel.addRow(this._row + 1);
+        break;
       }
       case 'insert-column-left': {
         this.dataModel.addColumn(this._column);
