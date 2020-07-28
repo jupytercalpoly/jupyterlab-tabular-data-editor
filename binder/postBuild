@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# install extension
+jupyter labextension update jupyter-offlinenotebook --no-build
+jupyter labextension install jupyterlab-tabular-data-editor
+
+# remove unnecessary directories when using the binder
+rm -rf coverage
+rm -rf lib
+rm -rf node_modules
+rm -rf src
+rm -rf style
+rm -rf test
+rm -rf testutils
+jupyter lab clean
+
+# Import workspace into JupyterLab
+jupyter lab workspaces import binder/workspace.json

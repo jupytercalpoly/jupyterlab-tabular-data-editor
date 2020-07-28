@@ -1,7 +1,10 @@
 # jupyterlab-tabular-data-editor
+
 ### Manipulate your tabular data responsively and effectively within JupyterLab.
 
-![Github Actions Status](https://github.com/jupytercalpoly/jupyterlab-tabular-data-editor/workflows/Build/badge.svg)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/jupytercalpoly/jupyterlab-tabular-data-editor/65607dab56eab7c7352448164340f4f260f6b255?urlpath=lab) ![Github Actions Status](https://github.com/jupytercalpoly/jupyterlab-tabular-data-editor/workflows/Build/badge.svg)
+
+Try our extension [here](https://mybinder.org/v2/gh/jupytercalpoly/jupyterlab-tabular-data-editor/65607dab56eab7c7352448164340f4f260f6b255?urlpath=lab)!
 
 Read more about the Jupyter Tabular Data Editor Extension in our [press release](https://github.com/jupytercalpoly/jupyterlab-tabular-data-editor/blob/master/PRESS_RELEASE.md)!
 
@@ -15,7 +18,7 @@ View a report of our code coverage [here](http://htmlpreview.github.io/?https://
 
 ## Requirements
 
-* JupyterLab >= 2.0
+- JupyterLab >= 2.0
 
 ## Install
 
