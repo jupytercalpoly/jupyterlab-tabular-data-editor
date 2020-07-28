@@ -264,28 +264,34 @@ export class EditableCSVViewer extends Widget {
     this._searchService.changed.connect(this._updateRenderer, this);
 
     // add the background column and row header elements
-    this._background = VirtualDOM.realize(h.div({
-      className: BACKGROUND_CLASS,
-      style : {
-        position: 'absolute',
-        zIndex: '1'
-      }
-    }));
+    this._background = VirtualDOM.realize(
+      h.div({
+        className: BACKGROUND_CLASS,
+        style: {
+          position: 'absolute',
+          zIndex: '1'
+        }
+      })
+    );
 
-    this._rowHeader = VirtualDOM.realize(h.div({
-      className: ROW_HEADER_CLASS,
-      style : {
-        position: 'absolute',
-        zIndex: '2'
-      }
-    }));
-    this._columnHeader = VirtualDOM.realize(h.div({
-      className: COLUMN_HEADER_CLASS,
-      style: {
-        position: 'absolute',
-        zIndex: '2'
-      }
-    }));
+    this._rowHeader = VirtualDOM.realize(
+      h.div({
+        className: ROW_HEADER_CLASS,
+        style: {
+          position: 'absolute',
+          zIndex: '2'
+        }
+      })
+    );
+    this._columnHeader = VirtualDOM.realize(
+      h.div({
+        className: COLUMN_HEADER_CLASS,
+        style: {
+          position: 'absolute',
+          zIndex: '2'
+        }
+      })
+    );
     // append the column and row headers to the viewport
     this._grid.viewport.node.appendChild(this._rowHeader);
     this._grid.viewport.node.appendChild(this._columnHeader);
@@ -497,7 +503,6 @@ export class EditableCSVViewer extends Widget {
     this._rowHeader.style.width = `${this._grid.headerWidth}px`;
     this._rowHeader.style.height = `${this._grid.viewportHeight}px`;
   }
-  
 
   /**
    * Update the renderer for the grid.
@@ -563,6 +568,7 @@ export class EditableCSVViewer extends Widget {
       }
       case 'insert-column-right': {
         this.dataModel.addColumn(this._column + 1);
+        break;
       }
       case 'remove-row': {
         this.dataModel.removeRow(this._row);
@@ -621,7 +627,6 @@ export class EditableCSVViewer extends Widget {
           const { row, column } = change;
           this.selectSingleCell(row, column);
         }
-
         this.dataModel.redo(change, modelData);
         break;
       }

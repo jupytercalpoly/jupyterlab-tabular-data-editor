@@ -137,7 +137,7 @@ function addCommands(
   tracker: WidgetTracker<IDocumentWidget<EditableCSVViewer>>
 ): void {
   const { commands } = app;
-  const GLOBAL_SELECTOR = '.jp-CSVViewer';
+  const GLOBAL_SELECTOR = '.jp-CSVViewer-grid';
   const BODY_SELECTOR = '.jp-background';
   const COLUMN_HEADER_SELECTOR = '.jp-column-header';
   const ROW_HEADER_SELECTOR = '.jp-row-header';
@@ -172,7 +172,9 @@ function addCommands(
     label: 'Insert Column Left',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('insert-column-left');
+        tracker.currentWidget.content.changeModelSignal.emit(
+          'insert-column-left'
+        );
     }
   });
 
@@ -180,9 +182,11 @@ function addCommands(
     label: 'Insert Column Right',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('insert-column-right')
+        tracker.currentWidget.content.changeModelSignal.emit(
+          'insert-column-right'
+        );
     }
-  })
+  });
 
   commands.addCommand(CommandIDs.removeColumn, {
     label: 'Remove Column',
@@ -314,8 +318,6 @@ function addCommands(
     rank: 0
   });
 
-  
-
   app.contextMenu.addItem({
     command: CommandIDs.insertRowBelow,
     selector: BODY_SELECTOR,
@@ -439,7 +441,7 @@ function addCommands(
     command: CommandIDs.copyContextMenu,
     args: {},
     keys: ['Accel C'],
-    selector: BODY_SELECTOR
+    selector: GLOBAL_SELECTOR
   });
 
   app.commands.addKeyBinding({
@@ -453,13 +455,13 @@ function addCommands(
     command: CommandIDs.undo,
     args: {},
     keys: ['Accel Z'],
-    selector: BODY_SELECTOR
+    selector: GLOBAL_SELECTOR
   });
   app.commands.addKeyBinding({
     command: CommandIDs.redo,
     args: {},
     keys: ['Accel Shift Z'],
-    selector: BODY_SELECTOR
+    selector: GLOBAL_SELECTOR
   });
 }
 
