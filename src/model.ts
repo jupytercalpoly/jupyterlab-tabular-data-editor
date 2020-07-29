@@ -241,7 +241,7 @@ export class EditableDSVModel extends MutableDataModel {
     let headerLength = this.colHeaderLength;
     const headerIndex = model.rawData.lastIndexOf(
       model.delimiter,
-      headerLength
+      headerLength - 1
     );
 
     model.rawData =

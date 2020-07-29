@@ -291,9 +291,12 @@ export class RichMouseHandler extends BasicMouseHandler {
         model.moveRow(startRow, endRow);
       }
       if (this.pressData) {
-        if (this.pressData.type === 'column-resize' || 
-        this.pressData.type === 'row-resize')
-        this._resizeSignal.emit(null);
+        if (
+          this.pressData.type === 'column-resize' ||
+          this.pressData.type === 'row-resize'
+        ) {
+          this._resizeSignal.emit(null);
+        }
       }
     }
     this.release();
