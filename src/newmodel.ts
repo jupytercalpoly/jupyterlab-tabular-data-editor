@@ -62,7 +62,7 @@ export default class EditorModel extends MutableDataModel {
       return '';
     }
 
-    // the model's method assumes the grid's row IDs.
+    // the model's data method assumes the grid's row IDs.
     row = this._gridRowID(row, region);
 
     // fetch the value from the data
@@ -106,17 +106,27 @@ export default class EditorModel extends MutableDataModel {
   /**
    * returns an array or the form [0, 1, 2, ..., n], where
    * n is the number of rows in the data set.
+   * We also give the underlying object a (-1, -1) key value pair
+   * so that each queried entry will have at least 1 value above and
+   * 1 value below
    */
   private _rowIdentityMap(): Array<number> {
-    return [...Array(this.numRows).keys()];
+    const arr = [...Array(this.numRows + 1).keys()];
+    arr[-1] = -1;
+    return arr;
   }
 
   /**
    * returns an array or the form [0, 1, 2, ..., m], where
    * m is the number of columns in the data set.
+   * We also give the underlying object a (-1, -1) key value pair
+   * so that each queried entry will have at least 1 value above and
+   * 1 value below
    */
   private _columnIdentityMap(): Array<number> {
-    return [...Array(this.numColumns)];
+    const arr = [...Array(this.numColumns + 1).keys()];
+    arr[-1] = -1;
+    return arr;
   }
 
   /**
