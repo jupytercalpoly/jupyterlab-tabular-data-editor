@@ -143,20 +143,24 @@ function addCommands(
   const ROW_HEADER_SELECTOR = '.jp-row-header';
 
   commands.addCommand(CommandIDs.insertRowAbove, {
-    label: 'Add Row',
+    label: 'Insert Row Above',
     execute: () => {
       // emit a signal to the EditableDSVModel
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('add-row');
+        tracker.currentWidget.content.changeModelSignal.emit(
+          'insert-row-above'
+        );
     }
   });
 
   commands.addCommand(CommandIDs.insertRowBelow, {
-    label: 'Add Row',
+    label: 'Insert Row Below',
     execute: () => {
       // emit a signal to the EditableDSVModel
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('add-row');
+        tracker.currentWidget.content.changeModelSignal.emit(
+          'insert-row-below'
+        );
     }
   });
 
