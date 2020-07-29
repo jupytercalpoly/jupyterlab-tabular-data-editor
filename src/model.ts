@@ -1,4 +1,4 @@
-import { MutableDataModel, DataModel } from '@lumino/datagrid';
+import { MutableDataModel, DataModel } from 'tde-datagrid';
 import { DSVModel } from 'tde-csvviewer';
 import { Signal } from '@lumino/signaling';
 import { numberToCharacter } from './_helper';
@@ -241,7 +241,7 @@ export class EditableDSVModel extends MutableDataModel {
     let headerLength = this.colHeaderLength;
     const headerIndex = model.rawData.lastIndexOf(
       model.delimiter,
-      headerLength
+      headerLength - 1
     );
 
     model.rawData =

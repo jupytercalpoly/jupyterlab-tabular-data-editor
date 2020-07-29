@@ -16,7 +16,7 @@ import {
   TextRenderer,
   CellRenderer,
   SelectionModel
-} from '@lumino/datagrid';
+} from 'tde-datagrid';
 import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget } from '@lumino/widgets';
 import { EditableDSVModel, DATAMODEL_SCHEMA, RECORD_ID } from './model';
@@ -27,9 +27,13 @@ import { CommandRegistry } from '@lumino/commands';
 import { ISignal } from '@lumino/signaling';
 import { ISearchMatch } from '@jupyterlab/documentsearch';
 import { CommandIDs } from './index';
+import { VirtualDOM, h } from '@lumino/virtualdom';
 
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
+const COLUMN_HEADER_CLASS = 'jp-column-header';
+const ROW_HEADER_CLASS = 'jp-row-header';
+const BACKGROUND_CLASS = 'jp-background';
 const RENDER_TIMEOUT = 1000;
 
 /**
@@ -219,6 +223,7 @@ export class GridSearchService {
 }
 
 export class EditableCSVViewer extends Widget {
+  private _background: HTMLElement;
   /**
    * Construct a new CSV viewer.
    */
@@ -252,11 +257,45 @@ export class EditableCSVViewer extends Widget {
     const handler = new RichMouseHandler({ grid: this._grid });
     this._grid.mouseHandler = handler;
     handler.rightClickSignal.connect(this._onRightClick, this);
-
+    handler.resizeSignal.connect(this._onResize, this);
     layout.addWidget(this._grid);
-
+    // init empty elements for the column header and row header events
     this._searchService = new GridSearchService(this._grid);
     this._searchService.changed.connect(this._updateRenderer, this);
+
+    // add the background column and row header elements
+    this._background = VirtualDOM.realize(
+      h.div({
+        className: BACKGROUND_CLASS,
+        style: {
+          position: 'absolute',
+          zIndex: '1'
+        }
+      })
+    );
+
+    this._rowHeader = VirtualDOM.realize(
+      h.div({
+        className: ROW_HEADER_CLASS,
+        style: {
+          position: 'absolute',
+          zIndex: '2'
+        }
+      })
+    );
+    this._columnHeader = VirtualDOM.realize(
+      h.div({
+        className: COLUMN_HEADER_CLASS,
+        style: {
+          position: 'absolute',
+          zIndex: '2'
+        }
+      })
+    );
+    // append the column and row headers to the viewport
+    this._grid.viewport.node.appendChild(this._rowHeader);
+    this._grid.viewport.node.appendChild(this._columnHeader);
+    this._grid.viewport.node.appendChild(this._background);
 
     void this._context.ready.then(() => {
       this._updateGrid();
@@ -454,6 +493,15 @@ export class EditableCSVViewer extends Widget {
       dataModel.onChangedSignal.connect(this._updateModel, this);
       dataModel.cancelEditingSignal.connect(this._cancelEditing, this);
     }
+    // update the position of the background row and column headers
+    this._background.style.width = `${this._grid.viewportWidth}px`;
+    this._background.style.height = `${this._grid.viewportHeight}px`;
+    this._columnHeader.style.left = `${this._grid.headerWidth}px`;
+    this._columnHeader.style.height = `${this._grid.headerHeight}px`;
+    this._columnHeader.style.width = `${this._grid.viewportWidth}px`;
+    this._rowHeader.style.top = `${this._grid.headerHeight}px`;
+    this._rowHeader.style.width = `${this._grid.headerWidth}px`;
+    this._rowHeader.style.height = `${this._grid.viewportHeight}px`;
   }
 
   /**
@@ -506,12 +554,20 @@ export class EditableCSVViewer extends Widget {
    */
   private _changeModel(emitter: EditableCSVViewer, type: string): void {
     switch (type) {
-      case 'add-row': {
+      case 'insert-row-above': {
         this.dataModel.addRow(this._row);
         break;
       }
-      case 'add-column': {
+      case 'insert-row-below': {
+        this.dataModel.addRow(this._row + 1);
+        break;
+      }
+      case 'insert-column-left': {
         this.dataModel.addColumn(this._column);
+        break;
+      }
+      case 'insert-column-right': {
+        this.dataModel.addColumn(this._column + 1);
         break;
       }
       case 'remove-row': {
@@ -571,7 +627,6 @@ export class EditableCSVViewer extends Widget {
           const { row, column } = change;
           this.selectSingleCell(row, column);
         }
-
         this.dataModel.redo(change, modelData);
         break;
       }
@@ -627,6 +682,17 @@ export class EditableCSVViewer extends Widget {
     [this._row, this._column] = coords;
   }
 
+  private _onResize(emitter: RichMouseHandler) {
+    this._background.style.width = `${this._grid.viewportWidth}px`;
+    this._background.style.height = `${this._grid.viewportHeight}px`;
+    this._columnHeader.style.left = `${this._grid.headerWidth}px`;
+    this._columnHeader.style.height = `${this._grid.headerHeight}px`;
+    this._columnHeader.style.width = `${this._grid.viewportWidth}px`;
+    this._rowHeader.style.top = `${this._grid.headerHeight}px`;
+    this._rowHeader.style.width = `${this._grid.headerWidth}px`;
+    this._rowHeader.style.height = `${this._grid.viewportHeight}px`;
+  }
+
   private _row: number;
   private _column: number;
   private _context: DocumentRegistry.Context;
@@ -644,6 +710,8 @@ export class EditableCSVViewer extends Widget {
   private _changeModelSignal: Signal<this, string> = new Signal<this, string>(
     this
   );
+  private _columnHeader: HTMLElement;
+  private _rowHeader: HTMLElement;
 }
 
 export class EditableCSVDocumentWidget extends DocumentWidget<

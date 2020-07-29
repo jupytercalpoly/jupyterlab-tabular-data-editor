@@ -4,7 +4,7 @@ import {
   DataGrid,
   DataModel,
   ResizeHandle
-} from '@lumino/datagrid';
+} from 'tde-datagrid';
 import { Drag } from '@lumino/dragdrop';
 import { Signal } from '@lumino/signaling';
 import { renderSelection, IBoundingRegion, BoundedDrag } from './selection';
@@ -16,6 +16,10 @@ export class RichMouseHandler extends BasicMouseHandler {
     super();
     this._grid = options.grid;
     this._cursor = null;
+  }
+
+  get resizeSignal(): Signal<this, null> {
+    return this._resizeSignal;
   }
 
   get rightClickSignal(): Signal<this, Array<number>> {
@@ -286,6 +290,14 @@ export class RichMouseHandler extends BasicMouseHandler {
         const endRow = grid.rowAt('body', vy);
         model.moveRow(startRow, endRow);
       }
+      if (this.pressData) {
+        if (
+          this.pressData.type === 'column-resize' ||
+          this.pressData.type === 'row-resize'
+        ) {
+          this._resizeSignal.emit(null);
+        }
+      }
     }
     this.release();
     return;
@@ -309,6 +321,7 @@ export class RichMouseHandler extends BasicMouseHandler {
   private _cursor: string | null;
   private _moveData: MoveData | null;
   private _rightClickSignal = new Signal<this, Array<number>>(this);
+  private _resizeSignal = new Signal<this, null>(this);
 }
 
 export type MoveData = {

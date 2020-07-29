@@ -1,10 +1,5 @@
 @import '~@lumino/default-theme/style/datagrid.css';
 
-.white-background {
-  background-color: white;
-  color: white;
-}
-
 /*DATAGRID*/
 
 /*border of a cell*/
@@ -15,6 +10,7 @@
 
 /*surrounding of the cell when double clicked*/
 .lm-DataGrid-cellEditorOccluder {
+  border: none;
 }
 
 /*Inside the cell when double-clicked*/
@@ -43,6 +39,7 @@
 
 /*RIGHT-CLICK MENU*/
 .lm-Menu-content {
+  border: none;
 }
 
 /*Shadow for moving rows & columns */
@@ -54,5 +51,13 @@
   opacity: 50%;*/
 }
 
+.jp-row-header {
+  border: none;
+}
+.jp-column-header {
+  border: none;
+}
 
-/*TOOLBAR*/
+.jp-background {
+  border: none;
+}
