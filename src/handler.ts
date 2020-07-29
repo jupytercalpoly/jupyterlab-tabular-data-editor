@@ -40,13 +40,16 @@ export class RichMouseHandler extends BasicMouseHandler {
 
   cursorByRegion(): string {
     const hit = this._grid.hitTest(this._event.clientX, this._event.clientY);
+    // display the grab cursor if the row/column is in the curent selection
     switch (hit.region) {
-      case 'row-header': {
-        return 'grab';
-      }
-      case 'column-header': {
-        return 'grab';
-      }
+      case 'row-header':
+        return this._grid.selectionModel.isRowSelected(hit.row)
+          ? 'grab'
+          : 'default';
+      case 'column-header':
+        return this._grid.selectionModel.isColumnSelected(hit.column)
+          ? 'grab'
+          : 'default';
       default: {
         return 'default';
       }
