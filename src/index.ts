@@ -192,16 +192,6 @@ function addCommands(
     }
   });
 
-  commands.addCommand(CommandIDs.insertColumnRight, {
-    label: 'Insert Column Right',
-    execute: () => {
-      tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit(
-          'insert-column-right'
-        );
-    }
-  });
-
   commands.addCommand(CommandIDs.removeColumn, {
     label: 'Remove Column',
     execute: () => {
