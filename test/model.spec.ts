@@ -236,6 +236,11 @@ describe('table editing functions', () => {
       const expected = ['A,B,C', '1,2,3', ',,', '7,8,9'].join('\n');
       expect(model.dsvModel.rawData).toBe(expected);
     });
+    it('clear contents of a selection', () => {
+      model.clearContents('body', 1, 0, { r1: 1, r2: 0, c1: 0, c2: 1 });
+      const expected = ['A,B,C', ',,3', ',,6', '7,8,9'].join('\n');
+      expect(model.dsvModel.rawData).toBe(expected);
+    });
   });
   describe('undo function', () => {
     it('tries to undo when nothing can be undone', () => {
@@ -329,6 +334,16 @@ describe('table editing functions', () => {
     });
     it('undo clear contents for a row', () => {
       model.clearContents('row-header', 0, 2, undefined);
+      change = model.litestore.getRecord({
+        schema: DATAMODEL_SCHEMA,
+        record: RECORD_ID
+      }).change;
+      model.undo(change);
+      const expectedData = ['A,B,C', '1,2,3', 'abc,5,6', '7,8,9'].join('\n');
+      expect(model.dsvModel.rawData).toBe(expectedData);
+    });
+    it('undo clear contents for a selection', () => {
+      model.clearContents('body', 1, 0, { r1: 1, r2: 0, c1: 0, c2: 1 });
       change = model.litestore.getRecord({
         schema: DATAMODEL_SCHEMA,
         record: RECORD_ID
@@ -495,6 +510,22 @@ describe('table editing functions', () => {
       });
       model.redo(change, modelData);
       const expected = ['A,B,C', '1,2,3', ',,', '7,8,9'].join('\n');
+      expect(model.dsvModel.rawData).toBe(expected);
+    });
+    it('redo clear contents for a selection', () => {
+      model.clearContents('body', 1, 0, { r1: 1, r2: 0, c1: 0, c2: 1 });
+      const oldChange = model.litestore.getRecord({
+        schema: DATAMODEL_SCHEMA,
+        record: RECORD_ID
+      }).change;
+      model.undo(oldChange);
+      model.litestore.redo();
+      const { change, modelData } = model.litestore.getRecord({
+        schema: DATAMODEL_SCHEMA,
+        record: RECORD_ID
+      });
+      model.redo(change, modelData);
+      const expected = ['A,B,C', ',,3', ',,6', '7,8,9'].join('\n');
       expect(model.dsvModel.rawData).toBe(expected);
     });
   });

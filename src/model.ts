@@ -672,6 +672,7 @@ export class EditableDSVModel extends MutableDataModel {
 
   /**
    * Clears the contents of the selected region
+   * Keybind: ['Backspace']
    */
   clearContents(
     regionClicked: DataModel.CellRegion,
@@ -684,9 +685,9 @@ export class EditableDSVModel extends MutableDataModel {
     }
 
     const model = this._dsvModel;
+    const { r1, r2, c1, c2 } = selection;
     let row, column, rowSpan, columnSpan: number;
     let change: DataModel.ChangedArgs;
-    //console.log(regionClicked, selection);
 
     switch (regionClicked) {
       // clear contents of that column
@@ -759,8 +760,45 @@ export class EditableDSVModel extends MutableDataModel {
         );
         this._litestore.endTransaction();
         break;
+      // region === 'body'
+      // clear contents in the current selection
+      default:
+        // set params
+        row = Math.min(r1, r2);
+        column = Math.min(c1, c2);
+        rowSpan = Math.abs(r1 - r2) + 1;
+        columnSpan = Math.abs(c1 - c2) + 1;
+
+        //define change args
+        change = {
+          type: 'cells-changed',
+          region: 'body',
+          row: row,
+          column: column,
+          rowSpan: rowSpan,
+          columnSpan: columnSpan
+        };
+
+        this._litestore.beginTransaction();
+        // iterate through row to clear contents
+        for (let curRow = row; curRow < row + rowSpan; curRow++) {
+          for (let curCol = column; curCol < column + columnSpan; curCol++) {
+            this.setData('body', curRow, curCol, '', false);
+          }
+        }
+        this._litestore.updateRecord(
+          {
+            schema: DATAMODEL_SCHEMA,
+            record: RECORD_ID
+          },
+          {
+            modelData: model.rawData,
+            change: change
+          }
+        );
+        this._litestore.endTransaction();
+        break;
     }
-    //console.log(change);
   }
 
   /**
