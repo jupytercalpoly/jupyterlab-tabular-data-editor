@@ -674,26 +674,62 @@ export class EditableDSVModel extends MutableDataModel {
    * Clears the contents of the selected region
    */
   clearContents(
-    region: DataModel.CellRegion | 'void',
+    regionClicked: DataModel.CellRegion,
+    rowClicked: number,
+    columnClicked: number,
     selection: SelectionModel.Selection
   ): void {
-    if (region === 'void') {
+    if (regionClicked === 'corner-header') {
       return;
     }
-    console.log(region, selection);
-    // const change: DataModel.ChangedArgs = {
-    //   type: 'cells-changed',
-    //   region: 'body',
-    //   row: row,
-    //   column: column,
-    //   rowSpan: 1,
-    //   columnSpan: 1
-    // };
-    // this.handleEmits(change)
+
+    const model = this._dsvModel;
+    let row, column, rowSpan, columnSpan: number;
+    let change: DataModel.ChangedArgs;
+    //console.log(regionClicked, selection);
+
+    // clear contents of that column
+    if (regionClicked === 'column-header') {
+      // set params
+      row = 0;
+      column = columnClicked;
+      rowSpan = this.rowCount('body');
+      columnSpan = 1;
+      //console.log(columnSpan, row, column, rowSpan);
+
+      //define change args
+      change = {
+        type: 'cells-changed',
+        region: 'body',
+        row: row,
+        column: column,
+        rowSpan: rowSpan,
+        columnSpan: columnSpan
+      };
+
+      this._litestore.beginTransaction();
+      // clear the contents of that cell
+      for (let i = 0; i < rowSpan; i++) {
+        this.setData('body', i, column, '', false);
+      }
+      // console.log(model.rawData);
+      this._litestore.updateRecord(
+        {
+          schema: DATAMODEL_SCHEMA,
+          record: RECORD_ID
+        },
+        {
+          modelData: model.rawData,
+          change: change
+        }
+      );
+      this._litestore.endTransaction();
+    }
+    //console.log(change);
   }
 
   /**
-   * Handles all singal emitting and model parsing after the raw data is manipulated
+   * Handles all signal emitting and model parsing after the raw data is manipulated
    * @param change The current change to be emitted to the Datagrid
    */
   handleEmits(change: DataModel.ChangedArgs): void {

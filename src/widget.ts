@@ -414,7 +414,12 @@ export class EditableCSVViewer extends Widget {
         break;
       }
       case 'clear-contents': {
-        this.dataModel.clearContents(this._region, this.getSelectedRange());
+        this.dataModel.clearContents(
+          this._region,
+          this._row,
+          this._column,
+          this.getSelectedRange()
+        );
         break;
       }
       case 'undo': {
@@ -497,7 +502,9 @@ export class EditableCSVViewer extends Widget {
     emitter: RichMouseHandler,
     hit: DataGrid.HitTestResult
   ): void {
-    this._region = hit.region;
+    if (hit.region !== 'void') {
+      this._region = hit.region;
+    }
     this._row = hit.row;
     this._column = hit.column;
   }
@@ -513,7 +520,7 @@ export class EditableCSVViewer extends Widget {
     this._rowHeader.style.height = `${this._grid.viewportHeight}px`;
   }
 
-  private _region: DataModel.CellRegion | 'void';
+  private _region: DataModel.CellRegion;
   private _row: number;
   private _column: number;
   private _context: DocumentRegistry.Context;
