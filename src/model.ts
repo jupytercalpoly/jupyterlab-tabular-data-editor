@@ -641,9 +641,9 @@ export class EditableDSVModel extends MutableDataModel {
     const change: DataModel.ChangedArgs = {
       type: 'columns-moved',
       region: 'body',
-      index: start,
+      index: startColumn,
       span: 1,
-      destination: end
+      destination: endColumn
     };
     this.handleEmits(change, 'columns-moved');
   }
