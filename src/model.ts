@@ -688,42 +688,77 @@ export class EditableDSVModel extends MutableDataModel {
     let change: DataModel.ChangedArgs;
     //console.log(regionClicked, selection);
 
-    // clear contents of that column
-    if (regionClicked === 'column-header') {
-      // set params
-      row = 0;
-      column = columnClicked;
-      rowSpan = this.rowCount('body');
-      columnSpan = 1;
-      //console.log(columnSpan, row, column, rowSpan);
+    switch (regionClicked) {
+      // clear contents of that column
+      case 'column-header':
+        // set params
+        row = 0;
+        column = columnClicked;
+        rowSpan = this.rowCount('body');
+        columnSpan = 1;
 
-      //define change args
-      change = {
-        type: 'cells-changed',
-        region: 'body',
-        row: row,
-        column: column,
-        rowSpan: rowSpan,
-        columnSpan: columnSpan
-      };
+        //define change args
+        change = {
+          type: 'cells-changed',
+          region: 'body',
+          row: row,
+          column: column,
+          rowSpan: rowSpan,
+          columnSpan: columnSpan
+        };
 
-      this._litestore.beginTransaction();
-      // clear the contents of that cell
-      for (let i = 0; i < rowSpan; i++) {
-        this.setData('body', i, column, '', false);
-      }
-      // console.log(model.rawData);
-      this._litestore.updateRecord(
-        {
-          schema: DATAMODEL_SCHEMA,
-          record: RECORD_ID
-        },
-        {
-          modelData: model.rawData,
-          change: change
+        this._litestore.beginTransaction();
+        // iterate through column to clear contents
+        for (let i = 0; i < rowSpan; i++) {
+          this.setData('body', i, column, '', false);
         }
-      );
-      this._litestore.endTransaction();
+        this._litestore.updateRecord(
+          {
+            schema: DATAMODEL_SCHEMA,
+            record: RECORD_ID
+          },
+          {
+            modelData: model.rawData,
+            change: change
+          }
+        );
+        this._litestore.endTransaction();
+        break;
+      // clear contents of that row
+      case 'row-header':
+        // set params
+        row = rowClicked;
+        column = 0;
+        rowSpan = 1;
+        columnSpan = this.columnCount('body');
+
+        //define change args
+        change = {
+          type: 'cells-changed',
+          region: 'body',
+          row: row,
+          column: column,
+          rowSpan: rowSpan,
+          columnSpan: columnSpan
+        };
+
+        this._litestore.beginTransaction();
+        // iterate through row to clear contents
+        for (let i = 0; i < columnSpan; i++) {
+          this.setData('body', row, i, '', false);
+        }
+        this._litestore.updateRecord(
+          {
+            schema: DATAMODEL_SCHEMA,
+            record: RECORD_ID
+          },
+          {
+            modelData: model.rawData,
+            change: change
+          }
+        );
+        this._litestore.endTransaction();
+        break;
     }
     //console.log(change);
   }
