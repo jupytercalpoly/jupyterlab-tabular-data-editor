@@ -1,4 +1,4 @@
-import { MutableDataModel, DataModel } from 'tde-datagrid';
+import { MutableDataModel, DataModel, SelectionModel } from 'tde-datagrid';
 import { DSVModel } from 'tde-csvviewer';
 import { Signal } from '@lumino/signaling';
 import { numberToCharacter } from './_helper';
@@ -668,6 +668,28 @@ export class EditableDSVModel extends MutableDataModel {
     };
     this.updateLitestore(change);
     this.handleEmits(change);
+  }
+
+  /**
+   * Clears the contents of the selected region
+   */
+  clearContents(
+    region: DataModel.CellRegion | 'void',
+    selection: SelectionModel.Selection
+  ): void {
+    if (region === 'void') {
+      return;
+    }
+    console.log(region, selection);
+    // const change: DataModel.ChangedArgs = {
+    //   type: 'cells-changed',
+    //   region: 'body',
+    //   row: row,
+    //   column: column,
+    //   rowSpan: 1,
+    //   columnSpan: 1
+    // };
+    // this.handleEmits(change)
   }
 
   /**

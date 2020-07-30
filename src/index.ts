@@ -290,6 +290,14 @@ function addCommands(
     }
   });
 
+  commands.addCommand(CommandIDs.clearContents, {
+    label: 'Clear Contents',
+    execute: () => {
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('clear-contents');
+    }
+  });
+
   // these commands are standard for every context menu
   const standardContextMenu = [
     'cutContextMenu',
@@ -304,21 +312,24 @@ function addCommands(
     'insertRowAbove',
     'insertRowBelow',
     'separator',
-    'removeRow'
+    'removeRow',
+    'clearContents'
   ];
   const columnHeaderContextMenu = [
     ...standardContextMenu,
     'insertColumnLeft',
     'insertColumnRight',
     'separator',
-    'removeColumn'
+    'removeColumn',
+    'clearContents'
   ];
   const rowHeaderContextMenu = [
     ...standardContextMenu,
     'insertRowAbove',
     'insertRowBelow',
     'separator',
-    'removeRow'
+    'removeRow',
+    'clearContents'
   ];
 
   // build the different context menus
@@ -365,7 +376,7 @@ function buildContextMenu(
   app: JupyterFrontEnd,
   commands: Array<string>,
   selector: string
-) {
+): void {
   // iterate over every command adding it to the context menu
   commands.forEach(
     (command: string): void => {
@@ -451,5 +462,6 @@ export const CommandIDs: { [key: string]: string } = {
   pasteToolbar: 'tde:paste-tb',
   undo: 'tde:undo',
   redo: 'tde:redo',
-  save: 'tde-save'
+  save: 'tde-save',
+  clearContents: 'tde-clear-contents'
 };
