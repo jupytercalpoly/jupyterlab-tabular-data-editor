@@ -345,12 +345,6 @@ function addCommands(
   });
 
   app.contextMenu.addItem({
-    selector: BODY_SELECTOR,
-    rank: 0,
-    type: 'separator'
-  });
-
-  app.contextMenu.addItem({
     command: CommandIDs.removeRow,
     selector: BODY_SELECTOR,
     rank: 0
