@@ -290,155 +290,41 @@ function addCommands(
     }
   });
 
-  // Add context menu items for the body
+  // these commands are standard for every context menu
+  const standardContextMenu = [
+    'cutContextMenu',
+    'copyContextMenu',
+    'pasteContextMenu',
+    'separator'
+  ];
 
-  app.contextMenu.addItem({
-    command: CommandIDs.cutContextMenu,
-    selector: BODY_SELECTOR,
-    rank: 0
-  });
+  // extending the standard context menu for different parts of the data
+  const bodyContextMenu = [
+    ...standardContextMenu,
+    'insertRowAbove',
+    'insertRowBelow',
+    'separator',
+    'removeRow'
+  ];
+  const columnHeaderContextMenu = [
+    ...standardContextMenu,
+    'insertColumnLeft',
+    'insertColumnRight',
+    'separator',
+    'removeColumn'
+  ];
+  const rowHeaderContextMenu = [
+    ...standardContextMenu,
+    'insertRowAbove',
+    'insertRowBelow',
+    'separator',
+    'removeRow'
+  ];
 
-  app.contextMenu.addItem({
-    command: CommandIDs.copyContextMenu,
-    selector: BODY_SELECTOR,
-    rank: 0
-  });
-
-  app.contextMenu.addItem({
-    command: CommandIDs.pasteContextMenu,
-    selector: BODY_SELECTOR,
-    rank: 0
-  });
-
-  app.contextMenu.addItem({
-    selector: BODY_SELECTOR,
-    rank: 0,
-    type: 'separator'
-  });
-
-  app.contextMenu.addItem({
-    command: CommandIDs.insertRowAbove,
-    selector: BODY_SELECTOR,
-    rank: 0
-  });
-
-  app.contextMenu.addItem({
-    command: CommandIDs.insertRowBelow,
-    selector: BODY_SELECTOR,
-    rank: 0
-  });
-
-  app.contextMenu.addItem({
-    selector: BODY_SELECTOR,
-    rank: 0,
-    type: 'separator'
-  });
-
-  app.contextMenu.addItem({
-    command: CommandIDs.removeRow,
-    selector: BODY_SELECTOR,
-    rank: 0
-  });
-
-  // column header items
-
-  app.contextMenu.addItem({
-    command: CommandIDs.cutContextMenu,
-    selector: COLUMN_HEADER_SELECTOR,
-    rank: 0
-  });
-
-  app.contextMenu.addItem({
-    command: CommandIDs.copyContextMenu,
-    selector: COLUMN_HEADER_SELECTOR,
-    rank: 0
-  });
-
-  app.contextMenu.addItem({
-    command: CommandIDs.pasteContextMenu,
-    selector: COLUMN_HEADER_SELECTOR,
-    rank: 0
-  });
-
-  app.contextMenu.addItem({
-    selector: COLUMN_HEADER_SELECTOR,
-    rank: 0,
-    type: 'separator'
-  });
-
-  app.contextMenu.addItem({
-    command: CommandIDs.insertColumnLeft,
-    selector: COLUMN_HEADER_SELECTOR,
-    rank: 0
-  });
-
-  app.contextMenu.addItem({
-    command: CommandIDs.insertColumnRight,
-    selector: COLUMN_HEADER_SELECTOR,
-    rank: 0
-  });
-
-  app.contextMenu.addItem({
-    selector: COLUMN_HEADER_SELECTOR,
-    rank: 0,
-    type: 'separator'
-  });
-
-  app.contextMenu.addItem({
-    command: CommandIDs.removeColumn,
-    selector: COLUMN_HEADER_SELECTOR,
-    rank: 0
-  });
-
-  // row header items
-
-  app.contextMenu.addItem({
-    command: CommandIDs.cutContextMenu,
-    selector: ROW_HEADER_SELECTOR,
-    rank: 0
-  });
-
-  app.contextMenu.addItem({
-    command: CommandIDs.copyContextMenu,
-    selector: ROW_HEADER_SELECTOR,
-    rank: 0
-  });
-
-  app.contextMenu.addItem({
-    command: CommandIDs.pasteContextMenu,
-    selector: ROW_HEADER_SELECTOR,
-    rank: 0
-  });
-
-  app.contextMenu.addItem({
-    selector: ROW_HEADER_SELECTOR,
-    rank: 0,
-    type: 'separator'
-  });
-
-  app.contextMenu.addItem({
-    command: CommandIDs.insertRowAbove,
-    selector: ROW_HEADER_SELECTOR,
-    rank: 0
-  });
-
-  app.contextMenu.addItem({
-    command: CommandIDs.insertRowBelow,
-    selector: ROW_HEADER_SELECTOR,
-    rank: 0
-  });
-
-  app.contextMenu.addItem({
-    selector: ROW_HEADER_SELECTOR,
-    rank: 0,
-    type: 'separator'
-  });
-
-  app.contextMenu.addItem({
-    command: CommandIDs.removeRow,
-    selector: ROW_HEADER_SELECTOR,
-    rank: 0
-  });
+  // build the different context menus
+  buildContextMenu(app, bodyContextMenu, BODY_SELECTOR);
+  buildContextMenu(app, columnHeaderContextMenu, COLUMN_HEADER_SELECTOR);
+  buildContextMenu(app, rowHeaderContextMenu, ROW_HEADER_SELECTOR);
 
   // add keybindings
   app.commands.addKeyBinding({
@@ -467,6 +353,34 @@ function addCommands(
     keys: ['Accel Shift Z'],
     selector: GLOBAL_SELECTOR
   });
+}
+
+/**
+ * Builds a context menu for specific portion of the datagrid
+ * @param app The JupyterFrontEnd which contains the context menu
+ * @param commands An array of commands, use 'separator' for dividers (see CommandIDs dictionary in index.ts)
+ * @param selector The current portion of the datagrid BODY_SELECTOR | COLUMN_HEADER_SELECTOR | ROW_HEADER_SELECTOR
+ */
+function buildContextMenu(
+  app: JupyterFrontEnd,
+  commands: Array<string>,
+  selector: string
+) {
+  // iterate over every command adding it to the context menu
+  commands.forEach(
+    (command: string): void => {
+      // if the command is a separator, add a separator
+      command === 'separator'
+        ? app.contextMenu.addItem({
+            type: 'separator',
+            selector: selector
+          })
+        : app.contextMenu.addItem({
+            command: CommandIDs[command],
+            selector: selector
+          });
+    }
+  );
 }
 
 export default [extension];
@@ -522,7 +436,7 @@ namespace Private {
   };
 }
 
-export const CommandIDs = {
+export const CommandIDs: { [key: string]: string } = {
   insertColumnLeft: 'tde:insert-column-left',
   insertColumnRight: 'tde:insert-column-right',
   insertRowAbove: 'tde:insert-row-above',
