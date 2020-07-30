@@ -364,6 +364,12 @@ function addCommands(
     keys: ['Accel Shift Z'],
     selector: GLOBAL_SELECTOR
   });
+  app.commands.addKeyBinding({
+    command: CommandIDs.clearContents,
+    args: {},
+    keys: ['Backspace'],
+    selector: GLOBAL_SELECTOR
+  });
 }
 
 /**
