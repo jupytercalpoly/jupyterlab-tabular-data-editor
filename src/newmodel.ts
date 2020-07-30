@@ -1,7 +1,8 @@
 import { DSVModel } from 'tde-csvviewer';
 import { MutableDataModel, DataModel } from '@lumino/datagrid';
 import { Fields } from '@lumino/datastore';
-// import { Litestore } from './litestore';
+import { Litestore } from './litestore';
+// import { Signal } from '@lumino/signaling';
 
 export default class EditorModel extends MutableDataModel {
   private _model: DSVModel;
@@ -13,7 +14,11 @@ export default class EditorModel extends MutableDataModel {
   private _initRows: number;
   private _initColumns: number;
   private _clipboard: Array<Array<string>>;
-  // private _litestore: Litestore;
+  private _litestore: Litestore;
+  // private _onChangeSignal: Signal<this, string> = new Signal<this, string>(
+  //   this
+  // );
+
   constructor(options: DSVModel.IOptions) {
     super();
     // give our model the DSVModel as a property
@@ -43,7 +48,23 @@ export default class EditorModel extends MutableDataModel {
     this._valueMap = {};
 
     // initialize the litestore
-    // this._litestore = new Litestore({ id: 0, schemas: [DATAMODEL_SCHEMA] });
+    this._litestore = new Litestore({ id: 0, schemas: [DATAMODEL_SCHEMA] });
+  }
+
+  /**
+   * get the row count
+   * Notes: this is equivalent to this.rowCount('body')
+   */
+  get numRows(): number {
+    return this._model.rowCount('body');
+  }
+
+  /**
+   * get the column count
+   * Notes: this is equivalent to this.rowCount('body')
+   */
+  get numColumns(): number {
+    return this._model.columnCount('body');
   }
 
   /**
@@ -105,6 +126,22 @@ export default class EditorModel extends MutableDataModel {
     // add the value to the valueMap
     this._valueMap[`${row}, ${column}`] = value;
 
+    // Define the change.
+    const change: DataModel.ChangedArgs = {
+      type: 'cells-changed',
+      region: 'body',
+      row: row,
+      column: column,
+      rowSpan: 1,
+      columnSpan: 1
+    };
+
+    // Update the Litestore.
+    this._updateLitestore(change);
+
+    // Emit the change.
+    this._handleEmits(change);
+
     return true;
   }
 
@@ -128,6 +165,23 @@ export default class EditorModel extends MutableDataModel {
 
     // add the values to the row map, starting AT start
     this._rowMap.splice(start, 0, ...values);
+
+    // Revert the Grid Row ID
+    start = this._gridRowID(start, region);
+
+    // Define the change.
+    const change: DataModel.ChangedArgs = {
+      type: 'rows-inserted',
+      region: 'body',
+      index: start,
+      span: span
+    };
+
+    // Update the Litestore.
+    this._updateLitestore(change);
+
+    // Emit the change.
+    this._handleEmits(change);
   }
 
   /**
@@ -147,6 +201,20 @@ export default class EditorModel extends MutableDataModel {
 
     // add the values to the column map, starting AT start
     this._columnMap.splice(start, 0, ...values);
+
+    // Define the change.
+    const change: DataModel.ChangedArgs = {
+      type: 'columns-inserted',
+      region: 'body',
+      index: start,
+      span: span
+    };
+
+    // Update the Litestore.
+    this._updateLitestore(change);
+
+    // Emit the change.
+    this._handleEmits(change);
   }
 
   /**
@@ -157,8 +225,26 @@ export default class EditorModel extends MutableDataModel {
   removeRows(region: DataModel.CellRegion, start: number, span: number): void {
     // map to the unique row ID.
     start = this._uniqueRowID(start, region);
+
     // remove the values from the rowMap
     this._rowMap.splice(start, span);
+
+    // Revert the Grid Row ID.
+    start = this._gridRowID(start, region);
+
+    // Define the change.
+    const change: DataModel.ChangedArgs = {
+      type: 'rows-removed',
+      region: 'body',
+      index: start,
+      span: span
+    };
+
+    // Update the Litestore.
+    this._updateLitestore(change);
+
+    // Emit the change.
+    this._handleEmits(change);
   }
 
   /**
@@ -170,6 +256,20 @@ export default class EditorModel extends MutableDataModel {
   removeColumns(start: number, span: number): void {
     // remove the values from the rowMap
     this._rowMap.splice(start, span);
+
+    // Define the change.
+    const change: DataModel.ChangedArgs = {
+      type: 'columns-removed',
+      region: 'body',
+      index: start,
+      span: span
+    };
+
+    // Update the Litestore.
+    this._updateLitestore(change);
+
+    // Emit the change.
+    this._handleEmits(change);
   }
 
   /**
@@ -185,7 +285,7 @@ export default class EditorModel extends MutableDataModel {
     end: number,
     span: number
   ): void {
-    // Get the unique row ID.
+    // Get the unique row IDs.
     start = this._uniqueRowID(start, region);
     end = this._uniqueRowID(end, region);
 
@@ -217,6 +317,25 @@ export default class EditorModel extends MutableDataModel {
 
     // insert the values we have moved starting at the destination
     this._rowMap.splice(destination, 0, ...valuesMoving);
+
+    // Revert the Grid Row IDs.
+    start = this._gridRowID(start, region);
+    end = this._gridRowID(end, region);
+
+    // Define the change.
+    const change: DataModel.ChangedArgs = {
+      type: 'rows-moved',
+      region: 'body',
+      index: start,
+      span: span,
+      destination: end
+    };
+
+    // Update the Litestore.
+    this._updateLitestore(change);
+
+    // Emit the change.
+    this._handleEmits(change);
   }
 
   /**
@@ -260,6 +379,21 @@ export default class EditorModel extends MutableDataModel {
 
     // insert the values we have moved starting at the destination
     this._columnMap.splice(destination, 0, ...valuesMoving);
+
+    // Define the change.
+    const change: DataModel.ChangedArgs = {
+      type: 'columns-moved',
+      region: 'body',
+      index: start,
+      span: span,
+      destination: end
+    };
+
+    // Update the Litestore.
+    this._updateLitestore(change);
+
+    // Emit the change.
+    this._handleEmits(change);
   }
 
   cut(
@@ -282,7 +416,24 @@ export default class EditorModel extends MutableDataModel {
       }
       this._clipboard.push(rowClip);
     }
+
+    // Define the change.
+    const change: DataModel.ChangedArgs = {
+      type: 'cells-changed',
+      region: 'body',
+      row: row,
+      column: column,
+      rowSpan: rowSpan,
+      columnSpan: columnSpan
+    };
+
+    // Update the Litestore.
+    this._updateLitestore(change);
+
+    // Emit the change.
+    this._handleEmits(change);
   }
+
   copy(
     region: DataModel.CellRegion,
     row: number,
@@ -325,29 +476,125 @@ export default class EditorModel extends MutableDataModel {
         this.setData(region, row, column, this._clipboard[i][j]);
       }
     }
+
+    // Define the change.
+    const change: DataModel.ChangedArgs = {
+      type: 'cells-changed',
+      region: 'body',
+      row: row,
+      column: column,
+      rowSpan: rowSpan,
+      columnSpan: columnSpan
+    };
+
+    // Update the Litestore.
+    this._updateLitestore(change);
+
+    // Emit the change.
+    this._handleEmits(change);
   }
 
-  // undo(): void {
+  undo(change: DataModel.ChangedArgs): void {
+    // Bail early if there is no change.
+    if (!change) {
+      return;
+    }
 
-  // }
+    // Undo
+    this._litestore.undo();
 
-  // redo(): void {
-  // }
+    // Get the previous state's data.
+    let undoChange: DataModel.ChangedArgs;
+    ({
+      columnMap: this._columnMap,
+      rowMap: this._rowMap,
+      valueMap: this._valueMap
+    } = this._litestore.getRecord({
+      schema: DATAMODEL_SCHEMA,
+      record: RECORD_ID
+    }));
 
-  /**
-   * get the row count
-   * Notes: this is equivalent to this.rowCount('body')
-   */
-  get numRows(): number {
-    return this._model.rowCount('body');
+    // submit a signal to the DataGrid based on the change.
+    switch (change.type) {
+      case 'cells-changed':
+        // add the visual element of reselecting the cell where the change happened.
+
+        undoChange = {
+          type: 'cells-changed',
+          region: 'body',
+          row: change.row,
+          column: change.column,
+          rowSpan: change.rowSpan,
+          columnSpan: change.columnSpan
+        };
+        break;
+      case 'rows-inserted':
+        undoChange = {
+          type: 'rows-removed',
+          region: 'body',
+          index: change.index,
+          span: change.span
+        };
+        break;
+      case 'columns-inserted':
+        undoChange = {
+          type: 'columns-removed',
+          region: 'body',
+          index: change.index,
+          span: change.span
+        };
+        break;
+      case 'rows-removed':
+        undoChange = {
+          type: 'rows-inserted',
+          region: 'body',
+          index: change.index,
+          span: change.span
+        };
+        break;
+      case 'columns-removed':
+        undoChange = {
+          type: 'columns-inserted',
+          region: 'body',
+          index: change.index,
+          span: change.span
+        };
+        break;
+      case 'rows-moved':
+        undoChange = {
+          type: 'rows-moved',
+          region: 'body',
+          index: change.destination,
+          destination: change.index,
+          span: change.span
+        };
+        break;
+      case 'columns-moved':
+        undoChange = {
+          type: 'columns-moved',
+          region: 'body',
+          index: change.destination,
+          destination: change.index,
+          span: change.span
+        };
+        break;
+    }
+    this._handleEmits(undoChange);
   }
 
-  /**
-   * get the column count
-   * Notes: this is equivalent to this.rowCount('body')
-   */
-  get numColumns(): number {
-    return this._model.columnCount('body');
+  redo(change: DataModel.ChangedArgs): void {
+    // Update the data.
+    ({
+      rowMap: this._rowMap,
+      columnMap: this._columnMap,
+      valueMap: this._valueMap
+    } = this._litestore.getRecord({
+      schema: DATAMODEL_SCHEMA,
+      record: RECORD_ID
+    }));
+
+    // Emit the change.
+    this._handleEmits(change);
   }
 
   /**
@@ -379,23 +626,28 @@ export default class EditorModel extends MutableDataModel {
   private _gridRowID(row: number, region: DataModel.CellRegion) {
     return region === 'body' ? row - 1 : row;
   }
+
+  private _updateLitestore(change: DataModel.ChangedArgs | null) {
+    this._litestore.beginTransaction();
+    this._litestore.updateRecord(
+      {
+        schema: DATAMODEL_SCHEMA,
+        record: RECORD_ID
+      },
+      {
+        rowMap: this._rowMap,
+        columnMap: this._columnMap,
+        valueMap: this._valueMap,
+        change: change
+      }
+    );
+  }
+
+  private _handleEmits(change: DataModel.ChangedArgs): void {
+    // Emits the updates to the DataModel to the DataGrid for rerender
+    this.emitChanged(change);
+  }
 }
-//   private _updateLiteStore(change: DataModel.ChangedArgs | null) {
-//     this._litestore.beginTransaction();
-//     this._litestore.updateRecord(
-//       {
-//         schema: DATAMODEL_SCHEMA,
-//         record: RECORD_ID
-//       },
-//       {
-//         rowMap: this._rowMap,
-//         columnMap: this._columnMap,
-//         valueMap: this._valueMap,
-//         change: change
-//       }
-//     );
-//   }
-// }
 
 export const SCHEMA_ID = 'datamodel';
 export const RECORD_ID = 'datamodel';
@@ -404,7 +656,7 @@ export const DATAMODEL_SCHEMA = {
   fields: {
     rowMap: Fields.Register<number[]>({ value: [] }),
     columnMap: Fields.Register<number[]>({ value: [] }),
-    valueMap: Fields.Register<HashMap>({ value: { r0c0: '' } }),
+    valueMap: Fields.Register<HashMap>({ value: {} }),
     change: Fields.Register<DataModel.ChangedArgs>({
       value: { type: 'model-reset' }
     })
