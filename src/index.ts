@@ -338,14 +338,6 @@ function addCommands(
     rank: 0
   });
 
-  
-
-  app.contextMenu.addItem({
-    command: CommandIDs.insertRowBelow,
-    selector: BODY_SELECTOR,
-    rank: 0
-  });
-
   app.contextMenu.addItem({
     selector: BODY_SELECTOR,
     rank: 0,
