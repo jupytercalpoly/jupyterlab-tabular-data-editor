@@ -509,7 +509,7 @@ export class EditableCSVViewer extends Widget {
     this._column = hit.column;
   }
 
-  private _onResize(emitter: RichMouseHandler) {
+  private _onResize(emitter: RichMouseHandler): void {
     this._background.style.width = `${this._grid.viewportWidth}px`;
     this._background.style.height = `${this._grid.viewportHeight}px`;
     this._columnHeader.style.left = `${this._grid.headerWidth}px`;
