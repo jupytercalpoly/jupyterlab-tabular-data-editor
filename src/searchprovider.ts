@@ -146,7 +146,8 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
    * @returns A promise that resolves once the action has completed.
    */
   async replaceAllMatches(newText: string): Promise<boolean> {
-    const litestore = this._target.content.litestore;
+    const model = this._target.content.dataModel.model;
+    const litestore = this._target.content.dataModel.litestore;
     const searchService = this._target.content.searchService;
     const startRow = searchService.currentMatch.line;
     const startColumn = searchService.currentMatch.column;

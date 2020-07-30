@@ -19,7 +19,7 @@ import {
 } from 'tde-datagrid';
 import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget } from '@lumino/widgets';
-import { EditableDSVModel } from './model';
+import { EditorModel } from './model';
 import { RichMouseHandler } from './handler';
 import { numberToCharacter } from './_helper';
 import { toArray } from '@lumino/algorithm';
@@ -39,6 +39,7 @@ const RENDER_TIMEOUT = 1000;
 
 export class EditableCSVViewer extends Widget {
   private _background: HTMLElement;
+  private _region: any;
   /**
    * Construct a new CSV viewer.
    */
@@ -187,8 +188,8 @@ export class EditableCSVViewer extends Widget {
   /**
    * The DataModel used to render the DataGrid
    */
-  get dataModel(): EditableDSVModel {
-    return this._grid.dataModel as EditableDSVModel;
+  get dataModel(): EditorModel {
+    return this._grid.dataModel as EditorModel;
   }
 
   get litestore(): Litestore {
@@ -299,13 +300,13 @@ export class EditableCSVViewer extends Widget {
    */
   protected _updateGrid(): void {
     const delimiter = this.delimiter;
-    const model = this._grid.dataModel as EditableDSVModel;
+    const model = this._grid.dataModel as EditorModel;
     let data: string;
 
     if (!model) {
       const header = this._buildColHeader(this.delimiter);
       data = header + this._context.model.toString();
-      const dataModel = (this._grid.dataModel = new EditableDSVModel({
+      const dataModel = (this._grid.dataModel = new EditorModel({
         data,
         delimiter
       }));
@@ -321,9 +322,6 @@ export class EditableCSVViewer extends Widget {
       this._litestore.beginTransaction();
       this.updateLitestore('initial update');
       this._litestore.endTransaction();
-
-      dataModel.onChangedSignal.connect(this._updateModel, this);
-      dataModel.cancelEditingSignal.connect(this._cancelEditing, this);
     }
     // update the position of the background row and column headers
     this._background.style.width = `${this._grid.viewportWidth}px`;
@@ -360,37 +358,10 @@ export class EditableCSVViewer extends Widget {
   }
 
   /**
-   * Called every time the datamodel updates
-   * Updates the file and the litestore
-   * @param emitter
-   * @param data The raw data used to update the model
-   * @param change The arguments from the datamodel change used ot update the Litestore
-   */
-  private _updateModel(
-    emitter: EditableDSVModel,
-    args: EditableCSVViewer.ModelChangedArgs
-  ): void {
-    const { data, change, type, useLitestore } = args;
-
-    if (useLitestore) {
-      this._litestore.beginTransaction();
-      this.updateLitestore(type, change);
-      this._litestore.endTransaction();
-    }
-
-    // serialize the data
-    this.context.model.fromString(data);
-  }
-
-  /**
    * Saves the file
    */
   private _save(): void {
     this.context.save();
-  }
-
-  private _cancelEditing(emitter: EditableDSVModel): void {
-    this._grid.editorController.cancel();
   }
 
   /**
@@ -413,10 +384,12 @@ export class EditableCSVViewer extends Widget {
 
     switch (type) {
       case 'insert-row-above': {
-        this.dataModel.addRow(this._row, type);
+        this.dataModel.addRows(this._region, this._row);
         break;
       }
       case 'insert-row-below': {
+        this.dataModel.addRows(this._region, this._row + 1);
+
         if (!selection) {
           break;
         }
@@ -434,10 +407,12 @@ export class EditableCSVViewer extends Widget {
         break;
       }
       case 'insert-column-left': {
-        this.dataModel.addColumn(this._column, type);
+        this.dataModel.addColumns(this._region, this._column);
         break;
       }
       case 'insert-column-right': {
+        this.dataModel.addColumns(this._region, this._column + 1);
+
         if (!selection) {
           break;
         }
@@ -456,32 +431,26 @@ export class EditableCSVViewer extends Widget {
         break;
       }
       case 'remove-row': {
-        this.dataModel.removeRow(this._row, type);
+        this.dataModel.removeRows(this._region, this._row);
         break;
       }
       case 'remove-column': {
-        this.dataModel.removeColumn(this._column, type);
+        this.dataModel.removeColumns(this._region, this._column);
         break;
       }
       case 'cut-cells':
       case 'copy-cells': {
         this._grid.copyToClipboard();
         const { r1, c1, r2, c2 } = this.getSelectedRange();
-        this.dataModel.cutAndCopy(
-          {
-            startRow: r1,
-            startColumn: c1,
-            endRow: r2,
-            endColumn: c2
-          },
-          type
-        );
+        const rowSpan = r2 - r1 + 1;
+        const columnSpan = c2 - c1 + 1;
+        this.dataModel.cut(this._region, r1, c1, rowSpan, columnSpan);
         break;
       }
       case 'paste-cells': {
         // we will determine the location based on the current selection
         const { r1, c1 } = this.getSelectedRange();
-        this.dataModel.paste({ row: r1, column: c1 }, type);
+        this.dataModel.paste(this._region, r1, c1);
         break;
       }
       case 'clear-contents': {
@@ -536,12 +505,7 @@ export class EditableCSVViewer extends Widget {
           return;
         }
         this._litestore.redo();
-        const {
-          change,
-          modelData,
-          selection,
-          type
-        } = this._litestore.getRecord({
+        const { change } = this._litestore.getRecord({
           schema: EditableCSVViewer.DATAMODEL_SCHEMA,
           record: EditableCSVViewer.RECORD_ID
         });
@@ -562,17 +526,12 @@ export class EditableCSVViewer extends Widget {
           c2 = change.destination;
         }
 
-        this._grid.selectionModel.select({
-          r1,
-          r2,
-          c1,
-          c2,
-          cursorRow: r1,
-          cursorColumn: c1,
-          clear: 'all'
-        });
-
-        this.dataModel.redo(modelData, change);
+        // reselect the cell that was edited
+        if (change.type === 'cells-changed') {
+          const { row, column } = change;
+          this.selectSingleCell(row, column);
+        }
+        this.dataModel.redo(change);
         break;
       }
       case 'save':
@@ -641,7 +600,7 @@ export class EditableCSVViewer extends Widget {
     event.preventDefault();
     event.stopPropagation();
     const { r1, c1 } = this.getSelectedRange();
-    this.dataModel.paste({ row: r1, column: c1 }, copiedText);
+    this.dataModel.paste(this._region, r1, c1, copiedText);
   }
 
   private _onRightClick(

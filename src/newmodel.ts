@@ -1,11 +1,10 @@
 import { DSVModel } from 'tde-csvviewer';
-import { MutableDataModel, DataModel } from '@lumino/datagrid';
+import { MutableDataModel, DataModel } from 'tde-datagrid';
 import { Fields } from '@lumino/datastore';
 import { Litestore } from './litestore';
 // import { Signal } from '@lumino/signaling';
 
-export default class EditorModel extends MutableDataModel {
-  private _model: DSVModel;
+export class EditorModel extends MutableDataModel {
   private _valueMap: HashMap;
   private _rowMap: Array<number>;
   private _columnMap: Array<number>;
@@ -14,7 +13,8 @@ export default class EditorModel extends MutableDataModel {
   private _initRows: number;
   private _initColumns: number;
   private _clipboard: Array<Array<string>>;
-  private _litestore: Litestore;
+  public litestore: Litestore;
+  public model: DSVModel;
   // private _onChangeSignal: Signal<this, string> = new Signal<this, string>(
   //   this
   // );
@@ -22,7 +22,7 @@ export default class EditorModel extends MutableDataModel {
   constructor(options: DSVModel.IOptions) {
     super();
     // give our model the DSVModel as a property
-    this._model = new DSVModel(options);
+    this.model = new DSVModel(options);
 
     // Arrays which map the requested row/column to the
     // row/column where the data actually lives, initially
@@ -48,7 +48,7 @@ export default class EditorModel extends MutableDataModel {
     this._valueMap = {};
 
     // initialize the litestore
-    this._litestore = new Litestore({ id: 0, schemas: [DATAMODEL_SCHEMA] });
+    this.litestore = new Litestore({ id: 0, schemas: [DATAMODEL_SCHEMA] });
   }
 
   /**
@@ -56,7 +56,7 @@ export default class EditorModel extends MutableDataModel {
    * Notes: this is equivalent to this.rowCount('body')
    */
   get numRows(): number {
-    return this._model.rowCount('body');
+    return this.model.rowCount('body');
   }
 
   /**
@@ -64,21 +64,21 @@ export default class EditorModel extends MutableDataModel {
    * Notes: this is equivalent to this.rowCount('body')
    */
   get numColumns(): number {
-    return this._model.columnCount('body');
+    return this.model.columnCount('body');
   }
 
   /**
    * the rowCount for a specific region
    */
   rowCount(region: DataModel.RowRegion): number {
-    return this._model.rowCount(region);
+    return this.model.rowCount(region);
   }
 
   /**
    * the columnCount for a specific region
    */
   columnCount(region: DataModel.ColumnRegion = 'body'): number {
-    return this._model.columnCount(region);
+    return this.model.columnCount(region);
   }
 
   data(region: DataModel.CellRegion, row: number, column: number): any {
@@ -108,14 +108,15 @@ export default class EditorModel extends MutableDataModel {
     row = this._gridRowID(row, region);
 
     // fetch the value from the data
-    return this._model.data(region, row, column);
+    return this.model.data(region, row, column);
   }
 
   setData(
     region: DataModel.CellRegion,
     row: number,
     column: number,
-    value: any
+    value: any,
+    useLitestore = true
   ): boolean {
     row = this._uniqueRowID(row, region);
 
@@ -125,6 +126,9 @@ export default class EditorModel extends MutableDataModel {
 
     // add the value to the valueMap
     this._valueMap[`${row}, ${column}`] = value;
+
+    // Revert the Grid Row ID
+    row = this._gridRowID(row, region);
 
     // Define the change.
     const change: DataModel.ChangedArgs = {
@@ -137,7 +141,9 @@ export default class EditorModel extends MutableDataModel {
     };
 
     // Update the Litestore.
-    this._updateLitestore(change);
+    if (useLitestore) {
+      this._updateLitestore(change);
+    }
 
     // Emit the change.
     this._handleEmits(change);
@@ -222,7 +228,7 @@ export default class EditorModel extends MutableDataModel {
    * @param start the index to start removing the rows
    * @param span the number of rows to remove
    */
-  removeRows(region: DataModel.CellRegion, start: number, span: number): void {
+  removeRows(region: DataModel.CellRegion, start: number, span = 1): void {
     // map to the unique row ID.
     start = this._uniqueRowID(start, region);
 
@@ -253,7 +259,7 @@ export default class EditorModel extends MutableDataModel {
    * @param span the number of columns to remove
    */
 
-  removeColumns(start: number, span: number): void {
+  removeColumns(region: DataModel.CellRegion, start: number, span = 1): void {
     // remove the values from the rowMap
     this._rowMap.splice(start, span);
 
@@ -455,9 +461,26 @@ export default class EditorModel extends MutableDataModel {
     }
   }
 
-  paste(region: DataModel.CellRegion, row: number, column: number): void {
+  paste(
+    region: DataModel.CellRegion,
+    row: number,
+    column: number,
+    data: string | null = null
+  ): void {
+    // see if we have stored it in our local array
+    if (this._clipboard.length === 0) {
+      if (data !== null) {
+        // convert the copied data to an array
+        this._clipboard = data.split('\n').map(elem => elem.split('\t'));
+      } else {
+        // we have no data, so bail
+        return;
+      }
+    }
+
     // get the unique row ID.
     row = this._uniqueRowID(row, region);
+
     // see how much space we have
     const rowsBelow = this.numRows - row;
     const columnsRight = this.numColumns - column;
@@ -501,7 +524,7 @@ export default class EditorModel extends MutableDataModel {
     }
 
     // Undo
-    this._litestore.undo();
+    this.litestore.undo();
 
     // Get the previous state's data.
     let undoChange: DataModel.ChangedArgs;
@@ -509,7 +532,7 @@ export default class EditorModel extends MutableDataModel {
       columnMap: this._columnMap,
       rowMap: this._rowMap,
       valueMap: this._valueMap
-    } = this._litestore.getRecord({
+    } = this.litestore.getRecord({
       schema: DATAMODEL_SCHEMA,
       record: RECORD_ID
     }));
@@ -588,7 +611,7 @@ export default class EditorModel extends MutableDataModel {
       rowMap: this._rowMap,
       columnMap: this._columnMap,
       valueMap: this._valueMap
-    } = this._litestore.getRecord({
+    } = this.litestore.getRecord({
       schema: DATAMODEL_SCHEMA,
       record: RECORD_ID
     }));
@@ -628,8 +651,8 @@ export default class EditorModel extends MutableDataModel {
   }
 
   private _updateLitestore(change: DataModel.ChangedArgs | null) {
-    this._litestore.beginTransaction();
-    this._litestore.updateRecord(
+    this.litestore.beginTransaction();
+    this.litestore.updateRecord(
       {
         schema: DATAMODEL_SCHEMA,
         record: RECORD_ID
