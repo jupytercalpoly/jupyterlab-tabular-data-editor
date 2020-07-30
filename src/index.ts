@@ -484,7 +484,11 @@ namespace Private {
     backgroundColor: 'white',
     headerBackgroundColor: '#EEEEEE',
     gridLineColor: 'rgba(20, 20, 20, 0.15)',
-    headerGridLineColor: 'rgba(20, 20, 20, 0.25)'
+    headerGridLineColor: 'rgba(20, 20, 20, 0.25)',
+    selectionBorderColor: 'rgb(33,150,243)',
+    cursorBorderColor: 'rgb(33,150,243)', //selected cell border color
+    headerSelectionBorderColor: 'rgb(33,150,243, 0)' //made transparent
+
     //rowBackgroundColor: i => (i % 2 === 0 ? '#F5F5F5' : 'white')
   };
 
@@ -497,7 +501,8 @@ namespace Private {
     backgroundColor: '#111111',
     headerBackgroundColor: '#424242',
     gridLineColor: 'rgba(235, 235, 235, 0.15)',
-    headerGridLineColor: 'rgba(235, 235, 235, 0.25)'
+    headerGridLineColor: 'rgba(235, 235, 235, 0.25)',
+    headerSelectionFillColor: 'rgba(20, 20, 20, 0.25)'
     //rowBackgroundColor: i => (i % 2 === 0 ? '#212121' : '#111111')
   };
 
