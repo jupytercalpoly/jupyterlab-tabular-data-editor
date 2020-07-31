@@ -1,4 +1,4 @@
-import { MutableDataModel, DataModel } from '@lumino/datagrid';
+import { MutableDataModel, DataModel, SelectionModel } from 'tde-datagrid';
 import { DSVModel } from 'tde-csvviewer';
 import { Signal } from '@lumino/signaling';
 import { numberToCharacter } from './_helper';
@@ -241,7 +241,7 @@ export class EditableDSVModel extends MutableDataModel {
     let headerLength = this.colHeaderLength;
     const headerIndex = model.rawData.lastIndexOf(
       model.delimiter,
-      headerLength
+      headerLength - 1
     );
 
     model.rawData =
@@ -671,7 +671,138 @@ export class EditableDSVModel extends MutableDataModel {
   }
 
   /**
-   * Handles all singal emitting and model parsing after the raw data is manipulated
+   * Clears the contents of the selected region
+   * Keybind: ['Backspace']
+   */
+  clearContents(
+    regionClicked: DataModel.CellRegion,
+    rowClicked: number,
+    columnClicked: number,
+    selection: SelectionModel.Selection
+  ): void {
+    if (regionClicked === 'corner-header') {
+      return;
+    }
+
+    const model = this._dsvModel;
+    const { r1, r2, c1, c2 } = selection;
+    let row, column, rowSpan, columnSpan: number;
+    let change: DataModel.ChangedArgs;
+
+    switch (regionClicked) {
+      // clear contents of that column
+      case 'column-header':
+        // set params
+        row = 0;
+        column = columnClicked;
+        rowSpan = this.rowCount('body');
+        columnSpan = 1;
+
+        //define change args
+        change = {
+          type: 'cells-changed',
+          region: 'body',
+          row: row,
+          column: column,
+          rowSpan: rowSpan,
+          columnSpan: columnSpan
+        };
+
+        this._litestore.beginTransaction();
+        // iterate through column to clear contents
+        for (let i = 0; i < rowSpan; i++) {
+          this.setData('body', i, column, '', false);
+        }
+        this._litestore.updateRecord(
+          {
+            schema: DATAMODEL_SCHEMA,
+            record: RECORD_ID
+          },
+          {
+            modelData: model.rawData,
+            change: change
+          }
+        );
+        this._litestore.endTransaction();
+        break;
+      // clear contents of that row
+      case 'row-header':
+        // set params
+        row = rowClicked;
+        column = 0;
+        rowSpan = 1;
+        columnSpan = this.columnCount('body');
+
+        //define change args
+        change = {
+          type: 'cells-changed',
+          region: 'body',
+          row: row,
+          column: column,
+          rowSpan: rowSpan,
+          columnSpan: columnSpan
+        };
+
+        this._litestore.beginTransaction();
+        // iterate through row to clear contents
+        for (let i = 0; i < columnSpan; i++) {
+          this.setData('body', row, i, '', false);
+        }
+        this._litestore.updateRecord(
+          {
+            schema: DATAMODEL_SCHEMA,
+            record: RECORD_ID
+          },
+          {
+            modelData: model.rawData,
+            change: change
+          }
+        );
+        this._litestore.endTransaction();
+        break;
+      // region === 'body'
+      // clear contents in the current selection
+      default:
+        // set params
+        row = Math.min(r1, r2);
+        column = Math.min(c1, c2);
+        rowSpan = Math.abs(r1 - r2) + 1;
+        columnSpan = Math.abs(c1 - c2) + 1;
+
+        //define change args
+        change = {
+          type: 'cells-changed',
+          region: 'body',
+          row: row,
+          column: column,
+          rowSpan: rowSpan,
+          columnSpan: columnSpan
+        };
+
+        this._litestore.beginTransaction();
+        // iterate through row to clear contents
+        for (let curRow = row; curRow < row + rowSpan; curRow++) {
+          for (let curCol = column; curCol < column + columnSpan; curCol++) {
+            this.setData('body', curRow, curCol, '', false);
+          }
+        }
+        this._litestore.updateRecord(
+          {
+            schema: DATAMODEL_SCHEMA,
+            record: RECORD_ID
+          },
+          {
+            modelData: model.rawData,
+            change: change
+          }
+        );
+        this._litestore.endTransaction();
+        break;
+    }
+  }
+
+  /**
+   * Handles all signal emitting and model parsing after the raw data is manipulated
    * @param change The current change to be emitted to the Datagrid
    */
   handleEmits(change: DataModel.ChangedArgs): void {

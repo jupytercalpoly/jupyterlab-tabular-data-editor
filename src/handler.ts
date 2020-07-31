@@ -4,7 +4,7 @@ import {
   DataGrid,
   DataModel,
   ResizeHandle
-} from '@lumino/datagrid';
+} from 'tde-datagrid';
 import { Drag } from '@lumino/dragdrop';
 import { Signal } from '@lumino/signaling';
 import { renderSelection, IBoundingRegion, BoundedDrag } from './selection';
@@ -18,7 +18,11 @@ export class RichMouseHandler extends BasicMouseHandler {
     this._cursor = null;
   }
 
-  get rightClickSignal(): Signal<this, Array<number>> {
+  get resizeSignal(): Signal<this, null> {
+    return this._resizeSignal;
+  }
+
+  get rightClickSignal(): Signal<this, DataGrid.HitTestResult> {
     return this._rightClickSignal;
   }
 
@@ -36,13 +40,16 @@ export class RichMouseHandler extends BasicMouseHandler {
 
   cursorByRegion(): string {
     const hit = this._grid.hitTest(this._event.clientX, this._event.clientY);
+    // display the grab cursor if the row/column is in the curent selection
     switch (hit.region) {
-      case 'row-header': {
-        return 'grab';
-      }
-      case 'column-header': {
-        return 'grab';
-      }
+      case 'row-header':
+        return this._grid.selectionModel.isRowSelected(hit.row)
+          ? 'grab'
+          : 'default';
+      case 'column-header':
+        return this._grid.selectionModel.isColumnSelected(hit.column)
+          ? 'grab'
+          : 'default';
       default: {
         return 'default';
       }
@@ -81,9 +88,18 @@ export class RichMouseHandler extends BasicMouseHandler {
   handleGrabbing(): void {
     const hit = this._grid.hitTest(this._event.clientX, this._event.clientY);
     const { region, row, column } = hit;
+    switch (region) {
+      case 'column-header': {
+        this._selectionIndex = column;
+        break;
+      }
+      case 'row-header': {
+        this._selectionIndex = row;
+        break;
+      }
+    }
 
-    // get row/column geometry
-    // the real parameters for the shadow rectangle
+    // get the rectangular region of the row/column our mouse clicked on
     let [r1, r2, c1, c2] = this.getShadowRegion(region, row, column);
 
     // get the left and top offsets of the grid viewport
@@ -99,11 +115,7 @@ export class RichMouseHandler extends BasicMouseHandler {
       lowerBound = upperBound = r1;
       leftBound = left + this._grid.headerWidth;
       rightBound =
-        left +
-        Math.min(
-          this._grid.pageWidth - (c2 - c1),
-          this._grid.headerWidth + this._grid.bodyWidth - (c2 - c1)
-        );
+        left + this._grid.headerWidth + this._grid.pageWidth - (c2 - c1);
     } else if (region === 'row-header') {
       lowerBound =
         top +
@@ -131,15 +143,20 @@ export class RichMouseHandler extends BasicMouseHandler {
       'shadow'
     );
 
-    // initiate the dark line
-    [r1, r2, c1, c2] = this.getLineRegionFromShadowRegion(
-      r1,
-      r2,
-      c1,
-      c2,
-      this._event,
-      region
-    );
+    // set r1, r2, c1, c2 to the bounds for the dark line
+    switch (region) {
+      case 'column-header': {
+        c1 = c1 - 1;
+        c2 = c1 + 2;
+        break;
+      }
+      case 'row-header': {
+        r1 = r1 - 1;
+        r2 = r1 + 2;
+      }
+    }
+
+    // initialize the dark line
     this._moveLine = renderSelection(
       r1,
       r2,
@@ -192,10 +209,17 @@ export class RichMouseHandler extends BasicMouseHandler {
           this._grid.bodyHeight + this._grid.headerHeight
         );
       c1 =
-        left + this._grid.headerWidth + this._grid.columnOffset('body', column);
+        left +
+        this._grid.headerWidth +
+        this._grid.columnOffset('body', column) -
+        this._grid.scrollX;
       c2 = c1 + this._grid.columnSize('body', column);
     } else if (region === 'row-header') {
-      r1 = top + this._grid.headerHeight + this._grid.rowOffset('body', row);
+      r1 =
+        top +
+        this._grid.headerHeight +
+        this._grid.rowOffset('body', row) -
+        this._grid.scrollY;
       r2 = r1 + this._grid.rowSize('body', row);
       c1 = left + this._grid.headerWidth;
       c2 =
@@ -231,38 +255,69 @@ export class RichMouseHandler extends BasicMouseHandler {
    * @param event
    */
   updateLinePos(grid: DataGrid, event: MouseEvent): void {
-    // reduce the sensitivity slightly
-    if (Math.abs(event.movementX) < 0.5 && Math.abs(event.movementY) < 0.5) {
-      return;
-    }
-    const hit = grid.hitTest(event.clientX, event.clientY);
-    const { region, row, column } = hit;
-    let [r1, r2, c1, c2] = this.getShadowRegion(region, row, column);
-    [r1, r2, c1, c2] = this.getLineRegionFromShadowRegion(
-      r1,
-      r2,
-      c1,
-      c2,
-      event,
-      region
-    );
-    this._moveLine.manualPositionUpdate(c1, r1);
-  }
+    // find the region we originall clicked on.
+    const { region } = this._moveData;
 
-  getLineRegionFromShadowRegion(
-    r1: number,
-    r2: number,
-    c1: number,
-    c2: number,
-    event: MouseEvent,
-    region: DataModel.CellRegion | 'void'
-  ): Array<number> {
-    if (region === 'column-header') {
-      event.movementX > 0 ? (c1 = c2 + 1) : (c2 = c1 + 1);
-    } else if (region === 'row-header') {
-      event.movementY > 0 ? (r1 = r2 + 1) : (r2 = r1 + 1);
+    // initialize the variables for the the rectangular column/row region
+    let [r1, r2, c1, c2] = this.getShadowRegion(
+      region,
+      this._selectionIndex,
+      this._selectionIndex
+    );
+
+    // see if we have crossed the boundary to a neighboring row/column
+    switch (region) {
+      case 'column-header': {
+        // bail early if we are still within the bounds
+        if (c1 < event.clientX && event.clientX < c2) {
+          return;
+        } else if (event.clientX < c1) {
+          // we are at the previous column, get the new region
+          this._selectionIndex--;
+          [r1, r2, c1, c2] = this.getShadowRegion(
+            region,
+            this._selectionIndex,
+            this._selectionIndex
+          );
+          this._moveLine.manualPositionUpdate(c1 - 1, r1);
+        } else {
+          this._selectionIndex++;
+          // we are at the next column, get the new region
+          [r1, r2, c1, c2] = this.getShadowRegion(
+            region,
+            this._selectionIndex,
+            this._selectionIndex
+          );
+          this._moveLine.manualPositionUpdate(c2 - 1, r1);
+        }
+        break;
+      }
+      case 'row-header': {
+        // bail early if we are still within the bounds
+        if (r1 < event.clientY && event.clientY < r2) {
+          return;
+        } else if (event.clientY < r1) {
+          // we are at the previous row, get the new region
+          this._selectionIndex--;
+          [r1, r2, c1, c2] = this.getShadowRegion(
+            region,
+            this._selectionIndex,
+            this._selectionIndex
+          );
+          this._moveLine.manualPositionUpdate(c1, r1 - 1);
+        } else {
+          // we are at the next column, get the new region
+          this._selectionIndex++;
+          [r1, r2, c1, c2] = this.getShadowRegion(
+            region,
+            this._selectionIndex,
+            this._selectionIndex
+          );
+          this._moveLine.manualPositionUpdate(c1, r2 - 1);
+        }
+        break;
+      }
     }
-    return [r1, r2, c1, c2];
   }
 
   /**
@@ -286,6 +341,14 @@ export class RichMouseHandler extends BasicMouseHandler {
         const endRow = grid.rowAt('body', vy);
         model.moveRow(startRow, endRow);
       }
+      if (this.pressData) {
+        if (
+          this.pressData.type === 'column-resize' ||
+          this.pressData.type === 'row-resize'
+        ) {
+          this._resizeSignal.emit(null);
+        }
+      }
     }
     this.release();
     return;
@@ -301,14 +364,15 @@ export class RichMouseHandler extends BasicMouseHandler {
   onContextMenu(grid: DataGrid, event: MouseEvent): void {
     const { clientX, clientY } = event;
     const hit = grid.hitTest(clientX, clientY);
-    const { row, column } = hit;
-    this._rightClickSignal.emit([row, column]);
+    this._rightClickSignal.emit(hit);
   }
   private _grid: DataGrid;
   private _event: MouseEvent;
   private _cursor: string | null;
   private _moveData: MoveData | null;
-  private _rightClickSignal = new Signal<this, Array<number>>(this);
+  private _rightClickSignal = new Signal<this, DataGrid.HitTestResult>(this);
+  private _resizeSignal = new Signal<this, null>(this);
+  private _selectionIndex: number;
 }
 
 export type MoveData = {

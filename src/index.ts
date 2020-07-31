@@ -137,14 +137,30 @@ function addCommands(
   tracker: WidgetTracker<IDocumentWidget<EditableCSVViewer>>
 ): void {
   const { commands } = app;
-  const SELECTOR = '.jp-CSVViewer-grid';
+  const GLOBAL_SELECTOR = '.jp-CSVViewer-grid';
+  const BODY_SELECTOR = '.jp-background';
+  const COLUMN_HEADER_SELECTOR = '.jp-column-header';
+  const ROW_HEADER_SELECTOR = '.jp-row-header';
 
-  commands.addCommand(CommandIDs.addRow, {
-    label: 'Add Row',
+  commands.addCommand(CommandIDs.insertRowAbove, {
+    label: 'Insert Row Above',
     execute: () => {
       // emit a signal to the EditableDSVModel
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('add-row');
+        tracker.currentWidget.content.changeModelSignal.emit(
+          'insert-row-above'
+        );
+    }
+  });
+
+  commands.addCommand(CommandIDs.insertRowBelow, {
+    label: 'Insert Row Below',
+    execute: () => {
+      // emit a signal to the EditableDSVModel
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit(
+          'insert-row-below'
+        );
     }
   });
 
@@ -156,11 +172,23 @@ function addCommands(
     }
   });
 
-  commands.addCommand(CommandIDs.addColumn, {
-    label: 'Add Column',
+  commands.addCommand(CommandIDs.insertColumnLeft, {
+    label: 'Insert Column Left',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('add-column');
+        tracker.currentWidget.content.changeModelSignal.emit(
+          'insert-column-left'
+        );
+    }
+  });
+
+  commands.addCommand(CommandIDs.insertColumnRight, {
+    label: 'Insert Column Right',
+    execute: () => {
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit(
+          'insert-column-right'
+        );
     }
   });
 
@@ -262,88 +290,114 @@ function addCommands(
     }
   });
 
-  // Add items to the context menu
-  app.contextMenu.addItem({
-    command: CommandIDs.cutContextMenu,
-    selector: SELECTOR,
-    rank: 0
+  commands.addCommand(CommandIDs.clearContents, {
+    label: 'Clear Contents',
+    execute: () => {
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('clear-contents');
+    }
   });
 
-  app.contextMenu.addItem({
-    command: CommandIDs.copyContextMenu,
-    selector: SELECTOR,
-    rank: 0
-  });
+  // these commands are standard for every context menu
+  const standardContextMenu = [
+    'cutContextMenu',
+    'copyContextMenu',
+    'pasteContextMenu',
+    'separator'
+  ];
 
-  app.contextMenu.addItem({
-    command: CommandIDs.pasteContextMenu,
-    selector: SELECTOR,
-    rank: 0
-  });
+  // extending the standard context menu for different parts of the data
+  const bodyContextMenu = [
+    ...standardContextMenu,
+    'insertRowAbove',
+    'insertRowBelow',
+    'separator',
+    'removeRow',
+    'clearContents'
+  ];
+  const columnHeaderContextMenu = [
+    ...standardContextMenu,
+    'insertColumnLeft',
+    'insertColumnRight',
+    'separator',
+    'removeColumn',
+    'clearContents'
+  ];
+  const rowHeaderContextMenu = [
+    ...standardContextMenu,
+    'insertRowAbove',
+    'insertRowBelow',
+    'separator',
+    'removeRow',
+    'clearContents'
+  ];
 
-  app.contextMenu.addItem({
-    selector: SELECTOR,
-    rank: 0,
-    type: 'separator'
-  });
-
-  app.contextMenu.addItem({
-    command: CommandIDs.addRow,
-    selector: SELECTOR,
-    rank: 0
-  });
-
-  app.contextMenu.addItem({
-    command: CommandIDs.removeRow,
-    selector: SELECTOR,
-    rank: 0
-  });
-
-  app.contextMenu.addItem({
-    selector: SELECTOR,
-    rank: 0,
-    type: 'separator'
-  });
-
-  app.contextMenu.addItem({
-    command: CommandIDs.addColumn,
-    selector: SELECTOR,
-    rank: 0
-  });
-
-  app.contextMenu.addItem({
-    command: CommandIDs.removeColumn,
-    selector: SELECTOR,
-    rank: 0
-  });
+  // build the different context menus
+  buildContextMenu(app, bodyContextMenu, BODY_SELECTOR);
+  buildContextMenu(app, columnHeaderContextMenu, COLUMN_HEADER_SELECTOR);
+  buildContextMenu(app, rowHeaderContextMenu, ROW_HEADER_SELECTOR);
 
   // add keybindings
   app.commands.addKeyBinding({
     command: CommandIDs.copyContextMenu,
     args: {},
     keys: ['Accel C'],
-    selector: SELECTOR
+    selector: GLOBAL_SELECTOR
   });
 
   app.commands.addKeyBinding({
     command: CommandIDs.cutContextMenu,
     args: {},
     keys: ['Accel X'],
-    selector: SELECTOR
+    selector: GLOBAL_SELECTOR
   });
 
   app.commands.addKeyBinding({
     command: CommandIDs.undo,
     args: {},
     keys: ['Accel Z'],
-    selector: SELECTOR
+    selector: GLOBAL_SELECTOR
   });
   app.commands.addKeyBinding({
     command: CommandIDs.redo,
     args: {},
     keys: ['Accel Shift Z'],
-    selector: SELECTOR
+    selector: GLOBAL_SELECTOR
   });
+  app.commands.addKeyBinding({
+    command: CommandIDs.clearContents,
+    args: {},
+    keys: ['Backspace'],
+    selector: GLOBAL_SELECTOR
+  });
+}
+
+/**
+ * Builds a context menu for specific portion of the datagrid
+ * @param app The JupyterFrontEnd which contains the context menu
+ * @param commands An array of commands, use 'separator' for dividers (see CommandIDs dictionary in index.ts)
+ * @param selector The current portion of the datagrid BODY_SELECTOR | COLUMN_HEADER_SELECTOR | ROW_HEADER_SELECTOR
+ */
+function buildContextMenu(
+  app: JupyterFrontEnd,
+  commands: Array<string>,
+  selector: string
+): void {
+  // iterate over every command adding it to the context menu
+  commands.forEach(
+    (command: string): void => {
+      // if the command is a separator, add a separator
+      command === 'separator'
+        ? app.contextMenu.addItem({
+            type: 'separator',
+            selector: selector
+          })
+        : app.contextMenu.addItem({
+            command: CommandIDs[command],
+            selector: selector
+          });
+    }
+  );
 }
 
 export default [extension];
@@ -361,7 +415,11 @@ namespace Private {
     backgroundColor: 'white',
     headerBackgroundColor: '#EEEEEE',
     gridLineColor: 'rgba(20, 20, 20, 0.15)',
-    headerGridLineColor: 'rgba(20, 20, 20, 0.25)'
+    headerGridLineColor: 'rgba(20, 20, 20, 0.25)',
+    selectionBorderColor: 'rgb(33,150,243)',
+    cursorBorderColor: 'rgb(33,150,243)', //selected cell border color
+    headerSelectionBorderColor: 'rgb(33,150,243, 0)' //made transparent
+
     //rowBackgroundColor: i => (i % 2 === 0 ? '#F5F5F5' : 'white')
   };
 
@@ -374,7 +432,8 @@ namespace Private {
     backgroundColor: '#111111',
     headerBackgroundColor: '#424242',
     gridLineColor: 'rgba(235, 235, 235, 0.15)',
-    headerGridLineColor: 'rgba(235, 235, 235, 0.25)'
+    headerGridLineColor: 'rgba(235, 235, 235, 0.25)',
+    headerSelectionFillColor: 'rgba(20, 20, 20, 0.25)'
     //rowBackgroundColor: i => (i % 2 === 0 ? '#212121' : '#111111')
   };
 
@@ -399,9 +458,11 @@ namespace Private {
   };
 }
 
-export const CommandIDs = {
-  addRow: 'tde:add-row',
-  addColumn: 'tde:add-column',
+export const CommandIDs: { [key: string]: string } = {
+  insertColumnLeft: 'tde:insert-column-left',
+  insertColumnRight: 'tde:insert-column-right',
+  insertRowAbove: 'tde:insert-row-above',
+  insertRowBelow: 'tde:insert-row-below',
   removeRow: 'tde-remove-row',
   removeColumn: 'tde:remove-column',
   copyContextMenu: 'tde:copy',
@@ -412,5 +473,6 @@ export const CommandIDs = {
   pasteToolbar: 'tde:paste-tb',
   undo: 'tde:undo',
   redo: 'tde:redo',
-  save: 'tde-save'
+  save: 'tde-save',
+  clearContents: 'tde-clear-contents'
 };

@@ -70,8 +70,8 @@ export class BoundedDrag extends Drag {
     this._mouseOffsetX = options.mouseOffsetX;
     this._mouseOffsetY = options.mouseOffsetY;
     this._initializing = true;
+    this.moveDragImage;
   }
-
   moveDragImage(clientX: number, clientY: number): void {
     // see if we lack a drag image or if drag image is udpdate-less
     if (!this.dragImage) {
