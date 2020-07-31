@@ -1,5 +1,7 @@
 # Jupyter Tabular Data Editor Extension Progress
-An account of tasks and features planned and completed
+An account of tasks and features that are completed or planned
+
+#### [Try out our current extension via Binder](https://mybinder.org/v2/gh/jupytercalpoly/jupyterlab-tabular-data-editor/master?urlpath=lab)
 
 ## Features To Be Added (listed in order of highest priority)
 - [x] Edit cells (text editing only)
@@ -9,16 +11,23 @@ An account of tasks and features planned and completed
 - [x] Move rows/columns
 - [x] Undo/redo capabilities
 - [x] Copy, paste, cut
-- [ ] Toolbar for editing functions
-- [ ] Search and Replace
+- [x] Command Toolbar
+- [x] Search and Replace
+- [x] Clear contents
 ---
 **Potential Future Features**
 - [ ] Filter
 - [ ] Sort
 - [ ] Creating a new csv from launcher
 - [ ] Referencing other cells in formulas (relative positioning)
+- [ ] Kernel-backed cell outputs
 
 ## Current Progress
+
+### 07/27/20 - 07/31/20
+#### Extension available to try out in a binder demo
+- Command Toolbar - Kalen
+- Clear contents (rows, columns, selections) - Kalen
 
 ### 07/20/20 - 07/24/20
 - Search and replace functionality - Kalen
