@@ -367,6 +367,9 @@ export class EditableCSVViewer extends Widget {
    * @param type
    */
   private _changeModel(emitter: EditableCSVViewer, type: string): void {
+    const selectionModel = this._grid.selectionModel;
+    const { r1, r2, c1, c2 } = selectionModel.currentSelection();
+
     switch (type) {
       case 'insert-row-above': {
         this.dataModel.addRow(this._row);
@@ -374,6 +377,17 @@ export class EditableCSVViewer extends Widget {
       }
       case 'insert-row-below': {
         this.dataModel.addRow(this._row + 1);
+
+        // move the selection down a row to account for the new row being inserted
+        selectionModel.select({
+          r1: r1 + 1,
+          r2: r2 + 1,
+          c1,
+          c2,
+          cursorRow: r1,
+          cursorColumn: c1,
+          clear: 'all'
+        });
         break;
       }
       case 'insert-column-left': {
@@ -382,6 +396,17 @@ export class EditableCSVViewer extends Widget {
       }
       case 'insert-column-right': {
         this.dataModel.addColumn(this._column + 1);
+
+        // move the selection down a row to account for the new column being inserted
+        selectionModel.select({
+          r1,
+          r2,
+          c1: c1 + 1,
+          c2: c2 + 1,
+          cursorRow: r1,
+          cursorColumn: c1,
+          clear: 'all'
+        });
         break;
       }
       case 'remove-row': {
