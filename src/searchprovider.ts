@@ -10,6 +10,11 @@ import { DATAMODEL_SCHEMA, RECORD_ID } from './model';
 // The type for which canSearchFor returns true
 export type CSVDocumentWidget = DocumentWidget<EditableCSVViewer>;
 
+/**
+ * Responsible for managing the state of the search-and-replace UI element in JupyterLab
+ * Contains methods to query a search, highlight the previous/next match,
+ * replace the current match, and replace all matches
+ */
 export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
   /**
    * Report whether or not this provider has the ability to search on the given object

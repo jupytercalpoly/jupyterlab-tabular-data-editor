@@ -5,7 +5,8 @@
 /*border of a cell*/
 .lm-DataGrid-cellEditorContainer {
   border: 2px solid #2196f3;
-  box-shadow: var(--jp-cell-editor-box-shadow);
+  box-shadow: var(--jp-elevation-z1);
+  /*box-shadow: var(--jp-cell-editor-box-shadow); - not noticeable*/
 }
 
 /*surrounding of the cell when double clicked*/
@@ -53,7 +54,7 @@
 
 .lm-DataGrid-select-line {
   border: none;
-  background-color: #2196F3;
+  background-color: #2196f3;
 }
 
 .jp-row-header {
@@ -61,6 +62,7 @@
 }
 .jp-column-header {
   border: none;
+  color: var(--jp-layout-color3);
 }
 
 .jp-background {
