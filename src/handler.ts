@@ -22,7 +22,7 @@ export class RichMouseHandler extends BasicMouseHandler {
     return this._resizeSignal;
   }
 
-  get rightClickSignal(): Signal<this, Array<number>> {
+  get rightClickSignal(): Signal<this, DataGrid.HitTestResult> {
     return this._rightClickSignal;
   }
 
@@ -364,14 +364,13 @@ export class RichMouseHandler extends BasicMouseHandler {
   onContextMenu(grid: DataGrid, event: MouseEvent): void {
     const { clientX, clientY } = event;
     const hit = grid.hitTest(clientX, clientY);
-    const { row, column } = hit;
-    this._rightClickSignal.emit([row, column]);
+    this._rightClickSignal.emit(hit);
   }
   private _grid: DataGrid;
   private _event: MouseEvent;
   private _cursor: string | null;
   private _moveData: MoveData | null;
-  private _rightClickSignal = new Signal<this, Array<number>>(this);
+  private _rightClickSignal = new Signal<this, DataGrid.HitTestResult>(this);
   private _resizeSignal = new Signal<this, null>(this);
   private _selectionIndex: number;
 }

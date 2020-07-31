@@ -14,7 +14,8 @@ import {
   BasicSelectionModel,
   DataGrid,
   TextRenderer,
-  SelectionModel
+  SelectionModel,
+  DataModel
 } from 'tde-datagrid';
 import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget } from '@lumino/widgets';
@@ -412,6 +413,15 @@ export class EditableCSVViewer extends Widget {
         this.dataModel.paste({ row: r1, column: c1 });
         break;
       }
+      case 'clear-contents': {
+        this.dataModel.clearContents(
+          this._region,
+          this._row,
+          this._column,
+          this.getSelectedRange()
+        );
+        break;
+      }
       case 'undo': {
         const { change } = this.dataModel.litestore.getRecord({
           schema: DATAMODEL_SCHEMA,
@@ -467,7 +477,7 @@ export class EditableCSVViewer extends Widget {
     this._grid.selectionModel.select(select);
   }
 
-  protected getSelectedRange(): any {
+  protected getSelectedRange(): SelectionModel.Selection {
     const selections = toArray(this._grid.selectionModel.selections());
     if (selections.length === 0) {
       return;
@@ -490,12 +500,16 @@ export class EditableCSVViewer extends Widget {
 
   private _onRightClick(
     emitter: RichMouseHandler,
-    coords: Array<number>
+    hit: DataGrid.HitTestResult
   ): void {
-    [this._row, this._column] = coords;
+    if (hit.region !== 'void') {
+      this._region = hit.region;
+    }
+    this._row = hit.row;
+    this._column = hit.column;
   }
 
-  private _onResize(emitter: RichMouseHandler) {
+  private _onResize(emitter: RichMouseHandler): void {
     this._background.style.width = `${this._grid.viewportWidth}px`;
     this._background.style.height = `${this._grid.viewportHeight}px`;
     this._columnHeader.style.left = `${this._grid.headerWidth}px`;
@@ -506,6 +520,7 @@ export class EditableCSVViewer extends Widget {
     this._rowHeader.style.height = `${this._grid.viewportHeight}px`;
   }
 
+  private _region: DataModel.CellRegion;
   private _row: number;
   private _column: number;
   private _context: DocumentRegistry.Context;
