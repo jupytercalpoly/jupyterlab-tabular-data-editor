@@ -16,6 +16,7 @@ An account of tasks and features that are completed or planned
 - [x] Clear contents
 ---
 **Potential Future Features**
+- [ ] Moving cells
 - [ ] Filter
 - [ ] Sort
 - [ ] Creating a new csv from launcher
