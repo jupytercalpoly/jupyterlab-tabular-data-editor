@@ -10,11 +10,13 @@ export class EditorModel extends MutableDataModel {
   private _columnMap: Array<number>;
   private _newRow: number;
   private _newColumn: number;
-  private _initRows: number;
-  private _initColumns: number;
+  // private _initRows: number;
+  // private _initColumns: number;
   private _clipboard: Array<Array<string>>;
   public litestore: Litestore;
   public model: DSVModel;
+  private _rowsAdded: number;
+  private columnsAdded: number;
   // private _onChangeSignal: Signal<this, string> = new Signal<this, string>(
   //   this
   // );
@@ -23,6 +25,13 @@ export class EditorModel extends MutableDataModel {
     super();
     // give our model the DSVModel as a property
     this.model = new DSVModel(options);
+
+    // pass all signals from the model to the grid.
+    this.model.changed.connect(this._passModelMessage, this);
+
+    // Set up variables to record how many rows/columns we add.
+    this._rowsAdded = 0;
+    this.columnsAdded = 0;
 
     // Arrays which map the requested row/column to the
     // row/column where the data actually lives, initially
@@ -33,13 +42,8 @@ export class EditorModel extends MutableDataModel {
     // we will give each subsequent row/column we add a numeric
     // value. It is natural to give them positive integer values
     // starting where this._rowMap and this._columnMap end.
-    this._newRow = this.numRows;
-    this._newColumn = this.numColumns;
-
-    // to quickly check whether a row/column is one we've added,
-    // we just check wether it was bigger than the inital rows/columns
-    this._initRows = this.numRows - 1;
-    this._initColumns = this.numColumns - 1;
+    this._newRow = this._rowsAdded;
+    this._newColumn = this.columnsAdded;
 
     // the valueMap stores new values that are added to the
     // dataset. It maps [row, column] pairs to values and is
@@ -52,63 +56,60 @@ export class EditorModel extends MutableDataModel {
   }
 
   /**
-   * get the row count
-   * Notes: this is equivalent to this.rowCount('body')
-   */
-  get numRows(): number {
-    return this.model.rowCount('body');
-  }
-
-  /**
-   * get the column count
-   * Notes: this is equivalent to this.rowCount('body')
-   */
-  get numColumns(): number {
-    return this.model.columnCount('body');
-  }
-
-  /**
    * the rowCount for a specific region
    */
-  rowCount(region: DataModel.RowRegion): number {
-    return this.model.rowCount(region);
+  rowCount(region: DataModel.RowRegion = 'body'): number {
+    if (region === 'body') {
+      return this._rowsAdded + this.model.rowCount('body');
+    }
+    return 1;
   }
 
   /**
    * the columnCount for a specific region
    */
   columnCount(region: DataModel.ColumnRegion = 'body'): number {
-    return this.model.columnCount(region);
+    if (region === 'body') {
+      return this.model.columnCount('body') + this.columnsAdded;
+    }
+    return 1;
   }
 
   data(region: DataModel.CellRegion, row: number, column: number): any {
+    // Bail early if we are on a row region.
+    if (region === 'row-header') {
+      return this.model.data(region, row, column);
+    }
     // The Grids rows IDs are not unique, as the header row
     // has ID 0 and the first body row has ID 0. We give each
     // row a unique id by indexing the first body row at 1
     row = this._uniqueRowID(row, region);
 
     // map the Grid row/column to the static row/column where the data lives
-    row = this._rowMap[row];
-    column = this._columnMap[column];
+    let modelRow = this._rowMap[row];
+    const modelColumn = this._columnMap[column];
 
     // check if a new value has been stored at this cell
-    if (this._valueMap[`${row}, ${column}`]) {
-      return this._valueMap[`${row}, ${column}`];
+    if (this._valueMap[`${modelRow}, ${modelColumn}`]) {
+      return this._valueMap[`${modelRow}, ${modelColumn}`];
     }
 
     // do a bounds check to see if either the row or column is
     // an added one.
-    if (row > this._initRows || column > this._initColumns) {
+    if (
+      modelRow > this.model.rowCount('body') ||
+      modelColumn > this.model.columnCount('body') - 1
+    ) {
       // we are on a new column or row which has no maped
       // value, so we know that the value must be empty
       return '';
     }
 
     // the model's data method assumes the grid's row IDs.
-    row = this._gridRowID(row, region);
+    modelRow = this._gridRowID(modelRow, region);
 
     // fetch the value from the data
-    return this.model.data(region, row, column);
+    return this.model.data(region, modelRow, modelColumn);
   }
 
   setData(
@@ -121,11 +122,11 @@ export class EditorModel extends MutableDataModel {
     row = this._uniqueRowID(row, region);
 
     // map to the virtual cell in the model.
-    row = this._rowMap[row];
-    column = this._columnMap[column];
+    const modelRow = this._rowMap[row];
+    const modelColumn = this._columnMap[column];
 
     // add the value to the valueMap
-    this._valueMap[`${row}, ${column}`] = value;
+    this._valueMap[`${modelRow}, ${modelColumn}`] = value;
 
     // Revert the Grid Row ID
     row = this._gridRowID(row, region);
@@ -163,10 +164,11 @@ export class EditorModel extends MutableDataModel {
     // store the next span's worth of values
     const values = [];
     let i = 0;
-    while (i <= span) {
+    while (i < span) {
       values.push(this._newRow);
       i++;
       this._newRow++;
+      this._rowsAdded++;
     }
 
     // add the values to the row map, starting AT start
@@ -199,10 +201,11 @@ export class EditorModel extends MutableDataModel {
     // store the next span's worth of values
     const values = [];
     let i = 0;
-    while (i <= span) {
+    while (i < span) {
       values.push(this._newColumn);
       i++;
       this._newColumn++;
+      this.columnsAdded++;
     }
 
     // add the values to the column map, starting AT start
@@ -235,6 +238,9 @@ export class EditorModel extends MutableDataModel {
     // remove the values from the rowMap
     this._rowMap.splice(start, span);
 
+    // update the row count.
+    this._rowsAdded -= span;
+
     // Revert the Grid Row ID.
     start = this._gridRowID(start, region);
 
@@ -262,6 +268,9 @@ export class EditorModel extends MutableDataModel {
   removeColumns(region: DataModel.CellRegion, start: number, span = 1): void {
     // remove the values from the rowMap
     this._rowMap.splice(start, span);
+
+    // Update the column count.
+    this.columnsAdded -= span;
 
     // Define the change.
     const change: DataModel.ChangedArgs = {
@@ -482,8 +491,8 @@ export class EditorModel extends MutableDataModel {
     row = this._uniqueRowID(row, region);
 
     // see how much space we have
-    const rowsBelow = this.numRows - row;
-    const columnsRight = this.numColumns - column;
+    const rowsBelow = this.rowCount() - row;
+    const columnsRight = this.columnsAdded - column;
 
     // clamp the values we are adding at the bounds of the grid
     const rowSpan = Math.min(rowsBelow, this._clipboard.length);
@@ -625,7 +634,7 @@ export class EditorModel extends MutableDataModel {
    * n is the number of rows in the data set.
    */
   private _rowIdentityMap(): Array<number> {
-    return [...Array(this.numRows).keys()];
+    return [...Array(this.rowCount).keys()];
   }
 
   /**
@@ -633,21 +642,21 @@ export class EditorModel extends MutableDataModel {
    * m is the number of columns in the data set.
    */
   private _columnIdentityMap(): Array<number> {
-    return [...Array(this.numColumns).keys()];
+    return [...Array(this.columnsAdded).keys()];
   }
 
   /**
    * translate from the Grid's row IDs to our own standard
    */
   private _uniqueRowID(row: number, region: DataModel.CellRegion) {
-    return region === 'body' ? row + 1 : row;
+    return region === 'column-header' ? 0 : row + 1;
   }
 
   /**
    * translate from our unique row ID to the Grid's standard
    */
   private _gridRowID(row: number, region: DataModel.CellRegion) {
-    return region === 'body' ? row - 1 : row;
+    return region === 'column-header' ? 0 : row - 1;
   }
 
   private _updateLitestore(change: DataModel.ChangedArgs | null) {
@@ -669,6 +678,13 @@ export class EditorModel extends MutableDataModel {
   private _handleEmits(change: DataModel.ChangedArgs): void {
     // Emits the updates to the DataModel to the DataGrid for rerender
     this.emitChanged(change);
+  }
+
+  private _passModelMessage(
+    emitter: DSVModel,
+    message: DataModel.ChangedArgs
+  ): void {
+    this.emitChanged(message);
   }
 }
 

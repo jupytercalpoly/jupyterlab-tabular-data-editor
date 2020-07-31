@@ -8,7 +8,7 @@ import {
 import { Drag } from '@lumino/dragdrop';
 import { Signal } from '@lumino/signaling';
 import { renderSelection, IBoundingRegion, BoundedDrag } from './selection';
-import { EditableDSVModel } from './model';
+import { EditorModel } from './newmodel';
 
 export class RichMouseHandler extends BasicMouseHandler {
   private _moveLine: BoundedDrag;
@@ -378,7 +378,8 @@ export class RichMouseHandler extends BasicMouseHandler {
   onMouseUp(grid: DataGrid, event: MouseEvent): void {
     // if move data exists, handle the move first
     if (this._moveData) {
-      const model = grid.dataModel as EditableDSVModel;
+
+      const model = grid.dataModel as EditorModel;
       const selectionModel = this._grid.selectionModel;
 
       // we can assume there is a selection as it is necessary to move rows/columns
@@ -387,7 +388,7 @@ export class RichMouseHandler extends BasicMouseHandler {
       if (this._moveData.region === 'column-header') {
         const startColumn = this._moveData.column;
         const endColumn = this._selectionIndex;
-        model.moveColumn(startColumn, endColumn);
+        model.moveColumns('body', startColumn, endColumn, 1);
         // select the row that was just moved
         selectionModel.select({
           r1,
@@ -401,7 +402,7 @@ export class RichMouseHandler extends BasicMouseHandler {
       } else if (this._moveData.region === 'row-header') {
         const startRow = this._moveData.row;
         const endRow = this._selectionIndex;
-        model.moveRow(startRow, endRow);
+        model.moveRows('body', startRow, endRow, 1);
 
         // select the row that was just moved
         selectionModel.select({

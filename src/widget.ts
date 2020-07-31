@@ -21,7 +21,6 @@ import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget } from '@lumino/widgets';
 import { EditorModel } from './model';
 import { RichMouseHandler } from './handler';
-import { numberToCharacter } from './_helper';
 import { toArray } from '@lumino/algorithm';
 import { CommandRegistry } from '@lumino/commands';
 import { CommandIDs } from './index';
@@ -229,71 +228,71 @@ export class EditableCSVViewer extends Widget {
    * Guess the row delimiter if it was not supplied.
    * This will be fooled if a different line delimiter possibility appears in the first row.
    */
-  private _guessRowDelimeter(data: string): string {
-    const i = data.slice(0, 5000).indexOf('\r');
-    if (i === -1) {
-      return '\n';
-    } else if (data[i + 1] === '\n') {
-      return '\r\n';
-    } else {
-      return '\r';
-    }
-  }
+  // private _guessRowDelimeter(data: string): string {
+  //   const i = data.slice(0, 5000).indexOf('\r');
+  //   if (i === -1) {
+  //     return '\n';
+  //   } else if (data[i + 1] === '\n') {
+  //     return '\r\n';
+  //   } else {
+  //     return '\r';
+  //   }
+  // }
 
-  /**
-   * Counts the occurrences of a substring from a given string
-   */
-  private _countOccurrences(
-    string: string,
-    substring: string,
-    rowDelimiter: string
-  ): number {
-    let numCol = 0;
-    let pos = 0;
-    const l = substring.length;
-    const firstRow = string.slice(0, string.indexOf(rowDelimiter));
+  // /**
+  //  * Counts the occurrences of a substring from a given string
+  //  */
+  // private _countOccurrences(
+  //   string: string,
+  //   substring: string,
+  //   rowDelimiter: string
+  // ): number {
+  //   let numCol = 0;
+  //   let pos = 0;
+  //   const l = substring.length;
+  //   const firstRow = string.slice(0, string.indexOf(rowDelimiter));
 
-    pos = firstRow.indexOf(substring, pos);
-    while (pos !== -1) {
-      numCol++;
-      pos += l;
-      pos = firstRow.indexOf(substring, pos);
-    }
-    // number of columns is the amount of columns + 1
-    return numCol + 1;
-  }
+  //   pos = firstRow.indexOf(substring, pos);
+  //   while (pos !== -1) {
+  //     numCol++;
+  //     pos += l;
+  //     pos = firstRow.indexOf(substring, pos);
+  //   }
+  //   // number of columns is the amount of columns + 1
+  //   return numCol + 1;
+  // }
 
-  /**
-   * Adds the a column header of alphabets to the top of the data (A..Z,AA..ZZ,AAA...)
-   * @param colDelimiter The delimiter used to separated columns (commas, tabs, spaces)
-   */
-  protected _buildColHeader(colDelimiter: string): string {
-    const rawData = this._context.model.toString();
-    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    // when the model is first created, we don't know how many columns or what the row delimeter is
-    const rowDelimiter = this._guessRowDelimeter(rawData);
-    const numCol = this._countOccurrences(rawData, colDelimiter, rowDelimiter);
+  // /**
+  //  * Adds the a column header of alphabets to the top of the data (A..Z,AA..ZZ,AAA...)
+  //  * @param colDelimiter The delimiter used to separated columns (commas, tabs, spaces)
+  //  */
+  // protected _buildColHeader(colDelimiter: string): string {
+  //   const rawData = this._context.model.toString();
+  //   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  //   // when the model is first created, we don't know how many columns or what the row delimeter is
+  //   const rowDelimiter = this._guessRowDelimeter(rawData);
+  //   const numCol = this._countOccurrences(rawData, colDelimiter, rowDelimiter);
 
-    // if only single alphabets fix the string
-    if (numCol <= 26) {
-      return (
-        alphabet
-          .slice(0, numCol)
-          .split('')
-          .join(colDelimiter) + rowDelimiter
-      );
-    }
-    // otherwise compute the column header with multi-letters (AA..)
-    else {
-      // get all single letters
-      let columnHeader = alphabet.split('').join(colDelimiter);
-      // find the rest
-      for (let i = 27; i < numCol; i++) {
-        columnHeader += colDelimiter + numberToCharacter(i);
-      }
-      return columnHeader + rowDelimiter;
-    }
-  }
+  //   // if only single alphabets fix the string
+  //   if (numCol <= 26) {
+  //     return (
+  //       alphabet
+  //         .slice(0, numCol)
+  //         .split('')
+  //         .join(colDelimiter) + rowDelimiter
+  //     );
+  //   }
+  //   // otherwise compute the column header with multi-letters (AA..)
+  //   else {
+  //     // get all single letters
+  //     let columnHeader = alphabet.split('').join(colDelimiter);
+  //     // find the rest
+  //     for (let i = 27; i < numCol; i++) {
+  //       columnHeader += colDelimiter + numberToCharacter(i);
+  //     }
+  //     return columnHeader + rowDelimiter;
+  //   }
+  // }
 
   /**
    * Create the model for the grid.
@@ -304,8 +303,7 @@ export class EditableCSVViewer extends Widget {
     let data: string;
 
     if (!model) {
-      const header = this._buildColHeader(this.delimiter);
-      data = header + this._context.model.toString();
+      data = this._context.model.toString();
       const dataModel = (this._grid.dataModel = new EditorModel({
         data,
         delimiter
