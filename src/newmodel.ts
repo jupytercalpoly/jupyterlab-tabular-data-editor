@@ -112,7 +112,7 @@ export class EditorModel extends MutableDataModel {
     column = columnMap[column];
 
     // check if a new value has been stored at this cell.
-    if (valueMap[`${row}, ${column}`]) {
+    if (valueMap[`${row}, ${column}`] !== undefined) {
       return valueMap[`${row}, ${column}`];
     }
 
@@ -477,6 +477,45 @@ export class EditorModel extends MutableDataModel {
     this._handleEmits(change);
   }
 
+  clearRows(region: DataModel.CellRegion, start: number, span = 1): void {
+    // The row comes to us as an index on a particular region. We need the
+    // absolute index (ie index 0 is the first row of data).
+    start = this._absoluteIndex(start, region);
+
+    // Set up values to stand in for the blank rows.
+    const values = [];
+    const columnHeaders: { [key: string]: string } = {};
+    let i = 0;
+    while (i < span) {
+      values.push(this._nextColumn);
+      columnHeaders[`0, ${this._nextColumn}`] = `Column ${start + i + 1}`;
+      i++;
+      this._nextColumn++;
+      this._columnsAdded++;
+    }
+    // Set up the row splice object to update the litestore.
+    const rowSplice = { index: start, remove: span, values };
+
+    // Revert to the row index by region, which is what the grid expects.
+    start = this._regionIndex(start, region);
+
+    // Define the change.
+    const change: DataModel.ChangedArgs = {
+      type: 'cells-changed',
+      region: 'body',
+      row: start,
+      rowSpan: span,
+      column: 0,
+      columnSpan: this.totalColumns()
+    };
+
+    // Have the Litestore apply the splice.
+    this._updateLitestore({ rowSplice, change });
+
+    // Emit the change.
+    this._handleEmits(change);
+  }
+
   cut(
     region: DataModel.CellRegion,
     row: number,
@@ -486,17 +525,15 @@ export class EditorModel extends MutableDataModel {
   ): void {
     // we use the value map to redefine values within the cut as ''. Need to map
     // to the static values.
-    // clear previous values from the clipboard
-    this._clipboard = [];
-    for (let i = rowSpan - 1; i >= 0; i--) {
-      const rowClip = [];
-      for (let j = columnSpan - 1; j >= 0; j--) {
-        // make a temporary copy of the values
-        rowClip.push(this.data(region, row + i, column + j));
-        this.setData(region, row, column, '');
-      }
-      this._clipboard.push(rowClip);
-    }
+    // copy the values
+    this.copy(region, row, column, rowSpan, columnSpan);
+
+    // Fill in the new blank values.
+    const values = new Array(rowSpan)
+      .fill('')
+      .map(elem => new Array(columnSpan).fill(''));
+    // set the new data.
+    this.setData(region, row, column, values, rowSpan, columnSpan);
   }
 
   copy(
