@@ -36,7 +36,7 @@ An account of tasks and features that are completed or planned
 
 **Completed Prototypes - Ryan**
 - Ghost columns/ rows
-- Copying and Pasting
+- Copying and pasting
 - Context menus
 
 ### 07/20/20 - 07/24/20
