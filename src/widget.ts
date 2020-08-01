@@ -436,19 +436,26 @@ export class EditableCSVViewer extends Widget {
         this.dataModel.removeColumns(this._region, this._column);
         break;
       }
-      case 'cut-cells':
+      case 'cut-cells': {
+        this._grid.copyToClipboard();
+        const { r1, c1, r2, c2 } = this.getSelectedRange();
+        const rowSpan = r2 - r1 + 1;
+        const columnSpan = c2 - c1 + 1;
+        this.dataModel.cut('body', r1, c1, rowSpan, columnSpan);
+        break;
+      }
       case 'copy-cells': {
         this._grid.copyToClipboard();
         const { r1, c1, r2, c2 } = this.getSelectedRange();
         const rowSpan = r2 - r1 + 1;
         const columnSpan = c2 - c1 + 1;
-        this.dataModel.cut(this._region, r1, c1, rowSpan, columnSpan);
+        this.dataModel.copy('body', r1, c1, rowSpan, columnSpan);
         break;
       }
       case 'paste-cells': {
         // we will determine the location based on the current selection
         const { r1, c1 } = this.getSelectedRange();
-        this.dataModel.paste(this._region, r1, c1);
+        this.dataModel.paste('body', r1, c1);
         break;
       }
       case 'clear-contents': {

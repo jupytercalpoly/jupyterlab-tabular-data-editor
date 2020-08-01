@@ -133,6 +133,8 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
       line,
       column,
       newText,
+      1,
+      1,
       useLitestore
     );
     this.selectSingleCell();
