@@ -29,6 +29,10 @@ An account of tasks and features that are completed or planned
 #### Extension available to try out in a binder demo
 - Command Toolbar - Kalen
 - Clear contents (rows, columns, selections) - Kalen
+- Multiple context menus depending on region - Logan
+- Improvement in time complexity of column ops - Logan
+- EditorModel ~50% complete. - Logan
+
 
 ### 07/20/20 - 07/24/20
 - Search and replace functionality - Kalen
