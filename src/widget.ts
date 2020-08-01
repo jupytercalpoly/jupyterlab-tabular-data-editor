@@ -456,6 +456,7 @@ export class EditableCSVViewer extends Widget {
         // we will determine the location based on the current selection
         const { r1, c1 } = this.getSelectedRange();
         this.dataModel.paste('body', r1, c1);
+        this._grid.editorController.cancel();
         break;
       }
       case 'clear-contents': {
@@ -605,7 +606,8 @@ export class EditableCSVViewer extends Widget {
     event.preventDefault();
     event.stopPropagation();
     const { r1, c1 } = this.getSelectedRange();
-    this.dataModel.paste(this._region, r1, c1, copiedText);
+    this.dataModel.paste('body', r1, c1, copiedText);
+    this._grid.editorController.cancel();
   }
 
   private _onRightClick(
