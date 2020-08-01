@@ -32,7 +32,12 @@ An account of tasks and features that are completed or planned
 - Multiple context menus depending on region - Logan
 - Improvement in time complexity of column ops - Logan
 - EditorModel ~50% complete. - Logan
+- CSS styling changes to data grid - Ryan
 
+**Completed Prototypes - Ryan**
+- Ghost columns/ rows
+- Copying and Pasting
+- Context menus
 
 ### 07/20/20 - 07/24/20
 - Search and replace functionality - Kalen
