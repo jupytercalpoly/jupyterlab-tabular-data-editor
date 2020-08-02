@@ -21,7 +21,6 @@ import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget } from '@lumino/widgets';
 import { EditorModel } from './model';
 import { RichMouseHandler } from './handler';
-import { toArray } from '@lumino/algorithm';
 import { CommandRegistry } from '@lumino/commands';
 import { CommandIDs } from './index';
 import { VirtualDOM, h } from '@lumino/virtualdom';
@@ -38,7 +37,6 @@ const RENDER_TIMEOUT = 1000;
 
 export class EditableCSVViewer extends Widget {
   private _background: HTMLElement;
-  private _region: any;
   /**
    * Construct a new CSV viewer.
    */
@@ -460,16 +458,11 @@ export class EditableCSVViewer extends Widget {
         break;
       }
       case 'clear-contents': {
-        // need to create a transaction since we are making multiple calls to setData()
-        this._litestore.beginTransaction();
-        const change = this.dataModel.clearContents(
-          this._region,
-          this._row,
-          this._column,
-          this.getSelectedRange()
-        );
-        this.updateLitestore(type, change);
-        this._litestore.endTransaction();
+        const selection = this.getSelectedRange();
+        if (!selection) {
+          return;
+        }
+        this.dataModel.clearContents(selection);
         break;
       }
       case 'undo': {
@@ -589,11 +582,8 @@ export class EditableCSVViewer extends Widget {
   }
 
   protected getSelectedRange(): SelectionModel.Selection {
-    const selections = toArray(this._grid.selectionModel.selections());
-    if (selections.length === 0) {
-      return;
-    }
-    return selections[0];
+    // Get the corners of the selected region.
+    return this._grid.selectionModel.currentSelection();
   }
 
   protected onAfterAttach(msg: Message): void {

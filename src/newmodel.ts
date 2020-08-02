@@ -1,5 +1,5 @@
 import { DSVModel } from 'tde-csvviewer';
-import { MutableDataModel, DataModel } from 'tde-datagrid';
+import { MutableDataModel, DataModel, SelectionModel } from 'tde-datagrid';
 import { Fields, MapField, ListField } from 'tde-datastore';
 import { Litestore } from './litestore';
 import { toArray, range } from '@lumino/algorithm';
@@ -8,8 +8,8 @@ export class EditorModel extends MutableDataModel {
   private _nextRow: number;
   private _nextColumn: number;
   private _clipboard: Array<Array<string>>;
-  public litestore: Litestore;
-  public model: DSVModel;
+  private _litestore: Litestore;
+  private _model: DSVModel;
   private _rowsAdded: number;
   private _columnsAdded: number;
   // private _onChangeSignal: Signal<this, string> = new Signal<this, string>(
@@ -19,10 +19,10 @@ export class EditorModel extends MutableDataModel {
   constructor(options: DSVModel.IOptions) {
     super();
     // Define our model.
-    this.model = new DSVModel(options);
+    this._model = new DSVModel(options);
 
     // Connect to the model's signals to recieve updates.
-    this.model.changed.connect(this._receiveModelSignal, this);
+    this._model.changed.connect(this._receiveModelSignal, this);
 
     // Set up variables to record how many rows/columns we add.
     this._rowsAdded = 0;
@@ -44,10 +44,18 @@ export class EditorModel extends MutableDataModel {
     const columnSplice = { index: 0, remove: 0, values: columnValues };
 
     // initialize the litestore
-    this.litestore = new Litestore({ id: 0, schemas: [DATAMODEL_SCHEMA] });
+    this._litestore = new Litestore({ id: 0, schemas: [DATAMODEL_SCHEMA] });
 
     // update the lightstore
     this._updateLitestore({ rowSplice, columnSplice });
+  }
+
+  get model(): DSVModel {
+    return this._model;
+  }
+
+  get litestore(): Litestore {
+    return this._litestore;
   }
 
   /**
@@ -56,7 +64,7 @@ export class EditorModel extends MutableDataModel {
    */
   rowCount(region: DataModel.RowRegion): number {
     if (region === 'body') {
-      return this.model.rowCount('body') + this._rowsAdded;
+      return this._model.rowCount('body') + this._rowsAdded;
     }
     return 1;
   }
@@ -69,7 +77,7 @@ export class EditorModel extends MutableDataModel {
    */
   columnCount(region: DataModel.ColumnRegion): number {
     if (region === 'body') {
-      return this.model.columnCount('body') + this._columnsAdded;
+      return this._model.columnCount('body') + this._columnsAdded;
     }
     return 1;
   }
@@ -78,7 +86,7 @@ export class EditorModel extends MutableDataModel {
    * The grid's current number of rows. TOTAL, NOT BY REGION.
    */
   totalRows(): number {
-    return this.model.rowCount('body') + this._rowsAdded + 1;
+    return this._model.rowCount('body') + this._rowsAdded + 1;
   }
 
   /**
@@ -88,13 +96,13 @@ export class EditorModel extends MutableDataModel {
    */
 
   totalColumns(): number {
-    return this.model.columnCount('body') + this._columnsAdded;
+    return this._model.columnCount('body') + this._columnsAdded;
   }
 
   data(region: DataModel.CellRegion, row: number, column: number): any {
     // The model is defered to if the region is a row header.
     if (region === 'row-header') {
-      return this.model.data(region, row, column);
+      return this._model.data(region, row, column);
     }
 
     // The row comes to us as an index on a particular region. We need the
@@ -102,7 +110,7 @@ export class EditorModel extends MutableDataModel {
     row = this._absoluteIndex(row, region);
 
     // unpack the maps from the LiteStore.
-    const { rowMap, columnMap, valueMap } = this.litestore.getRecord({
+    const { rowMap, columnMap, valueMap } = this._litestore.getRecord({
       schema: DATAMODEL_SCHEMA,
       record: RECORD_ID
     });
@@ -126,7 +134,7 @@ export class EditorModel extends MutableDataModel {
     row = this._regionIndex(row, region);
 
     // fetch the value from the data
-    return this.model.data(region, row, column);
+    return this._model.data(region, row, column);
   }
 
   setData(
@@ -143,7 +151,7 @@ export class EditorModel extends MutableDataModel {
     row = this._absoluteIndex(row, region);
 
     // unpack Litestore values.
-    const { rowMap, columnMap } = this.litestore.getRecord({
+    const { rowMap, columnMap } = this._litestore.getRecord({
       schema: DATAMODEL_SCHEMA,
       record: RECORD_ID
     });
@@ -356,7 +364,7 @@ export class EditorModel extends MutableDataModel {
     }
 
     // Unpack the rowMap from the litestore.
-    const { rowMap } = this.litestore.getRecord({
+    const { rowMap } = this._litestore.getRecord({
       schema: DATAMODEL_SCHEMA,
       record: RECORD_ID
     });
@@ -427,7 +435,7 @@ export class EditorModel extends MutableDataModel {
     }
 
     // Unpack the columnMap from the litestore.
-    const { columnMap } = this.litestore.getRecord({
+    const { columnMap } = this._litestore.getRecord({
       schema: DATAMODEL_SCHEMA,
       record: RECORD_ID
     });
@@ -477,6 +485,46 @@ export class EditorModel extends MutableDataModel {
     this._handleEmits(change);
   }
 
+  /**
+   * Clears the contents of the selected region
+   * Keybind: ['Backspace']
+   */
+  clearContents(selection: SelectionModel.Selection): void {
+    // Unpack the selection.
+    const { r1, r2, c1, c2 } = selection;
+    // Check if the selected is a corner header.
+    if (Math.abs(r1 - r2) >= 100 && Math.abs(c1 - c2) >= 100) {
+      return;
+    }
+    let row, column, rowSpan, columnSpan: number;
+
+    // Check if we are on a column header.
+    if (Math.abs(r1 - r2) >= 100) {
+      // Set up arguments for clearColumns method.
+      column = Math.min(c1, c2);
+      columnSpan = Math.abs(c1 - c2) + 1;
+      this.clearColumns('body', column, columnSpan);
+      return;
+    }
+    // Check if we are on a row header.
+    if (Math.abs(c1 - c2) >= 100) {
+      // Set up arguments for clearRows method.
+      row = Math.min(r1, r2);
+      rowSpan = Math.abs(r1 - r2) + 1;
+      this.clearRows('body', row, rowSpan);
+      return;
+    }
+    // Otherwise, we have a body selection. Set up args for setData
+    row = Math.min(r1, r2);
+    rowSpan = Math.abs(r1 - r2) + 1;
+    column = Math.min(c1, c2);
+    columnSpan = Math.abs(c1 - c2) + 1;
+    const values = new Array(rowSpan)
+      .fill(0)
+      .map(elem => new Array(columnSpan).fill(''));
+    this.setData('body', row, column, values, rowSpan, columnSpan);
+  }
+
   clearRows(region: DataModel.CellRegion, start: number, span = 1): void {
     // The row comes to us as an index on a particular region. We need the
     // absolute index (ie index 0 is the first row of data).
@@ -484,14 +532,11 @@ export class EditorModel extends MutableDataModel {
 
     // Set up values to stand in for the blank rows.
     const values = [];
-    const columnHeaders: { [key: string]: string } = {};
     let i = 0;
     while (i < span) {
-      values.push(this._nextColumn);
-      columnHeaders[`0, ${this._nextColumn}`] = `Column ${start + i + 1}`;
+      values.push(this._nextRow);
       i++;
-      this._nextColumn++;
-      this._columnsAdded++;
+      this._nextRow++;
     }
     // Set up the row splice object to update the litestore.
     const rowSplice = { index: start, remove: span, values };
@@ -511,6 +556,35 @@ export class EditorModel extends MutableDataModel {
 
     // Have the Litestore apply the splice.
     this._updateLitestore({ rowSplice, change });
+
+    // Emit the change.
+    this._handleEmits(change);
+  }
+
+  clearColumns(region: DataModel.CellRegion, start: number, span = 1) {
+    // Set up values to stand in for the blank rows.
+    const values = [];
+    let i = 0;
+    while (i < span) {
+      values.push(this._nextColumn);
+      i++;
+      this._nextColumn++;
+    }
+    // Set up the row splice object to update the litestore.
+    const columnSplice = { index: start, remove: span, values };
+
+    // Define the change.
+    const change: DataModel.ChangedArgs = {
+      type: 'cells-changed',
+      region: 'body',
+      row: 0,
+      rowSpan: this.totalRows(),
+      column: start,
+      columnSpan: span
+    };
+
+    // Have the Litestore apply the splice.
+    this._updateLitestore({ columnSplice, change });
 
     // Emit the change.
     this._handleEmits(change);
@@ -606,7 +680,7 @@ export class EditorModel extends MutableDataModel {
     }
 
     // Undo
-    this.litestore.undo();
+    this._litestore.undo();
 
     // submit a signal to the DataGrid based on the change.
     let undoChange: DataModel.ChangedArgs;
@@ -678,7 +752,7 @@ export class EditorModel extends MutableDataModel {
   }
 
   redo(change: DataModel.ChangedArgs): void {
-    this.litestore.redo();
+    this._litestore.redo();
     // Emit the change.
     this._handleEmits(change);
   }
@@ -701,8 +775,8 @@ export class EditorModel extends MutableDataModel {
     const { rowSplice, columnSplice, valueUpdate: newValue, change } = updates;
     const nullValue: number[] = [];
     const nullSplice = { index: 0, remove: 0, values: nullValue };
-    this.litestore.beginTransaction();
-    this.litestore.updateRecord(
+    this._litestore.beginTransaction();
+    this._litestore.updateRecord(
       {
         schema: DATAMODEL_SCHEMA,
         record: RECORD_ID
@@ -714,7 +788,7 @@ export class EditorModel extends MutableDataModel {
         change: change || null
       }
     );
-    this.litestore.endTransaction();
+    this._litestore.endTransaction();
   }
 
   private _handleEmits(change: DataModel.ChangedArgs): void {
