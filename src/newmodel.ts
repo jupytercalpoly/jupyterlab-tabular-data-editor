@@ -545,7 +545,7 @@ export class EditorModel extends MutableDataModel {
     start = this._regionIndex(start, region);
 
     // Define the change.
-    const change: DataModel.ChangedArgs = {
+    let change: DataModel.ChangedArgs = {
       type: 'cells-changed',
       region: 'body',
       row: start,
@@ -556,6 +556,12 @@ export class EditorModel extends MutableDataModel {
 
     // Have the Litestore apply the splice.
     this._updateLitestore({ rowSplice, change });
+
+    // The DataGrid is slow to process a cells-change argument with
+    // a very large span, so in this instance we elect to use the "big
+    // hammer".
+
+    change = { type: 'model-reset' };
 
     // Emit the change.
     this._handleEmits(change);
@@ -574,17 +580,23 @@ export class EditorModel extends MutableDataModel {
     const columnSplice = { index: start, remove: span, values };
 
     // Define the change.
-    const change: DataModel.ChangedArgs = {
+    let change: DataModel.ChangedArgs = {
       type: 'cells-changed',
       region: 'body',
       row: 0,
-      rowSpan: this.totalRows(),
+      rowSpan: this.totalRows() - 10,
       column: start,
       columnSpan: span
     };
 
     // Have the Litestore apply the splice.
     this._updateLitestore({ columnSplice, change });
+
+    // The DataGrid is slow to process a cells-change argument with
+    // a very large span, so in this instance we elect to use the "big
+    // hammer".
+
+    change = { type: 'model-reset' };
 
     // Emit the change.
     this._handleEmits(change);
