@@ -353,12 +353,12 @@ export class EditableCSVViewer extends Widget {
     });
   }
 
-  /**
-   * Saves the file
-   */
-  private _save(): void {
-    this.context.save();
-  }
+  // /**
+  //  * Saves the file
+  //  */
+  // private _save(): void {
+  //   this.context.save();
+  // }
 
   /**
    * Handles all changes to the data model
@@ -534,7 +534,7 @@ export class EditableCSVViewer extends Widget {
         break;
       }
       case 'save':
-        this._save();
+        this.dataModel.save();
         break;
     }
   }

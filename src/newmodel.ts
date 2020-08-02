@@ -120,8 +120,8 @@ export class EditorModel extends MutableDataModel {
     column = columnMap[column];
 
     // check if a new value has been stored at this cell.
-    if (valueMap[`${row}, ${column}`] !== undefined) {
-      return valueMap[`${row}, ${column}`];
+    if (valueMap[`${row},${column}`] !== undefined) {
+      return valueMap[`${row},${column}`];
     }
 
     if (!(Number.isInteger(row) && Number.isInteger(column))) {
@@ -170,7 +170,7 @@ export class EditorModel extends MutableDataModel {
       currentRow = rowMap[row + i];
       for (let j = 0; j < columnSpan; j++) {
         currentColumn = columnMap[column + j];
-        key = `${currentRow}, ${currentColumn}`;
+        key = `${currentRow},${currentColumn}`;
         valueUpdate[key] = values[i][j];
       }
     }
@@ -252,7 +252,7 @@ export class EditorModel extends MutableDataModel {
     let i = 0;
     while (i < span) {
       values.push(this._nextColumn);
-      columnHeaders[`0, ${this._nextColumn}`] = `Column ${start + i + 1}`;
+      columnHeaders[`0,${this._nextColumn}`] = `Column ${start + i + 1}`;
       i++;
       this._nextColumn++;
       this._columnsAdded++;
@@ -767,6 +767,22 @@ export class EditorModel extends MutableDataModel {
     this._litestore.redo();
     // Emit the change.
     this._handleEmits(change);
+  }
+
+  save(): void {
+    // Get the current litestore values.
+    // Unpack the columnMap from the litestore.
+    const { rowMap, columnMap, valueMap } = this._litestore.getRecord({
+      schema: DATAMODEL_SCHEMA,
+      record: RECORD_ID
+    });
+    console.log(rowMap);
+    console.log(columnMap);
+    console.log(valueMap);
+    const keys = Object.keys(valueMap).map(elem => {
+      return elem.split(',').map(elem => parseFloat(elem));
+    });
+    console.log(keys);
   }
 
   /**
