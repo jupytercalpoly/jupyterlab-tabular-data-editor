@@ -19,7 +19,7 @@ import {
 } from 'tde-datagrid';
 import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget } from '@lumino/widgets';
-import { EditableDSVModel, DATAMODEL_SCHEMA, RECORD_ID } from './model';
+import { EditableDSVModel } from './model';
 import { RichMouseHandler } from './handler';
 import { numberToCharacter } from './_helper';
 import { toArray } from '@lumino/algorithm';
@@ -27,6 +27,8 @@ import { CommandRegistry } from '@lumino/commands';
 import { CommandIDs } from './index';
 import { VirtualDOM, h } from '@lumino/virtualdom';
 import { GridSearchService } from './searchservice';
+import { Litestore } from './litestore';
+import { Fields } from '@lumino/datastore';
 
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
@@ -189,6 +191,10 @@ export class EditableCSVViewer extends Widget {
     return this._grid.dataModel as EditableDSVModel;
   }
 
+  get litestore(): Litestore {
+    return this._litestore;
+  }
+
   get changeModelSignal(): Signal<this, string> {
     return this._changeModelSignal;
   }
@@ -304,6 +310,18 @@ export class EditableCSVViewer extends Widget {
         delimiter
       }));
       this._grid.selectionModel = new BasicSelectionModel({ dataModel });
+
+      // create litestore
+      this._litestore = new Litestore({
+        id: 0,
+        schemas: [EditableCSVViewer.DATAMODEL_SCHEMA]
+      });
+
+      // set inital status of litestore
+      this._litestore.beginTransaction();
+      this.updateLitestore();
+      this._litestore.endTransaction();
+
       dataModel.onChangedSignal.connect(this._updateModel, this);
       dataModel.cancelEditingSignal.connect(this._cancelEditing, this);
     }
@@ -342,11 +360,25 @@ export class EditableCSVViewer extends Widget {
   }
 
   /**
-   * Updates the file based on the data model
+   * Called every time the datamodel updates
+   * Updates the file and the litestore
    * @param emitter
    * @param data The raw data used to update the model
+   * @param change The arguments from the datamodel change used ot update the Litestore
    */
-  private _updateModel(emitter: EditableDSVModel, data: string): void {
+  private _updateModel(
+    emitter: EditableDSVModel,
+    args: EditableCSVViewer.ModelChangedArgs
+  ): void {
+    const { data, change, useLitestore } = args;
+
+    if (useLitestore) {
+      this._litestore.beginTransaction();
+      this.updateLitestore(change);
+      this._litestore.endTransaction();
+    }
+
+    // serialize the data
     this.context.model.fromString(data);
   }
 
@@ -388,7 +420,7 @@ export class EditableCSVViewer extends Widget {
         this.dataModel.addRow(this._row + 1);
 
         if (!selection) {
-          return;
+          break;
         }
         // move the selection down a row to account for the new row being inserted
         selectionModel.select({
@@ -410,7 +442,7 @@ export class EditableCSVViewer extends Widget {
         this.dataModel.addColumn(this._column + 1);
 
         if (!selection) {
-          return;
+          break;
         }
         // move the selection down a row to account for the new column being inserted
         selectionModel.select({
@@ -454,18 +486,27 @@ export class EditableCSVViewer extends Widget {
         break;
       }
       case 'clear-contents': {
-        this.dataModel.clearContents(
+        // need to create a transaction since we are making multiple calls to setData()
+        this._litestore.beginTransaction();
+        const change = this.dataModel.clearContents(
           this._region,
           this._row,
           this._column,
           this.getSelectedRange()
         );
+        this.updateLitestore(change);
+        this._litestore.endTransaction();
         break;
       }
       case 'undo': {
-        const { change } = this.dataModel.litestore.getRecord({
-          schema: DATAMODEL_SCHEMA,
-          record: RECORD_ID
+        // check to see if an undo exists (one undo will exist because that's the initial transaction)
+        if (this._litestore.transactionStore.undoStack.length === 1) {
+          return;
+        }
+
+        const { change } = this._litestore.getRecord({
+          schema: EditableCSVViewer.DATAMODEL_SCHEMA,
+          record: EditableCSVViewer.RECORD_ID
         });
 
         // reselect the cell that was edited
@@ -474,15 +515,27 @@ export class EditableCSVViewer extends Widget {
           this.selectSingleCell(row, column);
         }
 
+        // undo first and then get the model data
+        this._litestore.undo();
+        const { modelData } = this._litestore.getRecord({
+          schema: EditableCSVViewer.DATAMODEL_SCHEMA,
+          record: EditableCSVViewer.RECORD_ID
+        });
+
         // undo changes in the model
-        this.dataModel.undo(change);
+        this.dataModel.undo(modelData, change);
         break;
       }
       case 'redo': {
-        this.dataModel.litestore.redo();
-        const { change, modelData } = this.dataModel.litestore.getRecord({
-          schema: DATAMODEL_SCHEMA,
-          record: RECORD_ID
+        // check to see if an redo exists (one redo will exist because that's the initial transaction)
+        if (this._litestore.transactionStore.redoStack.length === 0) {
+          return;
+        }
+
+        this._litestore.redo();
+        const { change, modelData } = this._litestore.getRecord({
+          schema: EditableCSVViewer.DATAMODEL_SCHEMA,
+          record: EditableCSVViewer.RECORD_ID
         });
 
         // reselect the cell that was edited
@@ -490,13 +543,33 @@ export class EditableCSVViewer extends Widget {
           const { row, column } = change;
           this.selectSingleCell(row, column);
         }
-        this.dataModel.redo(change, modelData);
+        this.dataModel.redo(modelData, change);
         break;
       }
       case 'save':
         this._save();
         break;
     }
+  }
+
+  /**
+   * Updates the current transaction with the raw data, header, and changeArgs
+   * Requires Litestore.beginTransaction() to be called before and Litestore.endTransaction to be called after
+   * @param change The change args for the Datagrid (may be null)
+   */
+  public updateLitestore(change?: DataModel.ChangedArgs): void {
+    const model = this.dataModel.dsvModel;
+    this._litestore.updateRecord(
+      {
+        schema: EditableCSVViewer.DATAMODEL_SCHEMA,
+        record: EditableCSVViewer.RECORD_ID
+      },
+      {
+        modelData: model.rawData,
+        modelHeader: model.header,
+        change: change
+      }
+    );
   }
 
   /**
@@ -573,6 +646,7 @@ export class EditableCSVViewer extends Widget {
   private _delimiter = ',';
   private _revealed = new PromiseDelegate<void>();
   private _baseRenderer: TextRenderConfig | null = null;
+  private _litestore: Litestore;
 
   // Signals for basic editing functionality
   private _changeModelSignal: Signal<this, string> = new Signal<this, string>(
@@ -580,6 +654,30 @@ export class EditableCSVViewer extends Widget {
   );
   private _columnHeader: HTMLElement;
   private _rowHeader: HTMLElement;
+}
+
+export namespace EditableCSVViewer {
+  /**
+   * The arguments emitted to the Editable CSVViewer when the datamodel changes
+   */
+  export type ModelChangedArgs = {
+    data: string;
+    change: DataModel.ChangedArgs;
+    useLitestore: boolean;
+  };
+
+  export const SCHEMA_ID = 'datamodel';
+  export const RECORD_ID = 'datamodel';
+  export const DATAMODEL_SCHEMA = {
+    id: SCHEMA_ID,
+    fields: {
+      modelData: Fields.String(),
+      modelHeader: Fields.Register<string[]>({ value: [] }),
+      change: Fields.Register<DataModel.ChangedArgs>({
+        value: { type: 'model-reset' }
+      })
+    }
+  };
 }
 
 export class EditableCSVDocumentWidget extends DocumentWidget<

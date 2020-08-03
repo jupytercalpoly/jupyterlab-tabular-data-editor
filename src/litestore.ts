@@ -31,6 +31,20 @@ export class TransactionStore {
   }
 
   /**
+   * Returns the current undo stack
+   */
+  get undoStack(): string[] {
+    return this._undoStack;
+  }
+
+  /**
+   * Returns the current redo stack
+   */
+  get redoStack(): string[] {
+    return this._redoStack;
+  }
+
+  /**
    * Add a transaction to the patch store.
    *
    * @param - the transaction to add to the store.
@@ -361,6 +375,10 @@ export class Litestore implements IDisposable, IIterable<Table<Schema>> {
    */
   get cemetery(): { [id: string]: number } {
     return this._transactionStore.cemetery;
+  }
+
+  get transactionStore(): TransactionStore {
+    return this._transactionStore;
   }
 
   /**
