@@ -1,6 +1,7 @@
 import 'jest';
 import { EditableDSVModel, DATAMODEL_SCHEMA, RECORD_ID } from '../src/model';
 import { DataModel } from '@lumino/datagrid';
+import { openSlice } from '../src/serialize';
 
 const delimiter = ',';
 let model: EditableDSVModel;
@@ -577,5 +578,23 @@ describe('helper functions', () => {
       const result = model.lastIndex({ row: 2 });
       expect(result).toBe(model.dsvModel.rawData.length);
     });
+  });
+});
+
+describe('openSlice', () => {
+  it('slice end at last column', () => {
+    const result = openSlice(model.dsvModel, 0, 1, 2);
+    const expected = 'B,C';
+    expect(result).toBe(expected);
+  });
+  it('Slice end at last row, last column', () => {
+    const result = openSlice(model.dsvModel, 3, 1, 2);
+    const expected = '8,9';
+    expect(result).toBe(expected);
+  });
+  it('Slice with a and b being the same', () => {
+    const result = openSlice(model.dsvModel, 0, 1, 1);
+    const expected = 'B';
+    expect(result).toBe(expected);
   });
 });
