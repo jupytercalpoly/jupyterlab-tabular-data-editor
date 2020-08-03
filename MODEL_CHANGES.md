@@ -14,7 +14,7 @@ _How the original model works and what problems it poses_
 Our model originally was based on directly changing the data of the csv file on every change to the grid. The data is stored as a string, so if you had an editor open that looked like this
 ![image](https://user-images.githubusercontent.com/52261474/89075518-41dcbe80-d333-11ea-8cb0-9a9267905812.png)
 
-then the string would look like "1,2,3\n4,5,6\n7,8,9". If you added a row 1, we make this change appear by modifing the string so that it looked like ",,,\n1,2,3\n4,5,6\n7,8,9". Seems simple enough, but what happens if you want to undo the change you made? We have to options. One is to save a copy of the previous string in our data store (which is what we did). This means that the memory requirement for the program is roughly nm, where n is the number of changes and m is the size of the string. You can see how this blows up incredibly fast, even for relatively small data sets. The other option is to actually do an inverse operation on the original string when and undo command is executed. This is what I intially tried to do when we were first considering how to implement undoing. While it does fix the memory problem, it is very tricky to implement and doesn't fix the problem of string operations taking forever.
+then the string would look like "1,2,3\n4,5,6\n7,8,9". If you added a row 1, we make this change appear by modifing the string so that it looked like ",,,\n1,2,3\n4,5,6\n7,8,9". Seems simple enough, but what happens if you want to undo the change you made? We have to options. One is to save a copy of the previous string in our data store (which is what we did). This means that the memory requirement for the program is roughly nm, where n is the number of changes and m is the size of the string. You can see how this blows up incredibly fast, even for relatively small data sets. The other option is to actually do an inverse operation on the original string when the undo command is executed. This is what we intially tried to do when we were first considering how to implement undoing. While it does fix the memory problem, it is very tricky to implement and doesn't fix the problem of string operations a long time.
 
 
 ## The New Model:
@@ -24,7 +24,7 @@ _How the new model works and the benefits of it_
 
 Our new model doesn't directly modify this string until you save the file. To understand what the new model is doing we have to dig a bit deeper into how the grid displays the correct values in each cell. The grid asks a class called `DSVModel` what is at each row/column position by calling a one of `DSVModel`'s methods called `data`. So, the `DataGrid` would first call `this._model.data('body', 0, 0)` to figure out what should be in the first row and first column (the `body` argument specifies what _region_ the `DataGrid` is looking at). This method would return `1`, since 1 is the value in the first row, first column cell.
 
-Our new model is called `EditorModel` and it sits in between The data grid and the model. When The data read calls `data`, it is actually calling `EditorModel`'s `data` method. `EditorModel`'s `data` function In turn calls the `DSVModel`'s data function. But first we do some pre-processing. We map the requested row and column 2 the row and column That corresponds to where the field lies. We do this with two arrays, which we call the `rowMap` and the `columnMap`. Here is a visual of what this looks like.
+Our new model is called `EditorModel` and it sits between The data grid and the model. When The data grid calls `data`, it is actually calling `EditorModel`'s `data` method. `EditorModel`'s `data` function In turn calls the `DSVModel`'s data function. But first we do some pre-processing. We map the requested row and column to the row and column That corresponds to where the field lies. We do this with two arrays, which we call the `rowMap` and the `columnMap`. Here is a visual of what this looks like.
 
 <img width="557" alt="init-state" src="https://user-images.githubusercontent.com/52261474/89232442-5079de80-d59c-11ea-81e3-35fa9a13c03f.PNG">
 
@@ -42,7 +42,7 @@ Now, let's say we added a column. The new picture looks like this.
 
 <img width="538" alt="column-added" src="https://user-images.githubusercontent.com/52261474/89232652-b8c8c000-d59c-11ea-843d-327429b943aa.PNG">
 
-We'll cover why the 3 is negative. But first, notice that when the datgrid asks for what is in, say, row 0 column 2, our function passes on to the `DSVModel`'s `data` method the question "what is in row 0 _column 1_. But what about if the grid asks for a value in the B column? Here is where the negative comes in. We can add a little `if` statement to our `data` function.
+We'll cover why the 3 is negative. First, notice that when the datgrid asks for what is in, say, row 0 column 2, our function passes on to the `DSVModel`'s `data` method the question "what is in row 0 _column 1_". This `data` method then returns the exact value that was in row 0 column 1 before the change. But what about if the grid asks for a value in the B column? Here is where the negative comes in. We can add a little `if` statement to our `data` function.
 
 ```
 const row = rowMap[row];
