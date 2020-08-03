@@ -326,21 +326,50 @@ export class RichMouseHandler extends BasicMouseHandler {
    * @param event
    */
   onMouseUp(grid: DataGrid, event: MouseEvent): void {
+    // if move data exists, handle the move first
     if (this._moveData) {
       let { vx, vy } = grid.mapToVirtual(event.clientX, event.clientY);
       // Clamp the coordinates to the limits.
       vx = Math.max(0, Math.min(vx, grid.bodyWidth - 1));
       vy = Math.max(0, Math.min(vy, grid.bodyHeight - 1));
+
       const model = grid.dataModel as EditableDSVModel;
+      const selectionModel = this._grid.selectionModel;
+
+      // we can assume there is a selection as it is necessary to move rows/columns
+      const { r1, r2, c1, c2 } = selectionModel.currentSelection();
+
       if (this._moveData.region === 'column-header') {
         const startColumn = this._moveData.column;
         const endColumn = grid.columnAt('body', vx);
         model.moveColumn(startColumn, endColumn);
+        // select the row that was just moved
+        selectionModel.select({
+          r1,
+          r2,
+          c1: endColumn,
+          c2: endColumn,
+          cursorRow: r1,
+          cursorColumn: c1,
+          clear: 'all'
+        });
       } else if (this._moveData.region === 'row-header') {
         const startRow = this._moveData.row;
         const endRow = grid.rowAt('body', vy);
         model.moveRow(startRow, endRow);
+
+        // select the row that was just moved
+        selectionModel.select({
+          r1: endRow,
+          r2: endRow,
+          c1,
+          c2,
+          cursorRow: r1,
+          cursorColumn: c1,
+          clear: 'all'
+        });
       }
+
       if (this.pressData) {
         if (
           this.pressData.type === 'column-resize' ||
@@ -382,7 +411,7 @@ export type MoveData = {
   readonly type: 'move';
 
   /**
-   * The row region which holds the section being resized.
+   * The region which holds the section being moved.
    */
   readonly region: DataModel.CellRegion;
 
