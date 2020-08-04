@@ -394,6 +394,16 @@ export class RichMouseHandler extends BasicMouseHandler {
     const { clientX, clientY } = event;
     const hit = grid.hitTest(clientX, clientY);
     this._rightClickSignal.emit(hit);
+
+    // if the right click is in the current selection, return
+    if (
+      this._grid.selectionModel.isRowSelected(hit.row) &&
+      this._grid.selectionModel.isColumnSelected(hit.column)
+    ) {
+      return;
+    }
+    // otherwise select the respective row/column/cell
+    super.onMouseDown(grid, event);
   }
   private _grid: DataGrid;
   private _event: MouseEvent;
