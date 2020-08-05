@@ -40,6 +40,10 @@ export class EditorModel extends MutableDataModel {
     return this._model;
   }
 
+  get onChangedSignal(): Signal<this, DSVEditor.ModelChangedArgs> {
+    return this._onChangeSignal;
+  }
+
   get litestore(): Litestore {
     return this._litestore;
   }
@@ -839,7 +843,7 @@ export class EditorModel extends MutableDataModel {
   updateString(): void {
     // Get the current litestore values.
     // Unpack the columnMap from the litestore.
-    console.log(this.litestore.getHistory());
+    console.log(this.litestore.transactionStore.getHistory());
     const { rowMap, columnMap } = this._litestore.getRecord({
       schema: DSVEditor.DATAMODEL_SCHEMA,
       record: DSVEditor.RECORD_ID
