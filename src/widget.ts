@@ -687,7 +687,9 @@ export namespace DSVEditor {
    */
   export type ModelChangedArgs = {
     rowUpdate?: ListField.Update<number>;
+    inverseRowUpdate?: ListField.Update<number>;
     columnUpdate?: ListField.Update<number>;
+    inverseColumnUpdate?: ListField.Update<number>;
     valueUpdate?: MapField.Update<string>;
     gridUpdate?: DataModel.ChangedArgs;
     gridChangeRecordUpdate?: ListField.Update<GridChangeRecordArgs>;
@@ -700,7 +702,9 @@ export namespace DSVEditor {
     id: SCHEMA_ID,
     fields: {
       rowMap: Fields.List<number>(),
+      inverseRowMap: Fields.List<number>(),
       columnMap: Fields.List<number>(),
+      inverseColumnMap: Fields.List<number>(),
       valueMap: Fields.Map<string>(),
       gridChange: Fields.Register<DataModel.ChangedArgs>({
         value: { type: 'model-reset' }
