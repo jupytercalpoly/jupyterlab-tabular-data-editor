@@ -86,7 +86,7 @@ export class EditableDSVModel extends MutableDataModel {
       rowSpan: 1,
       columnSpan: 1
     };
-    this.handleEmits(change, useLitestore);
+    this.handleEmits(change, 'cells-changed', useLitestore);
     return true;
   }
 
@@ -94,7 +94,7 @@ export class EditableDSVModel extends MutableDataModel {
    * Adds a row to the body of the model
    * @param row The index of the row to be inserted (0-indexed)
    */
-  addRow(row: number): void {
+  addRow(row: number, type: string): void {
     const model = this.dsvModel;
     const newRow = this.blankRow(model, row);
     this.insertAt(newRow, model, { row: row });
@@ -104,14 +104,14 @@ export class EditableDSVModel extends MutableDataModel {
       index: row,
       span: 1
     };
-    this.handleEmits(change);
+    this.handleEmits(change, type);
   }
 
   /**
    * Adds a column to the body of the model
    * @param column The index of the column to be inserted (0-indexed)
    */
-  addColumn(column: number): void {
+  addColumn(column: number, type: string): void {
     const model = this.dsvModel;
     const data = this.dsvModel.rawData;
     // initalize an array to hold each row
@@ -166,14 +166,14 @@ export class EditableDSVModel extends MutableDataModel {
       index: column,
       span: 1
     };
-    this.handleEmits(change);
+    this.handleEmits(change, type);
   }
 
   /**
    * Removes a row from the body of the model
    * @param row The index of the row removed (0-indexed)
    */
-  removeRow(row: number): void {
+  removeRow(row: number, type: string): void {
     const model = this.dsvModel;
     this.sliceOut(model, { row: row });
 
@@ -183,14 +183,14 @@ export class EditableDSVModel extends MutableDataModel {
       index: row,
       span: 1
     };
-    this.handleEmits(change);
+    this.handleEmits(change, type);
   }
 
   /**
    * Removes a column from the body of the model
    * @param column The index of the column removed (0-indexed)
    */
-  removeColumn(column: number): void {
+  removeColumn(column: number, type: string): void {
     const model = this.dsvModel;
     const data = this.dsvModel.rawData;
     // initialize the replacement array
@@ -243,19 +243,19 @@ export class EditableDSVModel extends MutableDataModel {
       index: column,
       span: 1
     };
-    this.handleEmits(change);
+    this.handleEmits(change, type);
   }
 
   /**
    * Copies the current selection and potential removes it (cut)
    * @param selection The current selction
-   * @param mode 'cut-cells' or 'copy-cells'
+   * @param type 'cut-cells' or 'copy-cells'
    */
   cutAndCopy(
     selection: ICellSelection,
-    mode: 'cut-cells' | 'copy-cells' = 'cut-cells'
+    type: 'cut-cells' | 'copy-cells' = 'cut-cells'
   ): void {
-    const keepingValue = mode === 'copy-cells' ? true : false;
+    const keepingValue = type === 'copy-cells' ? true : false;
     const model = this.dsvModel;
     const { startRow, startColumn, endRow, endColumn } = selection;
     const numRows = endRow - startRow + 1;
@@ -286,7 +286,7 @@ export class EditableDSVModel extends MutableDataModel {
       rowSpan: numRows,
       columnSpan: numColumns
     };
-    this.handleEmits(change, !keepingValue);
+    this.handleEmits(change, type, !keepingValue);
   }
 
   /**
@@ -294,7 +294,11 @@ export class EditableDSVModel extends MutableDataModel {
    * @param startCoord The start coordinates of the paste
    * @param data The data being pasted
    */
-  paste(startCoord: ICoordinates, data: string | null = null): void {
+  paste(
+    startCoord: ICoordinates,
+    type: string,
+    data: string | null = null
+  ): void {
     let clipboardArray = this._clipBoardArr;
     const model = this.dsvModel;
 
@@ -343,7 +347,7 @@ export class EditableDSVModel extends MutableDataModel {
       rowSpan: rowSpan,
       columnSpan: columnSpan
     };
-    this.handleEmits(change);
+    this.handleEmits(change, type);
   }
 
   /**
@@ -431,7 +435,7 @@ export class EditableDSVModel extends MutableDataModel {
         break;
     }
     // don't use litestore for undo
-    this.handleEmits(undoChange, false);
+    this.handleEmits(undoChange, '', false);
   }
 
   /**
@@ -454,7 +458,7 @@ export class EditableDSVModel extends MutableDataModel {
 
     model.rawData = data;
     // don't use litestore for redo
-    this.handleEmits(change, false);
+    this.handleEmits(change, '', false);
   }
 
   /**
@@ -510,7 +514,7 @@ export class EditableDSVModel extends MutableDataModel {
       span: 1,
       destination: endRow
     };
-    this.handleEmits(change);
+    this.handleEmits(change, 'rows-moved');
   }
 
   /**
@@ -641,7 +645,7 @@ export class EditableDSVModel extends MutableDataModel {
       span: 1,
       destination: endColumn
     };
-    this.handleEmits(change);
+    this.handleEmits(change, 'columns-moved');
   }
 
   /**
@@ -749,7 +753,11 @@ export class EditableDSVModel extends MutableDataModel {
    * Handles all signal emitting and model parsing after the raw data is manipulated
    * @param change The current change to be emitted to the Datagrid
    */
-  handleEmits(change: DataModel.ChangedArgs, useLitestore = true): void {
+  handleEmits(
+    change: DataModel.ChangedArgs,
+    type: string,
+    useLitestore = true
+  ): void {
     this._silenceDsvModel();
     this._dsvModel.parseAsync();
 
@@ -759,7 +767,8 @@ export class EditableDSVModel extends MutableDataModel {
     this._onChangeSignal.emit({
       data: this._dsvModel.rawData.slice(this.colHeaderLength),
       change,
-      useLitestore
+      useLitestore,
+      type
     });
   }
 

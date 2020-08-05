@@ -173,7 +173,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
       rowSpan: endRow - startRow,
       columnSpan: endColumn - startColumn
     };
-    this._target.content.updateLitestore(change);
+    this._target.content.updateLitestore('replace-all', change);
     litestore.endTransaction();
     return true;
   }
