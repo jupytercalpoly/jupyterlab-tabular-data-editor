@@ -19,14 +19,17 @@ import {
 } from 'tde-datagrid';
 import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget } from '@lumino/widgets';
-import { EditorModel } from './model';
+import { EditableDSVModel } from './model';
 import { RichMouseHandler } from './handler';
+import { numberToCharacter } from './_helper';
+import { toArray } from '@lumino/algorithm';
 import { CommandRegistry } from '@lumino/commands';
 import { CommandIDs } from './index';
 import { VirtualDOM, h } from '@lumino/virtualdom';
 import { GridSearchService } from './searchservice';
 import { Litestore } from './litestore';
-import { Fields } from '@lumino/datastore';
+import { Fields } from 'tde-datastore';
+import { ListField, MapField } from 'tde-datastore';
 
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
@@ -35,12 +38,12 @@ const ROW_HEADER_CLASS = 'jp-row-header';
 const BACKGROUND_CLASS = 'jp-background';
 const RENDER_TIMEOUT = 1000;
 
-export class EditableCSVViewer extends Widget {
+export class DSVEditor extends Widget {
   private _background: HTMLElement;
   /**
    * Construct a new CSV viewer.
    */
-  constructor(options: EditableCSVViewer.IOptions) {
+  constructor(options: DSVEditor.IOptions) {
     super();
 
     const context = (this._context = options.context);
@@ -185,8 +188,8 @@ export class EditableCSVViewer extends Widget {
   /**
    * The DataModel used to render the DataGrid
    */
-  get dataModel(): EditorModel {
-    return this._grid.dataModel as EditorModel;
+  get dataModel(): EditableDSVModel {
+    return this._grid.dataModel as EditableDSVModel;
   }
 
   get litestore(): Litestore {
@@ -226,83 +229,84 @@ export class EditableCSVViewer extends Widget {
    * Guess the row delimiter if it was not supplied.
    * This will be fooled if a different line delimiter possibility appears in the first row.
    */
-  // private _guessRowDelimeter(data: string): string {
-  //   const i = data.slice(0, 5000).indexOf('\r');
-  //   if (i === -1) {
-  //     return '\n';
-  //   } else if (data[i + 1] === '\n') {
-  //     return '\r\n';
-  //   } else {
-  //     return '\r';
-  //   }
-  // }
+  private _guessRowDelimeter(data: string): string {
+    const i = data.slice(0, 5000).indexOf('\r');
+    if (i === -1) {
+      return '\n';
+    } else if (data[i + 1] === '\n') {
+      return '\r\n';
+    } else {
+      return '\r';
+    }
+  }
 
-  // /**
-  //  * Counts the occurrences of a substring from a given string
-  //  */
-  // private _countOccurrences(
-  //   string: string,
-  //   substring: string,
-  //   rowDelimiter: string
-  // ): number {
-  //   let numCol = 0;
-  //   let pos = 0;
-  //   const l = substring.length;
-  //   const firstRow = string.slice(0, string.indexOf(rowDelimiter));
+  /**
+   * Counts the occurrences of a substring from a given string
+   */
+  private _countOccurrences(
+    string: string,
+    substring: string,
+    rowDelimiter: string
+  ): number {
+    let numCol = 0;
+    let pos = 0;
+    const l = substring.length;
+    const firstRow = string.slice(0, string.indexOf(rowDelimiter));
 
-  //   pos = firstRow.indexOf(substring, pos);
-  //   while (pos !== -1) {
-  //     numCol++;
-  //     pos += l;
-  //     pos = firstRow.indexOf(substring, pos);
-  //   }
-  //   // number of columns is the amount of columns + 1
-  //   return numCol + 1;
-  // }
+    pos = firstRow.indexOf(substring, pos);
+    while (pos !== -1) {
+      numCol++;
+      pos += l;
+      pos = firstRow.indexOf(substring, pos);
+    }
+    // number of columns is the amount of columns + 1
+    return numCol + 1;
+  }
 
-  // /**
-  //  * Adds the a column header of alphabets to the top of the data (A..Z,AA..ZZ,AAA...)
-  //  * @param colDelimiter The delimiter used to separated columns (commas, tabs, spaces)
-  //  */
-  // protected _buildColHeader(colDelimiter: string): string {
-  //   const rawData = this._context.model.toString();
-  //   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  //   // when the model is first created, we don't know how many columns or what the row delimeter is
-  //   const rowDelimiter = this._guessRowDelimeter(rawData);
-  //   const numCol = this._countOccurrences(rawData, colDelimiter, rowDelimiter);
+  /**
+   * Adds the a column header of alphabets to the top of the data (A..Z,AA..ZZ,AAA...)
+   * @param colDelimiter The delimiter used to separated columns (commas, tabs, spaces)
+   */
+  protected _buildColHeader(colDelimiter: string): string {
+    const rawData = this._context.model.toString();
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    // when the model is first created, we don't know how many columns or what the row delimeter is
+    const rowDelimiter = this._guessRowDelimeter(rawData);
+    const numCol = this._countOccurrences(rawData, colDelimiter, rowDelimiter);
 
-  //   // if only single alphabets fix the string
-  //   if (numCol <= 26) {
-  //     return (
-  //       alphabet
-  //         .slice(0, numCol)
-  //         .split('')
-  //         .join(colDelimiter) + rowDelimiter
-  //     );
-  //   }
-  //   // otherwise compute the column header with multi-letters (AA..)
-  //   else {
-  //     // get all single letters
-  //     let columnHeader = alphabet.split('').join(colDelimiter);
-  //     // find the rest
-  //     for (let i = 27; i < numCol; i++) {
-  //       columnHeader += colDelimiter + numberToCharacter(i);
-  //     }
-  //     return columnHeader + rowDelimiter;
-  //   }
-  // }
+    // if only single alphabets fix the string
+    if (numCol <= 26) {
+      return (
+        alphabet
+          .slice(0, numCol)
+          .split('')
+          .join(colDelimiter) + rowDelimiter
+      );
+    }
+    // otherwise compute the column header with multi-letters (AA..)
+    else {
+      // get all single letters
+      let columnHeader = alphabet.split('').join(colDelimiter);
+      // find the rest
+      for (let i = 27; i < numCol; i++) {
+        columnHeader += colDelimiter + numberToCharacter(i);
+      }
+      return columnHeader + rowDelimiter;
+    }
+  }
 
   /**
    * Create the model for the grid.
    */
   protected _updateGrid(): void {
     const delimiter = this.delimiter;
-    const model = this._grid.dataModel as EditorModel;
+    const model = this._grid.dataModel as EditableDSVModel;
     let data: string;
 
     if (!model) {
-      data = this._context.model.toString();
-      const dataModel = (this._grid.dataModel = new EditorModel({
+      const header = this._buildColHeader(this.delimiter);
+      data = header + this._context.model.toString();
+      const dataModel = (this._grid.dataModel = new EditableDSVModel({
         data,
         delimiter
       }));
@@ -311,13 +315,16 @@ export class EditableCSVViewer extends Widget {
       // create litestore
       this._litestore = new Litestore({
         id: 0,
-        schemas: [EditableCSVViewer.DATAMODEL_SCHEMA]
+        schemas: [DSVEditor.DATAMODEL_SCHEMA]
       });
 
       // set inital status of litestore
       this._litestore.beginTransaction();
       this.updateLitestore('initial update');
       this._litestore.endTransaction();
+
+      dataModel.onChangedSignal.connect(this._updateModel, this);
+      dataModel.cancelEditingSignal.connect(this._cancelEditing, this);
     }
     // update the position of the background row and column headers
     this._background.style.width = `${this._grid.viewportWidth}px`;
@@ -354,11 +361,37 @@ export class EditableCSVViewer extends Widget {
   }
 
   /**
+   * Called every time the datamodel updates
+   * Updates the file and the litestore
+   * @param emitter
+   * @param data The raw data used to update the model
+   * @param change The arguments from the datamodel change used ot update the Litestore
+   */
+  private _updateModel(
+    emitter: EditableDSVModel,
+    args: DSVEditor.ModelChangedArgs
+  ): void {
+    const { data, gridChange: change, useLitestore } = args;
+
+    if (useLitestore) {
+      this._litestore.beginTransaction();
+      this.updateLitestore(change);
+      this._litestore.endTransaction();
+    }
+
+    // serialize the data
+    this.context.model.fromString(data);
+  }
+
+  /**
    * Saves the file
    */
   private _save(): void {
-    this.context.model.fromString(this.dataModel.model.rawData);
     this.context.save();
+  }
+
+  private _cancelEditing(emitter: EditableDSVModel): void {
+    this._grid.editorController.cancel();
   }
 
   /**
@@ -366,7 +399,7 @@ export class EditableCSVViewer extends Widget {
    * @param emitter
    * @param type
    */
-  private _changeModel(emitter: EditableCSVViewer, type: string): void {
+  private _changeModel(emitter: DSVEditor, type: string): void {
     const selectionModel = this._grid.selectionModel;
     const selection = selectionModel.currentSelection();
     let r1, r2, c1, c2: number;
@@ -381,11 +414,11 @@ export class EditableCSVViewer extends Widget {
 
     switch (type) {
       case 'insert-row-above': {
-        this.dataModel.addRows(this._region, this._row);
+        this.dataModel.addRow(this._row);
         break;
       }
       case 'insert-row-below': {
-        this.dataModel.addRows(this._region, this._row + 1);
+        this.dataModel.addRow(this._row + 1);
 
         if (!selection) {
           break;
@@ -404,11 +437,11 @@ export class EditableCSVViewer extends Widget {
         break;
       }
       case 'insert-column-left': {
-        this.dataModel.addColumns(this._region, this._column);
+        this.dataModel.addColumn(this._column);
         break;
       }
       case 'insert-column-right': {
-        this.dataModel.addColumns(this._region, this._column + 1);
+        this.dataModel.addColumn(this._column + 1);
 
         if (!selection) {
           break;
@@ -428,42 +461,45 @@ export class EditableCSVViewer extends Widget {
         break;
       }
       case 'remove-row': {
-        this.dataModel.removeRows(this._region, this._row);
+        this.dataModel.removeRow(this._row);
         break;
       }
       case 'remove-column': {
-        this.dataModel.removeColumns(this._region, this._column);
+        this.dataModel.removeColumn(this._column);
         break;
       }
-      case 'cut-cells': {
-        this._grid.copyToClipboard();
-        const { r1, c1, r2, c2 } = this.getSelectedRange();
-        const rowSpan = r2 - r1 + 1;
-        const columnSpan = c2 - c1 + 1;
-        this.dataModel.cut('body', r1, c1, rowSpan, columnSpan);
-        break;
-      }
+      case 'cut-cells':
       case 'copy-cells': {
         this._grid.copyToClipboard();
         const { r1, c1, r2, c2 } = this.getSelectedRange();
-        const rowSpan = r2 - r1 + 1;
-        const columnSpan = c2 - c1 + 1;
-        this.dataModel.copy('body', r1, c1, rowSpan, columnSpan);
+        this.dataModel.cutAndCopy(
+          {
+            startRow: r1,
+            startColumn: c1,
+            endRow: r2,
+            endColumn: c2
+          },
+          type
+        );
         break;
       }
       case 'paste-cells': {
         // we will determine the location based on the current selection
         const { r1, c1 } = this.getSelectedRange();
-        this.dataModel.paste('body', r1, c1);
-        this._grid.editorController.cancel();
+        this.dataModel.paste({ row: r1, column: c1 });
         break;
       }
       case 'clear-contents': {
-        const selection = this.getSelectedRange();
-        if (!selection) {
-          return;
-        }
-        this.dataModel.clearContents(selection);
+        // need to create a transaction since we are making multiple calls to setData()
+        this._litestore.beginTransaction();
+        const change = this.dataModel.clearContents(
+          this._region,
+          this._row,
+          this._column,
+          this.getSelectedRange()
+        );
+        this.updateLitestore(change);
+        this._litestore.endTransaction();
         break;
       }
       case 'undo': {
@@ -472,16 +508,16 @@ export class EditableCSVViewer extends Widget {
           return;
         }
 
-        const { change, selection } = this._litestore.getRecord({
-          schema: EditableCSVViewer.DATAMODEL_SCHEMA,
-          record: EditableCSVViewer.RECORD_ID
+        const { gridChange: change } = this._litestore.getRecord({
+          schema: DSVEditor.DATAMODEL_SCHEMA,
+          record: DSVEditor.RECORD_ID
         });
 
         // undo first and then get the model data
         this._litestore.undo();
         const { modelData } = this._litestore.getRecord({
-          schema: EditableCSVViewer.DATAMODEL_SCHEMA,
-          record: EditableCSVViewer.RECORD_ID
+          schema: DSVEditor.DATAMODEL_SCHEMA,
+          record: DSVEditor.RECORD_ID
         });
 
         // reselect previous selection
@@ -505,37 +541,20 @@ export class EditableCSVViewer extends Widget {
           return;
         }
         this._litestore.redo();
-        const { change } = this._litestore.getRecord({
-          schema: EditableCSVViewer.DATAMODEL_SCHEMA,
-          record: EditableCSVViewer.RECORD_ID
+        const { gridChange: change, modelData } = this._litestore.getRecord({
+          schema: DSVEditor.DATAMODEL_SCHEMA,
+          record: DSVEditor.RECORD_ID
         });
 
-        let { r1, r2, c1, c2 } = selection;
-        // handle special cases for selection
-        if (type === 'insert-row-below') {
-          r1 += 1;
-          r2 += 1;
-        } else if (type === 'insert-column-right') {
-          c1 += 1;
-          c2 += 1;
-        } else if (change.type === 'rows-moved') {
-          r1 = change.destination;
-          r2 = change.destination;
-        } else if (change.type === 'columns-moved') {
-          c1 = change.destination;
-          c2 = change.destination;
-        }
-
         // reselect the cell that was edited
-        if (change.type === 'cells-changed') {
+        if (change && change.type === 'cells-changed') {
           const { row, column } = change;
           this.selectSingleCell(row, column);
         }
-        this.dataModel.redo(change);
+        this.dataModel.redo(modelData, change);
         break;
       }
       case 'save':
-        this.dataModel.updateString();
         this._save();
         break;
     }
@@ -552,15 +571,13 @@ export class EditableCSVViewer extends Widget {
 
     this._litestore.updateRecord(
       {
-        schema: EditableCSVViewer.DATAMODEL_SCHEMA,
-        record: EditableCSVViewer.RECORD_ID
+        schema: DSVEditor.DATAMODEL_SCHEMA,
+        record: DSVEditor.RECORD_ID
       },
       {
         modelData: model.rawData,
         modelHeader: model.header,
-        change: change,
-        selection: selection,
-        type: type
+        gridChange: change
       }
     );
   }
@@ -584,8 +601,11 @@ export class EditableCSVViewer extends Widget {
   }
 
   protected getSelectedRange(): SelectionModel.Selection {
-    // Get the corners of the selected region.
-    return this._grid.selectionModel.currentSelection();
+    const selections = toArray(this._grid.selectionModel.selections());
+    if (selections.length === 0) {
+      return;
+    }
+    return selections[0];
   }
 
   protected onAfterAttach(msg: Message): void {
@@ -598,8 +618,7 @@ export class EditableCSVViewer extends Widget {
     event.preventDefault();
     event.stopPropagation();
     const { r1, c1 } = this.getSelectedRange();
-    this.dataModel.paste('body', r1, c1, copiedText);
-    this._grid.editorController.cancel();
+    this.dataModel.paste({ row: r1, column: c1 }, copiedText);
   }
 
   private _onRightClick(
@@ -647,15 +666,24 @@ export class EditableCSVViewer extends Widget {
   private _rowHeader: HTMLElement;
 }
 
-export namespace EditableCSVViewer {
+export namespace DSVEditor {
+  export type MapChange<T> = {
+    index: number;
+    remove: number;
+    values: T[];
+    currentLength?: number;
+  };
   /**
    * The arguments emitted to the Editable CSVViewer when the datamodel changes
    */
   export type ModelChangedArgs = {
-    data: string;
-    change: DataModel.ChangedArgs;
-    useLitestore: boolean;
-    type: string;
+    rowUpdate?: ListField.Update<number>;
+    latestRowChange?: ListField.Update<MapChange<number>>;
+    columnUpdate?: ListField.Update<number>;
+    latestColumnChange?: ListField.Update<MapChange<number>>;
+    valueUpdate?: MapField.Update<string>;
+    gridUpdate?: DataModel.ChangedArgs;
+    useLitestore?: boolean;
   };
 
   export const SCHEMA_ID = 'datamodel';
@@ -663,26 +691,24 @@ export namespace EditableCSVViewer {
   export const DATAMODEL_SCHEMA = {
     id: SCHEMA_ID,
     fields: {
-      modelData: Fields.String(),
-      modelHeader: Fields.Register<string[]>({ value: [] }),
-      change: Fields.Register<DataModel.ChangedArgs>({
-        value: null
+      rowMap: Fields.List<number>(),
+      rowChangelog: Fields.List<MapChange<number>>(),
+      columnMap: Fields.List<number>(),
+      columnChangelog: Fields.List<MapChange<number>>(),
+      valueMap: Fields.Map<string>(),
+      gridChange: Fields.Register<DataModel.ChangedArgs>({
+        value: { type: 'model-reset' }
       }),
-      selection: Fields.Register<SelectionModel.Selection>({
-        value: null
-      }),
-      type: Fields.String()
+      useLitestore: Fields.Boolean()
     }
   };
 }
 
-export class EditableCSVDocumentWidget extends DocumentWidget<
-  EditableCSVViewer
-> {
+export class EditableCSVDocumentWidget extends DocumentWidget<DSVEditor> {
   constructor(options: EditableCSVDocumentWidget.IOptions) {
     let { content, reveal } = options;
     const { context, commandRegistry, ...other } = options;
-    content = content || new EditableCSVViewer({ context });
+    content = content || new DSVEditor({ context });
     reveal = Promise.all([reveal, content.revealed]);
     super({ context, content, reveal, ...other });
 
@@ -754,15 +780,14 @@ export class EditableCSVDocumentWidget extends DocumentWidget<
   }
 }
 export declare namespace EditableCSVDocumentWidget {
-  interface IOptions
-    extends DocumentWidget.IOptionsOptionalContent<EditableCSVViewer> {
+  interface IOptions extends DocumentWidget.IOptionsOptionalContent<DSVEditor> {
     delimiter?: string;
     commandRegistry: CommandRegistry;
   }
 }
 
 export class EditableCSVViewerFactory extends ABCWidgetFactory<
-  IDocumentWidget<EditableCSVViewer>
+  IDocumentWidget<DSVEditor>
 > {
   constructor(
     options: DocumentRegistry.IWidgetFactoryOptions<IDocumentWidget>,
@@ -774,14 +799,14 @@ export class EditableCSVViewerFactory extends ABCWidgetFactory<
 
   createNewWidget(
     context: DocumentRegistry.Context
-  ): IDocumentWidget<EditableCSVViewer> {
+  ): IDocumentWidget<DSVEditor> {
     const commandRegistry = this._commandReigstry;
     return new EditableCSVDocumentWidget({ context, commandRegistry });
   }
 
   private _commandReigstry: CommandRegistry;
 }
-export namespace EditableCSVViewer {
+export namespace DSVEditor {
   /**
    * Instantiation options for CSV widgets.
    */

@@ -1,14 +1,14 @@
 // Copyright (c) Jupyter Development Team.
 // Distributed under the terms of the Modified BSD License.
 import { ISearchProvider, ISearchMatch } from '@jupyterlab/documentsearch';
-import { EditableCSVViewer } from './widget';
+import { DSVEditor } from './widget';
 import { DocumentWidget } from '@jupyterlab/docregistry';
 import { Signal, ISignal } from '@lumino/signaling';
 import { Widget } from '@lumino/widgets';
 import { DataModel } from 'tde-datagrid';
 
 // The type for which canSearchFor returns true
-export type CSVDocumentWidget = DocumentWidget<EditableCSVViewer>;
+export type CSVDocumentWidget = DocumentWidget<DSVEditor>;
 
 /**
  * Responsible for managing the state of the search-and-replace UI element in JupyterLab
@@ -23,8 +23,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
     // check to see if the CSVSearchProvider can search on the
     // first cell, false indicates another editor is present
     return (
-      domain instanceof DocumentWidget &&
-      domain.content instanceof EditableCSVViewer
+      domain instanceof DocumentWidget && domain.content instanceof DSVEditor
     );
   }
 
