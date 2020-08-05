@@ -22,7 +22,7 @@ import { PanelLayout, Widget } from '@lumino/widgets';
 import { EditorModel } from './newmodel';
 import { RichMouseHandler } from './handler';
 import { numberToCharacter } from './_helper';
-import { toArray } from '@lumino/algorithm';
+import { toArray, range } from '@lumino/algorithm';
 import { CommandRegistry } from '@lumino/commands';
 import { CommandIDs } from './index';
 import { VirtualDOM, h } from '@lumino/virtualdom';
@@ -317,9 +317,31 @@ export class DSVEditor extends Widget {
         schemas: [DSVEditor.DATAMODEL_SCHEMA]
       });
 
+      // Give the litestore as a property of the model for it to read from.
+      this.dataModel.litestore = this._litestore;
+
+      // Define the initial update object for the litestore.
+      const update: DSVEditor.ModelChangedArgs = {};
+
+      // Define the initial state of the row and column map.
+      const rowUpdate = {
+        index: 0,
+        remove: 0,
+        values: toArray(range(0, this.dataModel.totalRows()))
+      };
+      const columnUpdate = {
+        index: 0,
+        remove: 0,
+        values: toArray(range(0, this.dataModel.totalColumns()))
+      };
+
+      // Add the map updates to the update object.
+      update.rowUpdate = rowUpdate;
+      update.columnUpdate = columnUpdate;
+
       // set inital status of litestore
       this._litestore.beginTransaction();
-      this.updateLitestore('initial update');
+      this.updateLitestore(update);
       this._litestore.endTransaction();
 
       dataModel.onChangedSignal.connect(this._updateModel, this);
@@ -381,6 +403,8 @@ export class DSVEditor extends Widget {
    * Saves the file
    */
   private _save(): void {
+    this.dataModel.updateString();
+    this.context.model.fromString(this.dataModel.model.rawData);
     this.context.save();
   }
 
@@ -479,11 +503,8 @@ export class DSVEditor extends Widget {
       }
       case 'clear-contents': {
         // need to create a transaction since we are making multiple calls to setData()
-        this._litestore.beginTransaction();
         const selection = this.getSelectedRange();
-        const change = this.dataModel.clearContents(this._region, selection);
-        this.updateLitestore(change);
-        this._litestore.endTransaction();
+        this.dataModel.clearContents(this._region, selection);
         break;
       }
       case 'undo': {
@@ -556,10 +577,12 @@ export class DSVEditor extends Widget {
         record: DSVEditor.RECORD_ID
       },
       {
-        rowMap: update.rowUpdate,
-        columnMap: update.columnUpdate,
-        valueMap: update.valueUpdate,
-        gridChange: update.gridUpdate
+        rowMap: update.rowUpdate || DSVEditor.NULL_NUM_SPLICE,
+        columnMap: update.columnUpdate || DSVEditor.NULL_NUM_SPLICE,
+        valueMap: update.valueUpdate || null,
+        gridChange: update.gridUpdate || null,
+        gridChangeRecord:
+          update.gridChangeRecordUpdate || DSVEditor.NULL_CHANGE_SPLICE
       }
     );
   }
@@ -651,11 +674,13 @@ export class DSVEditor extends Widget {
 }
 
 export namespace DSVEditor {
-  export type MapChange<T> = {
-    index: number;
-    remove: number;
-    values: T[];
-    currentLength?: number;
+  /**
+   * The Grid update args
+   */
+  export type GridChangeRecordArgs = {
+    currentRows: number;
+    currentColumns: number;
+    change: DataModel.ChangedArgs;
   };
   /**
    * The arguments emitted to the Editable CSVViewer when the datamodel changes
@@ -665,6 +690,7 @@ export namespace DSVEditor {
     columnUpdate?: ListField.Update<number>;
     valueUpdate?: MapField.Update<string>;
     gridUpdate?: DataModel.ChangedArgs;
+    gridChangeRecordUpdate?: ListField.Update<GridChangeRecordArgs>;
     useLitestore?: boolean;
   };
 
@@ -679,8 +705,17 @@ export namespace DSVEditor {
       gridChange: Fields.Register<DataModel.ChangedArgs>({
         value: { type: 'model-reset' }
       }),
-      useLitestore: Fields.Boolean()
+      gridChangeRecord: Fields.List<GridChangeRecordArgs>(),
+      useLitestore: Fields.Boolean({ value: true })
     }
+  };
+  export const NULL_NUMS: number[] = [];
+  export const NULL_NUM_SPLICE = { index: 0, remove: 0, values: NULL_NUMS };
+  export const NULL_CHANGE: GridChangeRecordArgs[] = [];
+  export const NULL_CHANGE_SPLICE = {
+    index: 0,
+    remove: 0,
+    values: NULL_CHANGE
   };
 }
 

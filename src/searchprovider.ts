@@ -147,7 +147,6 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
    * @returns A promise that resolves once the action has completed.
    */
   async replaceAllMatches(newText: string): Promise<boolean> {
-    const model = this._target.content.dataModel.model;
     const litestore = this._target.content.dataModel.litestore;
     const searchService = this._target.content.searchService;
     const startRow = searchService.currentMatch.line;
@@ -166,7 +165,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
       this.replaceCurrentMatch(newText, false);
     }
 
-    const change: DataModel.ChangedArgs = {
+    const gridUpdate: DataModel.ChangedArgs = {
       type: 'cells-changed',
       region: 'body',
       // the range of cells being edited
@@ -175,7 +174,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
       rowSpan: endRow - startRow,
       columnSpan: endColumn - startColumn
     };
-    this._target.content.updateLitestore('replace-all', change);
+    this._target.content.updateLitestore({ gridUpdate });
     litestore.endTransaction();
     return true;
   }
