@@ -104,16 +104,20 @@ export class RichMouseHandler extends BasicMouseHandler {
     }
   }
 
+  /**
+   * @override
+   * @param grid
+   * @param event
+   */
   onMouseHover(grid: DataGrid, event: MouseEvent): void {
     this._event = event;
     super.onMouseHover(grid, event);
   }
 
   /**
+   * @override
    * Handle the mouse down event for the data grid.
-   *
    * @param grid - The data grid of interest.
-   *
    * @param event - The mouse down event of interest.
    */
   onMouseDown(grid: DataGrid, event: MouseEvent): void {
@@ -126,6 +130,9 @@ export class RichMouseHandler extends BasicMouseHandler {
     return;
   }
 
+  /**
+   * @override
+   */
   release(): void {
     if (this._moveData) {
       this._moveData.override.dispose();
@@ -134,6 +141,9 @@ export class RichMouseHandler extends BasicMouseHandler {
     super.release();
   }
 
+  /**
+   * Creates the shadow/line on the row/column that was grabbed
+   */
   handleGrabbing(): void {
     const hit = this._grid.hitTest(this._event.clientX, this._event.clientY);
     const { region, row, column } = hit;
@@ -253,10 +263,9 @@ export class RichMouseHandler extends BasicMouseHandler {
   }
 
   /**
+   * @override
    * Handle the mouse move event for the data grid.
-   *
    * @param grid - The data grid of interest.
-   *
    * @param event - The mouse move event of interest.
    */
   onMouseMove(grid: DataGrid, event: MouseEvent): void {
@@ -362,7 +371,7 @@ export class RichMouseHandler extends BasicMouseHandler {
   }
 
   /**
-   *
+   * @override
    * @param grid
    * @param event
    */
@@ -420,9 +429,7 @@ export class RichMouseHandler extends BasicMouseHandler {
 
   /**
    * Handle the context menu event for the data grid.
-   *
    * @param grid - The data grid of interest.
-   *
    * @param event - The context menu event of interest.
    */
   onContextMenu(grid: DataGrid, event: MouseEvent): void {
