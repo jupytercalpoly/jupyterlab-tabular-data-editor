@@ -5,7 +5,7 @@ import { EditableCSVViewer } from './widget';
 import { DocumentWidget } from '@jupyterlab/docregistry';
 import { Signal, ISignal } from '@lumino/signaling';
 import { Widget } from '@lumino/widgets';
-import { DATAMODEL_SCHEMA, RECORD_ID } from './model';
+import { DataModel } from 'tde-datagrid';
 
 // The type for which canSearchFor returns true
 export type CSVDocumentWidget = DocumentWidget<EditableCSVViewer>;
@@ -146,8 +146,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
    * @returns A promise that resolves once the action has completed.
    */
   async replaceAllMatches(newText: string): Promise<boolean> {
-    const model = this._target.content.dataModel.dsvModel;
-    const litestore = this._target.content.dataModel.litestore;
+    const litestore = this._target.content.litestore;
     const searchService = this._target.content.searchService;
     const startRow = searchService.currentMatch.line;
     const startColumn = searchService.currentMatch.column;
@@ -164,25 +163,17 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
       }
       this.replaceCurrentMatch(newText, false);
     }
-    litestore.updateRecord(
-      {
-        schema: DATAMODEL_SCHEMA,
-        record: RECORD_ID
-      },
-      {
-        modelData: model.rawData,
-        modelHeader: model.header,
-        change: {
-          type: 'cells-changed',
-          region: 'body',
-          // the range of cells being edited
-          row: startRow,
-          column: startColumn,
-          rowSpan: endRow - startRow,
-          columnSpan: endColumn - startColumn
-        }
-      }
-    );
+
+    const change: DataModel.ChangedArgs = {
+      type: 'cells-changed',
+      region: 'body',
+      // the range of cells being edited
+      row: startRow,
+      column: startColumn,
+      rowSpan: endRow - startRow,
+      columnSpan: endColumn - startColumn
+    };
+    this._target.content.updateLitestore('replace-all', change);
     litestore.endTransaction();
     return true;
   }
