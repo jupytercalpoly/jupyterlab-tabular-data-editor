@@ -278,31 +278,20 @@ export class RichMouseHandler extends BasicMouseHandler {
       rightBound =
         left + this._grid.headerWidth + this._grid.pageWidth - (c2 - c1);
     } else if (region === 'row-header') {
-      lowerBound =
-        top +
-        Math.min(
-          this._grid.pageHeight - (r2 - r1),
-          this._grid.bodyHeight + this._grid.headerHeight - (r2 - r1)
-        );
-      upperBound = top + this._grid.headerHeight;
+      lowerBound = top + this._grid.headerHeight;
+      upperBound =
+        top + this._grid.headerHeight + this._grid.pageHeight - (r2 - r1);
       leftBound = rightBound = c1;
-    }
-
-    if (
-      event.clientX < leftBound ||
-      event.clientX > rightBound // ||
-      // event.clientY < lowerBound ||
-      // event.clientY > upperBound
-    ) {
-      console.log(lowerBound, upperBound);
-      return;
     }
 
     // see if we have crossed the boundary to a neighboring row/column
     switch (region) {
       case 'column-header': {
-        // bail early if we are still within the bounds
-        if (c1 < event.clientX && event.clientX < c2) {
+        // bail early if we are still within the bounds or outside of the grid viewport
+        if (
+          (c1 < event.clientX && event.clientX < c2) ||
+          (event.clientX < leftBound || event.clientX > rightBound)
+        ) {
           return;
         } else if (event.clientX < c1) {
           // we are at the previous column, get the new region
@@ -326,8 +315,11 @@ export class RichMouseHandler extends BasicMouseHandler {
         break;
       }
       case 'row-header': {
-        // bail early if we are still within the bounds
-        if (r1 < event.clientY && event.clientY < r2) {
+        // bail early if we are still within the bounds or outside of the grid viewport
+        if (
+          (r1 < event.clientY && event.clientY < r2) ||
+          (event.clientY < lowerBound || event.clientY > upperBound)
+        ) {
           return;
         } else if (event.clientY < r1) {
           // we are at the previous row, get the new region
@@ -388,7 +380,7 @@ export class RichMouseHandler extends BasicMouseHandler {
         });
       } else if (this._moveData.region === 'row-header') {
         const startRow = this._moveData.row;
-        const endRow = grid.rowAt('body', vy);
+        const endRow = this._selectionIndex;
         model.moveRow(startRow, endRow);
 
         // select the row that was just moved
