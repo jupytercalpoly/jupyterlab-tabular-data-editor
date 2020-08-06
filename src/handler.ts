@@ -106,7 +106,6 @@ export class RichMouseHandler extends BasicMouseHandler {
     const { left, top } = this._grid.viewport.node.getBoundingClientRect();
 
     // get the bounds for dragging
-
     let lowerBound: number;
     let upperBound: number;
     let rightBound: number;
@@ -255,7 +254,7 @@ export class RichMouseHandler extends BasicMouseHandler {
    * @param event
    */
   updateLinePos(grid: DataGrid, event: MouseEvent): void {
-    // find the region we originall clicked on.
+    // find the region we originally clicked on.
     const { region } = this._moveData;
 
     // initialize the variables for the the rectangular column/row region
@@ -264,6 +263,40 @@ export class RichMouseHandler extends BasicMouseHandler {
       this._selectionIndex,
       this._selectionIndex
     );
+
+    // get the left and top offsets of the grid viewport
+    const { left, top } = this._grid.viewport.node.getBoundingClientRect();
+
+    // get the bounds for dragging
+    let lowerBound: number;
+    let upperBound: number;
+    let rightBound: number;
+    let leftBound: number;
+    if (region === 'column-header') {
+      lowerBound = upperBound = r1;
+      leftBound = left + this._grid.headerWidth;
+      rightBound =
+        left + this._grid.headerWidth + this._grid.pageWidth - (c2 - c1);
+    } else if (region === 'row-header') {
+      lowerBound =
+        top +
+        Math.min(
+          this._grid.pageHeight - (r2 - r1),
+          this._grid.bodyHeight + this._grid.headerHeight - (r2 - r1)
+        );
+      upperBound = top + this._grid.headerHeight;
+      leftBound = rightBound = c1;
+    }
+
+    if (
+      event.clientX < leftBound ||
+      event.clientX > rightBound // ||
+      // event.clientY < lowerBound ||
+      // event.clientY > upperBound
+    ) {
+      console.log(lowerBound, upperBound);
+      return;
+    }
 
     // see if we have crossed the boundary to a neighboring row/column
     switch (region) {
@@ -341,7 +374,7 @@ export class RichMouseHandler extends BasicMouseHandler {
 
       if (this._moveData.region === 'column-header') {
         const startColumn = this._moveData.column;
-        const endColumn = grid.columnAt('body', vx);
+        const endColumn = this._selectionIndex;
         model.moveColumn(startColumn, endColumn);
         // select the row that was just moved
         selectionModel.select({
