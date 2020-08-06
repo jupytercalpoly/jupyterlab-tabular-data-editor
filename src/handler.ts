@@ -26,6 +26,51 @@ export class RichMouseHandler extends BasicMouseHandler {
     return this._rightClickSignal;
   }
 
+  /**
+   * Computes the bounding region for the grid (provides boundaries for the shadow/line when moving)
+   * @param region The current region
+   * @param shadowRegion The indexes for the rows/columns of the shadow region
+   */
+  computeGridBoundingRegion(
+    region: DataModel.CellRegion | 'void',
+    shadowRegion: RichMouseHandler.IShadowRegion
+  ): IBoundingRegion {
+    const { r1, r2, c1, c2 } = shadowRegion;
+    // get the left and top offsets of the grid viewport
+    const { left, top } = this._grid.viewport.node.getBoundingClientRect();
+
+    // get the bounds for dragging
+    let lowerBound: number;
+    let upperBound: number;
+    let rightBound: number;
+    let leftBound: number;
+    if (region === 'column-header') {
+      // y-axis bounds are the same
+      lowerBound = upperBound = r1;
+      leftBound = left + this._grid.headerWidth;
+      rightBound =
+        left + this._grid.headerWidth + this._grid.pageWidth - (c2 - c1);
+    } else if (region === 'row-header') {
+      // x-axis bounds are the same
+      lowerBound = top + this._grid.headerHeight;
+      upperBound =
+        top + this._grid.headerHeight + this._grid.pageHeight - (r2 - c1);
+      leftBound = rightBound = c1;
+    }
+    return {
+      upperBound,
+      lowerBound,
+      leftBound,
+      rightBound
+    };
+  }
+
+  /**
+   * @override
+   * Returns the proper resize cursor type based on the region clicked
+   * Calls cursorByRegion if no resize cursor is correct
+   * @param region The current region
+   */
   cursorForHandle(region: ResizeHandle): string {
     const cursorMap = {
       top: 'ns-resize',
@@ -38,6 +83,9 @@ export class RichMouseHandler extends BasicMouseHandler {
     return this._cursor;
   }
 
+  /**
+   * Called from the cursorForHandle function to enable grab cursor by region
+   */
   cursorByRegion(): string {
     const hit = this._grid.hitTest(this._event.clientX, this._event.clientY);
     // display the grab cursor if the row/column is in the curent selection
@@ -85,6 +133,7 @@ export class RichMouseHandler extends BasicMouseHandler {
     }
     super.release();
   }
+
   handleGrabbing(): void {
     const hit = this._grid.hitTest(this._event.clientX, this._event.clientY);
     const { region, row, column } = hit;
@@ -100,31 +149,10 @@ export class RichMouseHandler extends BasicMouseHandler {
     }
 
     // get the rectangular region of the row/column our mouse clicked on
-    let [r1, r2, c1, c2] = this.getShadowRegion(region, row, column);
+    const shadowRegion = this.getShadowRegion(region, row, column);
+    let { r1, r2, c1, c2 } = shadowRegion;
 
-    // get the left and top offsets of the grid viewport
-    const { left, top } = this._grid.viewport.node.getBoundingClientRect();
-
-    // get the bounds for dragging
-    let lowerBound: number;
-    let upperBound: number;
-    let rightBound: number;
-    let leftBound: number;
-    if (region === 'column-header') {
-      lowerBound = upperBound = r1;
-      leftBound = left + this._grid.headerWidth;
-      rightBound = left + this._grid.headerWidth + this._grid.pageWidth;
-    } else if (region === 'row-header') {
-      lowerBound = top + this._grid.headerHeight;
-      upperBound = top + this._grid.headerHeight + this._grid.pageHeight;
-      leftBound = rightBound = c1;
-    }
-    const boundingRegion: IBoundingRegion = {
-      upperBound: upperBound,
-      lowerBound: lowerBound,
-      leftBound: leftBound,
-      rightBound: rightBound
-    };
+    const boundingRegion = this.computeGridBoundingRegion(region, shadowRegion);
     renderSelection(
       r1,
       r2,
@@ -163,13 +191,12 @@ export class RichMouseHandler extends BasicMouseHandler {
     if (region === 'void') {
       return;
     }
-    const type = 'move';
 
     // Override the document cursor.
     const override = Drag.overrideCursor('grabbing');
 
     this._moveData = {
-      type,
+      type: 'move',
       region,
       row,
       column,
@@ -185,7 +212,7 @@ export class RichMouseHandler extends BasicMouseHandler {
     region: DataModel.CellRegion | 'void',
     row: number,
     column: number
-  ): Array<number> {
+  ): RichMouseHandler.IShadowRegion {
     let r1: number;
     let r2: number;
     let c1: number;
@@ -222,7 +249,7 @@ export class RichMouseHandler extends BasicMouseHandler {
           this._grid.headerWidth + this._grid.bodyWidth
         );
     }
-    return [r1, r2, c1, c2];
+    return { r1, r2, c1, c2 };
   }
 
   /**
@@ -235,7 +262,7 @@ export class RichMouseHandler extends BasicMouseHandler {
   onMouseMove(grid: DataGrid, event: MouseEvent): void {
     // Fetch the press data.
     if (this._moveData) {
-      this.updateLinePos(grid, event);
+      this.updateLinePos(event);
     } else {
       super.onMouseMove(grid, event);
     }
@@ -247,34 +274,23 @@ export class RichMouseHandler extends BasicMouseHandler {
    * @param grid
    * @param event
    */
-  updateLinePos(grid: DataGrid, event: MouseEvent): void {
+  updateLinePos(event: MouseEvent): void {
     // find the region we originally clicked on.
     const { region } = this._moveData;
 
     // initialize the variables for the the rectangular column/row region
-    let [r1, r2, c1, c2] = this.getShadowRegion(
+    const shadowRegion = this.getShadowRegion(
       region,
       this._selectionIndex,
       this._selectionIndex
     );
-
-    // get the left and top offsets of the grid viewport
-    const { left, top } = this._grid.viewport.node.getBoundingClientRect();
-
-    // get the bounds for dragging
-    let lowerBound: number;
-    let upperBound: number;
-    let rightBound: number;
-    let leftBound: number;
-    if (region === 'column-header') {
-      lowerBound = upperBound = r1;
-      leftBound = left + this._grid.headerWidth;
-      rightBound = left + this._grid.headerWidth + this._grid.pageWidth;
-    } else if (region === 'row-header') {
-      lowerBound = top + this._grid.headerHeight;
-      upperBound = top + this._grid.headerHeight + this._grid.pageHeight;
-      leftBound = rightBound = c1;
-    }
+    const { r1, r2, c1, c2 } = shadowRegion;
+    const {
+      lowerBound,
+      upperBound,
+      leftBound,
+      rightBound
+    } = this.computeGridBoundingRegion(region, shadowRegion);
 
     // see if we have crossed the boundary to a neighboring row/column
     switch (region) {
@@ -288,7 +304,7 @@ export class RichMouseHandler extends BasicMouseHandler {
         } else if (event.clientX < c1) {
           // we are at the previous column, get the new region
           this._selectionIndex--;
-          [r1, r2, c1, c2] = this.getShadowRegion(
+          const { r1, c1 } = this.getShadowRegion(
             region,
             this._selectionIndex,
             this._selectionIndex
@@ -301,7 +317,7 @@ export class RichMouseHandler extends BasicMouseHandler {
           }
 
           // we are at the next column, get the new region
-          [r1, r2, c1, c2] = this.getShadowRegion(
+          const { r1, c2 } = this.getShadowRegion(
             region,
             this._selectionIndex,
             this._selectionIndex
@@ -320,7 +336,7 @@ export class RichMouseHandler extends BasicMouseHandler {
         } else if (event.clientY < r1) {
           // we are at the previous row, get the new region
           this._selectionIndex--;
-          [r1, r2, c1, c2] = this.getShadowRegion(
+          const { r1, c1 } = this.getShadowRegion(
             region,
             this._selectionIndex,
             this._selectionIndex
@@ -333,7 +349,7 @@ export class RichMouseHandler extends BasicMouseHandler {
           }
 
           // we are at the next column, get the new region
-          [r1, r2, c1, c2] = this.getShadowRegion(
+          const { r2, c1 } = this.getShadowRegion(
             region,
             this._selectionIndex,
             this._selectionIndex
@@ -461,10 +477,11 @@ export declare namespace RichMouseHandler {
   export interface IOptions {
     grid: DataGrid;
   }
-}
 
-export declare namespace RichMouseHandler {
-  export interface IOptions {
-    grid: DataGrid;
+  export interface IShadowRegion {
+    r1: number;
+    r2: number;
+    c1: number;
+    c2: number;
   }
 }
