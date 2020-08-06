@@ -63,7 +63,7 @@ export class EditorModel extends MutableDataModel {
    */
   rowCount(region: DataModel.RowRegion): number {
     if (region === 'body') {
-      return this._model.rowCount('body') + this._rowsAdded;
+      return this._model.rowCount('body') + this._rowsAdded - this._rowsAdded;
     }
     return 1;
   }
@@ -76,7 +76,7 @@ export class EditorModel extends MutableDataModel {
    */
   columnCount(region: DataModel.ColumnRegion): number {
     if (region === 'body') {
-      return this._model.columnCount('body') + this._columnsAdded;
+      return this._model.columnCount('body') + this._columnsAdded - this._columnsRemoved;
     }
     return 1;
   }
@@ -129,7 +129,7 @@ export class EditorModel extends MutableDataModel {
       return valueMap[`${row},${column}`];
     }
 
-    if (!Number.isInteger(row) || !Number.isInteger(column)) {
+    if (row < 0 || column < 0) {
       // we are on a new column or row which has no maped
       // value, so we know that the value must be empty
       return '';
@@ -189,7 +189,7 @@ export class EditorModel extends MutableDataModel {
     // Revert to the row index by region, which is what the grid expects.
     row = this._regionIndex(row, region);
 
-    // Define the grid update.
+    // Define the update for the grid.
     const gridUpdate: DataModel.ChangedArgs = {
       type: 'cells-changed',
       region,
@@ -226,6 +226,7 @@ export class EditorModel extends MutableDataModel {
     // absolute index (ie index 0 is the first row of data).
     start = this._absoluteIndex(start, region);
 
+    // Unpack values from the litestore.
     const { rowMap, columnMap } = this._litestore.getRecord({
       schema: DSVEditor.DATAMODEL_SCHEMA,
       record: DSVEditor.RECORD_ID
@@ -235,7 +236,7 @@ export class EditorModel extends MutableDataModel {
     const values = [];
     let i = 0;
     while (i < span) {
-      values.push(-rowMap.length);
+      values.push(-(this.totalRows() + this._rowsAdded));
       i++;
       this._rowsAdded++;
     }
@@ -295,6 +296,7 @@ export class EditorModel extends MutableDataModel {
     // Set up an udate object for the litestore.
     const update: DSVEditor.ModelChangedArgs = {};
 
+    // Unpack values from the litestore.
     const { columnMap, rowMap } = this._litestore.getRecord({
       schema: DSVEditor.DATAMODEL_SCHEMA,
       record: DSVEditor.RECORD_ID
@@ -303,10 +305,10 @@ export class EditorModel extends MutableDataModel {
     const columnHeaders: { [key: string]: string } = {};
     let i = 0;
     while (i < span) {
-      values.push(-columnMap.length);
+      values.push(-(this.totalColumns() + this._columnsAdded));
       columnHeaders[`0,${columnMap.length}`] = `Column ${start + i + 1}`;
       i++;
-      this._columnsAdded++;
+      this._columnsAdded++
     }
 
     // Create the splice data for the litestore.
@@ -318,9 +320,6 @@ export class EditorModel extends MutableDataModel {
 
     // Add the column update to the litestore update object.
     update.columnUpdate = columnUpdate;
-
-    // Update the column count.
-    this._columnsAdded += span;
 
     // Define the update for the grid.
     const gridUpdate: DataModel.ChangedArgs = {
@@ -365,6 +364,7 @@ export class EditorModel extends MutableDataModel {
     // absolute index (ie index 0 is the first row of data).
     start = this._absoluteIndex(start, region);
 
+    // Unpack values from the litestore.
     const { columnMap, rowMap } = this._litestore.getRecord({
       schema: DSVEditor.DATAMODEL_SCHEMA,
       record: DSVEditor.RECORD_ID
@@ -426,6 +426,7 @@ export class EditorModel extends MutableDataModel {
     // Set up an udate object for the litestore.
     const update: DSVEditor.ModelChangedArgs = {};
 
+    // Unpack values from the litestore.
     const { rowMap, columnMap } = this._litestore.getRecord({
       schema: DSVEditor.DATAMODEL_SCHEMA,
       record: DSVEditor.RECORD_ID
@@ -477,9 +478,9 @@ export class EditorModel extends MutableDataModel {
 
   /**
    *
-   * @param start the index of the first column to move
-   * @param end the index to insert the first column
-   * @param span the number of columns moving
+   * @param start the index of the first row to move
+   * @param end the index to insert the first row
+   * @param span the number of rows moving
    */
 
   moveRows(
@@ -501,6 +502,7 @@ export class EditorModel extends MutableDataModel {
     // Set up an udate object for the litestore.
     const update: DSVEditor.ModelChangedArgs = {};
 
+    // Unpack values from the litestore.
     const { rowMap, columnMap } = this._litestore.getRecord({
       schema: DSVEditor.DATAMODEL_SCHEMA,
       record: DSVEditor.RECORD_ID
@@ -602,6 +604,7 @@ export class EditorModel extends MutableDataModel {
     // Set up an udate object for the litestore.
     const update: DSVEditor.ModelChangedArgs = {};
 
+    // Unpack values from the litestore.
     const { columnMap, rowMap } = this._litestore.getRecord({
       schema: DSVEditor.DATAMODEL_SCHEMA,
       record: DSVEditor.RECORD_ID
@@ -871,7 +874,7 @@ export class EditorModel extends MutableDataModel {
           index: change.index,
           span: change.span
         };
-        this._columnsAdded -= change.span;
+        this._columnsRemoved += change.span;
         break;
       case 'rows-removed':
         update.gridUpdate = {
@@ -930,7 +933,7 @@ export class EditorModel extends MutableDataModel {
         break;
       }
       case 'columns-removed': {
-        this._columnsAdded -= change.span;
+        this._columnsRemoved += change.span;
         break;
       }
       case 'rows-inserted': {
@@ -938,7 +941,7 @@ export class EditorModel extends MutableDataModel {
         break;
       }
       case 'rows-removed': {
-        this._rowsAdded -= change.span;
+        this._rowsRemoved += change.span;
       }
     }
 
@@ -1050,21 +1053,28 @@ export class EditorModel extends MutableDataModel {
           inverseColumnMap.splice(change.index, 0, ...values);
           break;
         }
-        // case "cells-changed": {
-        //   change = changeArg.change as DataModel.CellsChangedArgs;
-        //   // trickiest case. This is when there was a clear operation. We first need to see whether
-        //   // columns were cleared or rows were cleared.
+        case "cells-changed": {
+          change = changeArg.change as DataModel.CellsChangedArgs;
+          // trickiest case. This is when there was a clear operation. We first need to see whether
+          // columns were cleared or rows were cleared.
 
-        //   // Get the columns that were presesnt at the time.
-        //   columns = changeArg.currentColumns;
-        //   // We assume that if all of the columns were cleared then this is row clear operation.
-        //   if (columns === change.columnSpan) {
-        //     // The inverse of this change is a dual operation. First, we pull out the span of values from
-        //     // the index to just beyond the current rows minus the span. Then, we
-        //   };
+          // Get the columns that were presesnt at the time.
+          columns = changeArg.currentColumns;
 
-        //   break;
-        // }
+          // We assume that if all of the columns were cleared then this is row clear operation.
+          if (columns === change.columnSpan) {
+            // The inverse of this change is a dual operation. First, grab a span of
+            values = inverseRowMap.splice(change.row, change.rowSpan, 0);
+            inverseRowMap.splice(changeArg.currentRows - change.rowSpan, 0, ...values);
+            values = inverseRowMap.splice(inverseRowMap.length - change.rowSpan, change.row + change.rowSpan)
+            break;
+          };
+          // The inverse of this change is a dual operation. First, grab a span of
+          values = inverseColumnMap.splice(change.column, change.columnSpan, 0);
+          inverseColumnMap.splice(changeArg.currentColumns - change.columnSpan, 0, ...values);
+          values = inverseColumnMap.splice(inverseColumnMap.length - change.columnSpan, change.column + change.columnSpan)
+          break;
+        }
       }
     }
 
@@ -1083,6 +1093,7 @@ export class EditorModel extends MutableDataModel {
     // absolute index (ie index 0 is the first row of data).
     start = this._absoluteIndex(start, region);
 
+    // Unpack values from the litestore.
     const { rowMap, columnMap } = this._litestore.getRecord({
       schema: DSVEditor.DATAMODEL_SCHEMA,
       record: DSVEditor.RECORD_ID
@@ -1092,9 +1103,12 @@ export class EditorModel extends MutableDataModel {
     const values = [];
     let i = 0;
     while (i < span) {
-      values.push(rowMap.length);
+      values.push(-(this.totalRows() + this._rowsAdded));
       i++;
+      this._rowsAdded++;
     }
+
+    this._rowsRemoved += span;
 
     // Set up the row splice object to update the litestore.
     const rowUpdate = {
@@ -1150,6 +1164,7 @@ export class EditorModel extends MutableDataModel {
     // Set up an udate object for the litestore.
     const update: DSVEditor.ModelChangedArgs = {};
 
+    // Unpack values from the litestore.
     const { columnMap, rowMap } = this._litestore.getRecord({
       schema: DSVEditor.DATAMODEL_SCHEMA,
       record: DSVEditor.RECORD_ID
@@ -1159,9 +1174,12 @@ export class EditorModel extends MutableDataModel {
     const values = [];
     let i = 0;
     while (i < span) {
-      values.push(columnMap.length);
+      values.push(-(this.totalColumns() + this._columnsAdded));
       i++;
+      this._columnsAdded++;
     }
+
+    this._columnsRemoved += span;
 
     // Set up the column splice object to update the litestore.
     const columnUpdate = {
@@ -1176,7 +1194,6 @@ export class EditorModel extends MutableDataModel {
     // The DataGrid is slow to process a cells-change argument with
     // a very large span, so in this instance we elect to use the "big
     // hammer".
-
     let gridUpdate: DataModel.ChangedArgs = { type: 'model-reset' };
 
     // Add the change to the litestore update object.
