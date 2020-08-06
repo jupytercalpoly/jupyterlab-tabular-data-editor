@@ -113,16 +113,10 @@ export class RichMouseHandler extends BasicMouseHandler {
     if (region === 'column-header') {
       lowerBound = upperBound = r1;
       leftBound = left + this._grid.headerWidth;
-      rightBound =
-        left + this._grid.headerWidth + this._grid.pageWidth - (c2 - c1);
+      rightBound = left + this._grid.headerWidth + this._grid.pageWidth;
     } else if (region === 'row-header') {
-      lowerBound =
-        top +
-        Math.min(
-          this._grid.pageHeight - (r2 - r1),
-          this._grid.bodyHeight + this._grid.headerHeight - (r2 - r1)
-        );
-      upperBound = top + this._grid.headerHeight;
+      lowerBound = top + this._grid.headerHeight;
+      upperBound = top + this._grid.headerHeight + this._grid.pageHeight;
       leftBound = rightBound = c1;
     }
     const boundingRegion: IBoundingRegion = {
@@ -275,12 +269,10 @@ export class RichMouseHandler extends BasicMouseHandler {
     if (region === 'column-header') {
       lowerBound = upperBound = r1;
       leftBound = left + this._grid.headerWidth;
-      rightBound =
-        left + this._grid.headerWidth + this._grid.pageWidth - (c2 - c1);
+      rightBound = left + this._grid.headerWidth + this._grid.pageWidth;
     } else if (region === 'row-header') {
       lowerBound = top + this._grid.headerHeight;
-      upperBound =
-        top + this._grid.headerHeight + this._grid.pageHeight - (r2 - r1);
+      upperBound = top + this._grid.headerHeight + this._grid.pageHeight;
       leftBound = rightBound = c1;
     }
 
@@ -303,7 +295,11 @@ export class RichMouseHandler extends BasicMouseHandler {
           );
           this._moveLine.manualPositionUpdate(c1 - 1, r1);
         } else {
-          this._selectionIndex++;
+          // check to ensure selection index stays within the bounds of the grid's columns
+          if (this._selectionIndex < this._grid.columnCount('body') - 1) {
+            this._selectionIndex++;
+          }
+
           // we are at the next column, get the new region
           [r1, r2, c1, c2] = this.getShadowRegion(
             region,
@@ -331,8 +327,12 @@ export class RichMouseHandler extends BasicMouseHandler {
           );
           this._moveLine.manualPositionUpdate(c1, r1 - 1);
         } else {
+          // check to ensure selection index stays within the bounds of the grid's rows
+          if (this._selectionIndex < this._grid.rowCount('body') - 1) {
+            this._selectionIndex++;
+          }
+
           // we are at the next column, get the new region
-          this._selectionIndex++;
           [r1, r2, c1, c2] = this.getShadowRegion(
             region,
             this._selectionIndex,
@@ -353,11 +353,6 @@ export class RichMouseHandler extends BasicMouseHandler {
   onMouseUp(grid: DataGrid, event: MouseEvent): void {
     // if move data exists, handle the move first
     if (this._moveData) {
-      let { vx, vy } = grid.mapToVirtual(event.clientX, event.clientY);
-      // Clamp the coordinates to the limits.
-      vx = Math.max(0, Math.min(vx, grid.bodyWidth - 1));
-      vy = Math.max(0, Math.min(vy, grid.bodyHeight - 1));
-
       const model = grid.dataModel as EditableDSVModel;
       const selectionModel = this._grid.selectionModel;
 
@@ -395,13 +390,12 @@ export class RichMouseHandler extends BasicMouseHandler {
         });
       }
 
-      if (this.pressData) {
-        if (
-          this.pressData.type === 'column-resize' ||
-          this.pressData.type === 'row-resize'
-        ) {
-          this._resizeSignal.emit(null);
-        }
+      if (
+        this.pressData &&
+        (this.pressData.type === 'column-resize' ||
+          this.pressData.type === 'row-resize')
+      ) {
+        this._resizeSignal.emit(null);
       }
     }
     this.release();
@@ -436,7 +430,7 @@ export class RichMouseHandler extends BasicMouseHandler {
   private _moveData: MoveData | null;
   private _rightClickSignal = new Signal<this, DataGrid.HitTestResult>(this);
   private _resizeSignal = new Signal<this, null>(this);
-  private _selectionIndex: number;
+  private _selectionIndex: number; // The index of the row/column where the move line is present
 }
 
 export type MoveData = {
