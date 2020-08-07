@@ -283,7 +283,7 @@ export class EditorModel extends MutableDataModel {
     update.gridChangeRecordUpdate = gridChangeRecordUpdate;
 
     // Emit the update object for the grid & editor.
-    this._handleEmits(update);
+    this.emitChanged(update.gridUpdate);
 
     return update;
   }
@@ -716,7 +716,7 @@ export class EditorModel extends MutableDataModel {
     region: DataModel.CellRegion,
     selection: SelectionModel.Selection
   ): DSVEditor.ModelChangedArgs {
-    // Set up the update object.
+    // Set up an udate object for the litestore.
     let update: DSVEditor.ModelChangedArgs = {};
 
     // Unpack the selection.
@@ -773,7 +773,9 @@ export class EditorModel extends MutableDataModel {
     column: number,
     rowEnd: number,
     columnEnd: number
-  ): void {
+  ): DSVEditor.ModelChangedArgs {
+    // Set up the update object for the litestore.
+    const update: DSVEditor.ModelChangedArgs = {};
     // we use the value map to redefine values within the cut as ''. Need to map
     // to the static values.
     // copy the values
@@ -787,7 +789,9 @@ export class EditorModel extends MutableDataModel {
       .map(elem => new Array(columnSpan).fill(''));
 
     // set the new data.
-    this.setData('body', row, column, values, rowSpan, columnSpan);
+    this.setData('body', row, column, values, rowSpan, columnSpan, update);
+
+    return update;
   }
 
   copy(
@@ -816,7 +820,10 @@ export class EditorModel extends MutableDataModel {
     row: number,
     column: number,
     data: string | null = null
-  ): void {
+  ): DSVEditor.ModelChangedArgs {
+    // Set up an udate object for the litestore.
+    const update: DSVEditor.ModelChangedArgs = {};
+
     // see if we have stored it in our local array
     if (this._clipboard.length === 0) {
       if (data !== null) {
@@ -849,11 +856,13 @@ export class EditorModel extends MutableDataModel {
       column,
       [...this._clipboard],
       rowSpan,
-      columnSpan
+      columnSpan,
+      update
     );
+    return update;
   }
 
-  undo(change: DataModel.ChangedArgs): DSVEditor.ModelChangedArgs {
+  emitOppositeChange(change: DataModel.ChangedArgs): void {
     // Bail early if there is no change.
     if (!change) {
       return;
@@ -931,20 +940,9 @@ export class EditorModel extends MutableDataModel {
         };
         break;
     }
-
-    // Set declaration that we are not using the litestore (as the undo has already been made).
-    update.useLitestore = false;
-
-    return update;
   }
 
-  redo(change: DataModel.ChangedArgs): DSVEditor.ModelChangedArgs {
-    // Set up an udate object for the litestore.
-    const update: DSVEditor.ModelChangedArgs = {};
-
-    // Add the change to the grid update
-    update.gridUpdate = change;
-
+  emitCurrentChange(change: DataModel.ChangedArgs): void {
     switch (change.type) {
       case 'columns-inserted': {
         this._columnsAdded += change.span;
@@ -962,9 +960,7 @@ export class EditorModel extends MutableDataModel {
         this._rowsRemoved += change.span;
       }
     }
-
-    // Emit the change.
-    return update;
+    this._onChangeSignal.emit(change);
   }
 
   updateString(): void {
@@ -1192,7 +1188,7 @@ export class EditorModel extends MutableDataModel {
     };
     update.gridChangeRecordUpdate = gridChangeRecordUpdate;
     // Emit the change.
-    this._handleEmits(update);
+    this.emitChanged(update.gridUpdate);
 
     return update;
   }
@@ -1266,7 +1262,7 @@ export class EditorModel extends MutableDataModel {
     update.gridChangeRecordUpdate = gridChangeRecordUpdate;
 
     // Emit the change.
-    this._handleEmits(update);
+    this.emitChanged(update.gridUpdate);
 
     return update;
   }
@@ -1283,22 +1279,6 @@ export class EditorModel extends MutableDataModel {
    */
   private _regionIndex(row: number, region: DataModel.CellRegion) {
     return region === 'column-header' ? 0 : row - 1;
-  }
-
-  private _handleEmits(update: DSVEditor.ModelChangedArgs): void {
-    // Emits the grid update to the grid.
-    if (update.gridUpdate) {
-      this.emitChanged(update.gridUpdate);
-    }
-
-    // An undefined useLitestore property will automatically be labeled
-    // as true.
-    if (update.useLitestore === undefined) {
-      update.useLitestore = true;
-    }
-
-    // emit the update to the Editor for updating the litestore.
-    this._onChangeSignal.emit(update);
   }
 
   private _receiveModelSignal(
@@ -1374,7 +1354,7 @@ export class EditorModel extends MutableDataModel {
     update.gridChangeRecordUpdate = gridChangeRecordUpdate;
 
     // Emit the change.
-    this._handleEmits(update);
+    this.emitChanged(update.gridUpdate);
   }
 
   // private _invertUpdate(type: MapUpdate, update: ListField.Splice<number>, map: ListField.Value<number>): ListField.Update<number> {

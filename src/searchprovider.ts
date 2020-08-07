@@ -124,7 +124,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
    */
   async replaceCurrentMatch(
     newText: string,
-    useLitestore = true
+    update?: DSVEditor.ModelChangedArgs
   ): Promise<boolean> {
     const { line, column } = this._target.content.searchService.currentMatch;
     await this._target.content.dataModel.setData(
@@ -134,7 +134,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
       newText,
       1,
       1,
-      useLitestore
+      update
     );
     this.selectSingleCell();
     return true;
@@ -155,6 +155,9 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
 
     litestore.beginTransaction();
 
+    // Set up the update object for the litestore.
+    const update: DSVEditor.ModelChangedArgs = {};
+
     // replace every match individually
     while (this.matches.length > 0) {
       // when we have one match left, get the last row and column being edited
@@ -162,7 +165,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
         endRow = searchService.currentMatch.line;
         endColumn = searchService.currentMatch.column;
       }
-      this.replaceCurrentMatch(newText, false);
+      this.replaceCurrentMatch(newText, update);
     }
 
     const gridUpdate: DataModel.ChangedArgs = {

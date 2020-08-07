@@ -392,11 +392,9 @@ export class DSVEditor extends Widget {
     emitter: EditorModel,
     args: DSVEditor.ModelChangedArgs
   ): void {
-    if (args.useLitestore) {
-      this._litestore.beginTransaction();
-      this.updateLitestore(args);
-      this._litestore.endTransaction();
-    }
+    this._litestore.beginTransaction();
+    this.updateLitestore(args);
+    this._litestore.endTransaction();
   }
 
   /**
@@ -429,19 +427,26 @@ export class DSVEditor extends Widget {
       c1 = selection.c1;
       c2 = selection.c2;
     }
+    // Set up the update object for the litestore.
+    let update: DSVEditor.ModelChangedArgs | null = null;
 
     switch (type) {
       case 'insert-row-above': {
-        this.dataModel.addRows(this._region, this._row);
+        update = this.dataModel.addRows(this._region, this._row);
+
+        // Add the type property so we can differentiate an insert above from an insert below.
+        update.type = type;
         break;
       }
       case 'insert-row-below': {
-        this.dataModel.addRows(this._region, this._row + 1);
-
         if (!selection) {
           break;
         }
-        this.dataModel.addRow(this._row + 1, type);
+        update = this.dataModel.addRows(this._region, this._row + 1);
+
+        // Add the type property so that we can differentiate insert above insert below.
+        update.type = type;
+
         // move the selection down a row to account for the new row being inserted
         selectionModel.select({
           r1: r1 + 1,
@@ -456,15 +461,17 @@ export class DSVEditor extends Widget {
       }
       case 'insert-column-left': {
         this.dataModel.addColumns(this._region, this._column);
+
+        // type property distinguishes between insert left and insert right.
+        update.type = type;
         break;
       }
       case 'insert-column-right': {
-        this.dataModel.addColumns(this._region, this._column + 1);
-
+        // Bail early if no selection was made.
         if (!selection) {
           break;
         }
-        this.dataModel.addColumn(this._column + 1, type);
+        this.dataModel.addColumns(this._region, this._column + 1);
 
         // move the selection down a row to account for the new column being inserted
         selectionModel.select({
@@ -487,27 +494,44 @@ export class DSVEditor extends Widget {
         break;
       }
       case 'cut-cells':
+        // Copy to the OS clipboard.
         this._grid.copyToClipboard();
-        this.dataModel.cut(this._region, r1, c1, r2, c2);
+
+        // Cut the cell selection.
+        update = this.dataModel.cut(this._region, r1, c1, r2, c2);
+
+        // Type parameter distinguishes between cut/paste.
+        update.type = type;
         break;
       case 'copy-cells': {
+        // Copy to the OS clipboard.
         this._grid.copyToClipboard();
+
+        // Make a local copy of the cells.
         this.dataModel.copy(this._region, r1, c1, r2, c2);
         break;
       }
       case 'paste-cells': {
         // we will determine the location based on the current selection
         const { r1, r2, c1, c2 } = this.getSelectedRange();
+
+        // Set row and column to the least row/column.
         const row = Math.min(r1, r2);
         const column = Math.min(c1, c2);
-        this.dataModel.paste(this._region, row, column);
+
+        // Paste the cells in the region.
+        update = this.dataModel.paste(this._region, row, column);
+
+        // Add type parameter to distinguish between cut/paste.
+        update.type = type;
+
+        // By default, upper left cell get's re-edited, so we need to cancel.
         this._cancelEditing();
         break;
       }
       case 'clear-contents': {
-        // need to create a transaction since we are making multiple calls to setData()
         const selection = this.getSelectedRange();
-        this.dataModel.clearContents(this._region, selection);
+        update = this.dataModel.clearContents(this._region, selection);
         break;
       }
       case 'undo': {
@@ -516,19 +540,12 @@ export class DSVEditor extends Widget {
           return;
         }
 
-        const { gridChange: change } = this._litestore.getRecord({
+        const { gridChange, selection } = this._litestore.getRecord({
           schema: DSVEditor.DATAMODEL_SCHEMA,
           record: DSVEditor.RECORD_ID
         });
 
-        // undo first and then get the model data
-        this._litestore.undo();
-        const { gridChange } = this._litestore.getRecord({
-          schema: DSVEditor.DATAMODEL_SCHEMA,
-          record: DSVEditor.RECORD_ID
-        });
-
-        // reselect previous selection
+        // reselect the previous selection.
         const { r1, r2, c1, c2 } = selection;
         this._grid.selectionModel.select({
           r1,
@@ -539,8 +556,12 @@ export class DSVEditor extends Widget {
           cursorColumn: c1,
           clear: 'all'
         });
-        // undo changes in the model
-        this.dataModel.undo(gridChange);
+
+        // undo first and then get the model data
+        this._litestore.undo();
+
+        // Have the model emit the opposite change to the Grid.
+        this.dataModel.emitOppositeChange(gridChange);
         break;
       }
       case 'redo': {
@@ -548,23 +569,52 @@ export class DSVEditor extends Widget {
         if (this._litestore.transactionStore.redoStack.length === 0) {
           return;
         }
+
+        // Redo first, then get the new selection and the new grid change.
         this._litestore.redo();
-        const { gridChange: change } = this._litestore.getRecord({
+        const { gridChange, selection, type } = this._litestore.getRecord({
           schema: DSVEditor.DATAMODEL_SCHEMA,
           record: DSVEditor.RECORD_ID
         });
 
-        // reselect the cell that was edited
-        if (change && change.type === 'cells-changed') {
-          const { row, column } = change;
-          this.selectSingleCell(row, column);
+        let { r1, r2, c1, c2 } = selection;
+        // handle special cases for selection
+        if (type === 'insert-row-below') {
+          r1 += 1;
+          r2 += 1;
+        } else if (type === 'insert-column-right') {
+          c1 += 1;
+          c2 += 1;
+        } else if (gridChange.type === 'rows-moved') {
+          r1 = gridChange.destination;
+          r2 = gridChange.destination;
+        } else if (gridChange.type === 'columns-moved') {
+          c1 = gridChange.destination;
+          c2 = gridChange.destination;
         }
-        this.dataModel.redo(change);
+
+        // Make the new selection.
+        this._grid.selectionModel.select({
+          r1,
+          r2,
+          c1,
+          c2,
+          cursorRow: r1,
+          cursorColumn: c1,
+          clear: 'all'
+        });
+        // Have the data model emit the grid change to the grid.
+        this.dataModel.emitCurrentChange(gridChange);
         break;
       }
       case 'save':
         this._save();
         break;
+    }
+    if (update) {
+      this._litestore.beginTransaction();
+      this.updateLitestore(update);
+      this._litestore.endTransaction();
     }
   }
 
@@ -574,6 +624,7 @@ export class DSVEditor extends Widget {
    * @param change The change args for the Datagrid (may be null)
    */
   public updateLitestore(update?: DSVEditor.ModelChangedArgs): void {
+    const selection = this._grid.selectionModel.currentSelection();
     this._litestore.updateRecord(
       {
         schema: DSVEditor.DATAMODEL_SCHEMA,
@@ -585,7 +636,9 @@ export class DSVEditor extends Widget {
         valueMap: update.valueUpdate || null,
         gridChange: update.gridUpdate || null,
         gridChangeRecord:
-          update.gridChangeRecordUpdate || DSVEditor.NULL_CHANGE_SPLICE
+          update.gridChangeRecordUpdate || DSVEditor.NULL_CHANGE_SPLICE,
+        selection: selection,
+        type: update.type
       }
     );
   }
@@ -701,7 +754,7 @@ export namespace DSVEditor {
     valueUpdate?: MapField.Update<string>;
     gridUpdate?: DataModel.ChangedArgs;
     gridChangeRecordUpdate?: ListField.Update<GridChangeRecordArgs>;
-    useLitestore?: boolean;
+    type?: string;
   };
 
   export const SCHEMA_ID = 'datamodel';
@@ -718,7 +771,10 @@ export namespace DSVEditor {
         value: { type: 'model-reset' }
       }),
       gridChangeRecord: Fields.List<GridChangeRecordArgs>(),
-      useLitestore: Fields.Boolean({ value: true })
+      selection: Fields.Register<SelectionModel.Selection>({
+        value: null
+      }),
+      type: Fields.String()
     }
   };
   export const NULL_NUMS: number[] = [];
