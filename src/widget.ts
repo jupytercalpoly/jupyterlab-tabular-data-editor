@@ -72,7 +72,7 @@ export class DSVEditor extends Widget {
     };
     const handler = new RichMouseHandler({ grid: this._grid });
     this._grid.mouseHandler = handler;
-    handler.rightClickSignal.connect(this._onRightClick, this);
+    handler.clickSignal.connect(this._onMouseClick, this);
     handler.resizeSignal.connect(this._onResize, this);
     layout.addWidget(this._grid);
 
@@ -487,10 +487,12 @@ export class DSVEditor extends Widget {
         break;
       }
       case 'cut-cells':
+        this._grid.copyToClipboard();
+        this.dataModel.cut(this._region, r1, c1, r2, c2);
+        break;
       case 'copy-cells': {
         this._grid.copyToClipboard();
-        const { r1, c1, r2, c2 } = this.getSelectedRange();
-        this.dataModel.cut(this._region, r1, c1, r2, c2);
+        this.dataModel.copy(this._region, r1, c1, r2, c2);
         break;
       }
       case 'paste-cells': {
@@ -499,6 +501,7 @@ export class DSVEditor extends Widget {
         const row = Math.min(r1, r2);
         const column = Math.min(c1, c2);
         this.dataModel.paste(this._region, row, column);
+        this._cancelEditing();
         break;
       }
       case 'clear-contents': {
@@ -626,9 +629,14 @@ export class DSVEditor extends Widget {
     const row = Math.min(r1, r2);
     const column = Math.min(c1, c2);
     this.dataModel.paste(this._region, row, column, copiedText);
+    this._cancelEditing();
   }
 
-  private _onRightClick(
+  private _cancelEditing(): void {
+    this._grid.editorController.cancel();
+  }
+
+  private _onMouseClick(
     emitter: RichMouseHandler,
     hit: DataGrid.HitTestResult
   ): void {

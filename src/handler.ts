@@ -22,8 +22,8 @@ export class RichMouseHandler extends BasicMouseHandler {
     return this._resizeSignal;
   }
 
-  get rightClickSignal(): Signal<this, DataGrid.HitTestResult> {
-    return this._rightClickSignal;
+  get clickSignal(): Signal<this, DataGrid.HitTestResult> {
+    return this._clickSignal;
   }
 
   /**
@@ -121,7 +121,6 @@ export class RichMouseHandler extends BasicMouseHandler {
    * @param event - The mouse down event of interest.
    */
   onMouseDown(grid: DataGrid, event: MouseEvent): void {
-    this._event = event;
     super.onMouseDown(grid, event);
     if (this._cursor === 'grab') {
       this._cursor = 'grabbing';
@@ -376,6 +375,10 @@ export class RichMouseHandler extends BasicMouseHandler {
    * @param event
    */
   onMouseUp(grid: DataGrid, event: MouseEvent): void {
+    // emit the current mouse position to the Editor
+    this._event = event;
+    const hit = grid.hitTest(event.clientX, event.clientY);
+    this._clickSignal.emit(hit);
     // if move data exists, handle the move first
     if (this._moveData) {
 
@@ -436,7 +439,7 @@ export class RichMouseHandler extends BasicMouseHandler {
   onContextMenu(grid: DataGrid, event: MouseEvent): void {
     const { clientX, clientY } = event;
     const hit = grid.hitTest(clientX, clientY);
-    this._rightClickSignal.emit(hit);
+    this._clickSignal.emit(hit);
 
     // if the right click is in the current selection, return
     if (
@@ -452,7 +455,7 @@ export class RichMouseHandler extends BasicMouseHandler {
   private _event: MouseEvent;
   private _cursor: string | null;
   private _moveData: MoveData | null;
-  private _rightClickSignal = new Signal<this, DataGrid.HitTestResult>(this);
+  private _clickSignal = new Signal<this, DataGrid.HitTestResult>(this);
   private _resizeSignal = new Signal<this, null>(this);
   private _selectionIndex: number; // The index of the row/column where the move line is present
 }
