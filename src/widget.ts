@@ -297,6 +297,7 @@ export class DSVEditor extends Widget {
 
   /**
    * Create the model for the grid.
+   * TODO: is there a reason we can't just do this once in the constructor?
    */
   protected _updateGrid(): void {
     const delimiter = this.delimiter;
@@ -404,6 +405,38 @@ export class DSVEditor extends Widget {
     this.dataModel.updateString();
     this.context.model.fromString(this.dataModel.model.rawData);
     this.context.save();
+
+    // Do a full litestore reset.
+    this._litestore = new Litestore({
+      id: 0,
+      schemas: [DSVEditor.DATAMODEL_SCHEMA]
+    });
+    // Define the initial update object for the litestore.
+    const update: DSVEditor.ModelChangedArgs = {};
+
+    // Define the initial state of the row and column map.
+    const rowUpdate = {
+      index: 0,
+      remove: 0,
+      values: toArray(range(0, this.dataModel.totalRows()))
+    };
+    const columnUpdate = {
+      index: 0,
+      remove: 0,
+      values: toArray(range(0, this.dataModel.totalColumns()))
+    };
+
+    // Add the map updates to the update object.
+    update.rowUpdate = rowUpdate;
+    update.columnUpdate = columnUpdate;
+
+    // set inital status of litestore
+    this._litestore.beginTransaction();
+    this.updateLitestore(update);
+    this._litestore.endTransaction();
+
+    // Give the datamodel it's litestore.
+    this.dataModel.litestore = this._litestore;
   }
 
   // private _cancelEditing(emitter: EditorModel): void {
@@ -460,7 +493,7 @@ export class DSVEditor extends Widget {
         break;
       }
       case 'insert-column-left': {
-        this.dataModel.addColumns(this._region, this._column);
+        update = this.dataModel.addColumns(this._region, this._column);
 
         // type property distinguishes between insert left and insert right.
         update.type = type;
@@ -471,7 +504,7 @@ export class DSVEditor extends Widget {
         if (!selection) {
           break;
         }
-        this.dataModel.addColumns(this._region, this._column + 1);
+        update = this.dataModel.addColumns(this._region, this._column + 1);
 
         // move the selection down a row to account for the new column being inserted
         selectionModel.select({
@@ -486,11 +519,11 @@ export class DSVEditor extends Widget {
         break;
       }
       case 'remove-row': {
-        this.dataModel.removeRows(this._region, this._row);
+        update = this.dataModel.removeRows(this._region, this._row);
         break;
       }
       case 'remove-column': {
-        this.dataModel.removeColumns(this._region, this._column);
+        update = this.dataModel.removeColumns(this._region, this._column);
         break;
       }
       case 'cut-cells':

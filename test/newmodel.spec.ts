@@ -11,6 +11,8 @@ function updateLitestore(
   model: EditorModel,
   update?: DSVEditor.ModelChangedArgs
 ): void {
+  // const selection = this._grid.selectionModel.currentSelection();
+
   model.litestore.updateRecord(
     {
       schema: DSVEditor.DATAMODEL_SCHEMA,
@@ -22,7 +24,8 @@ function updateLitestore(
       valueMap: update.valueUpdate || null,
       gridChange: update.gridUpdate || null,
       gridChangeRecord:
-        update.gridChangeRecordUpdate || DSVEditor.NULL_CHANGE_SPLICE
+        update.gridChangeRecordUpdate || DSVEditor.NULL_CHANGE_SPLICE,
+      type: update.type || null
     }
   );
 }
@@ -183,6 +186,7 @@ describe('Serialization', () => {
       schema: DSVEditor.DATAMODEL_SCHEMA,
       record: DSVEditor.RECORD_ID
     });
+    console.log(valueMap);
 
     // Check that the valueMap was properly updated.
     expect(valueMap['1,0']).toBe('hello');
@@ -221,15 +225,6 @@ describe('Serialization', () => {
       return row;
     });
 
-    // Move macro update.
-    let moveUpdate: DSVEditor.ModelChangedArgs = {};
-    moveUpdate = model.moveColumns('body', 0, 1, 1);
-    model.litestore.beginTransaction();
-    updateLitestore(model, moveUpdate);
-    model.litestore.endTransaction();
-
-    refMatrix = refMatrix.map(row => [row[1], row[0]]);
-
     // Clear macro update.
     let clearUpdate: DSVEditor.ModelChangedArgs = {};
     clearUpdate = model.clearContents('row-header', {
@@ -250,7 +245,7 @@ describe('Serialization', () => {
       record: DSVEditor.RECORD_ID
     });
     expect(rowMap.slice()).toStrictEqual([0, 1, -5, 3, -4]);
-    expect(columnMap.slice()).toStrictEqual([1, 0]);
+    expect(columnMap.slice()).toStrictEqual([0, 1]);
 
     // Make the comparison.
     model.updateString();

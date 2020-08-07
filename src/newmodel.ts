@@ -167,14 +167,45 @@ export class EditorModel extends MutableDataModel {
     const valueUpdate: { [key: string]: string } = {};
 
     if (update === null) {
+      // TODO Feels like this function does too much. Can we have this if statement be
+      // the only thing handled by setData and then the else handled by a different function?
       // Initialize an empty update if we are not provided with one.
       update = {};
       row = rowMap[row];
       column = columnMap[column];
 
+      // Create the value update
+      valueUpdate[`${row},${column}`] = values;
+
       // Add the valueMap update to the Litestore update.
       update.valueUpdate = valueUpdate;
+
+      // Revert to the row index by region, which is what the grid expects.
+      row = this._regionIndex(row, region);
+
+      // Define the update for the grid.
+      const gridUpdate: DataModel.ChangedArgs = {
+        type: 'cells-changed',
+        region,
+        row,
+        column,
+        rowSpan,
+        columnSpan
+      };
+
+      // Add the grid update to the liteStore update.
+      update.gridUpdate = gridUpdate;
+
+      // Emit the change to the Editor.
+      this._onChangeSignal.emit(update);
+
+      // Emit the change to the grid.
+      this.emitChanged(update.gridUpdate);
+
+      return true;
     } else {
+      // If it is a singleton, coerce it into an array.
+      values = Array.isArray(values) ? values : [[values]];
       // set up a loop to go through each value.
       let currentRow: number;
       let currentColumn: number;
@@ -190,24 +221,28 @@ export class EditorModel extends MutableDataModel {
 
       // Add the valueMap update to the Litestore update.
       update.valueUpdate = valueUpdate;
+
+      // Revert to the row index by region, which is what the grid expects.
+      row = this._regionIndex(row, region);
+
+      // Define the update for the grid.
+      const gridUpdate: DataModel.ChangedArgs = {
+        type: 'cells-changed',
+        region,
+        row,
+        column,
+        rowSpan,
+        columnSpan
+      };
+
+      // Add the grid update to the liteStore update.
+      update.gridUpdate = gridUpdate;
+
+      // Emit the change to the grid.
+      this.emitChanged(update.gridUpdate);
+
+      return true;
     }
-    // Revert to the row index by region, which is what the grid expects.
-    row = this._regionIndex(row, region);
-
-    // Define the update for the grid.
-    const gridUpdate: DataModel.ChangedArgs = {
-      type: 'cells-changed',
-      region,
-      row,
-      column,
-      rowSpan,
-      columnSpan
-    };
-
-    // Add the grid update to the liteStore update.
-    update.gridUpdate = gridUpdate;
-
-    return true;
   }
 
   /**
@@ -316,6 +351,9 @@ export class EditorModel extends MutableDataModel {
       this._columnsAdded++;
     }
 
+    // Add the column headers as the value update.
+    update.valueUpdate = columnHeaders;
+
     // Create the splice data for the litestore.
     const columnUpdate = {
       index: start,
@@ -351,6 +389,9 @@ export class EditorModel extends MutableDataModel {
       values: [updateArgs]
     };
     update.gridChangeRecordUpdate = gridChangeRecordUpdate;
+
+    // Emit the change to the grid.
+    this.emitChanged(update.gridUpdate);
 
     return update;
   }
@@ -421,6 +462,9 @@ export class EditorModel extends MutableDataModel {
     };
     update.gridChangeRecordUpdate = gridChangeRecordUpdate;
 
+    // Emit the change to the grid.
+    this.emitChanged(update.gridUpdate);
+
     // return the update object.
     return update;
   }
@@ -484,7 +528,9 @@ export class EditorModel extends MutableDataModel {
     };
     update.gridChangeRecordUpdate = gridChangeRecordUpdate;
 
-    // Emit the change.
+    // Emit the change to the grid.
+    this.emitChanged(update.gridUpdate);
+
     return update;
   }
 
@@ -556,8 +602,13 @@ export class EditorModel extends MutableDataModel {
     };
     update.gridChangeRecordUpdate = gridChangeRecordUpdate;
 
-    // Emit the change.
-    return update;
+    // Emit the change to the grid.
+    this.emitChanged(update.gridUpdate);
+
+    // Emit the change to the Editor
+    // TODO: I think it would be better if we refactored so that we were returning
+    // an update object.
+    this._onChangeSignal.emit(update);
   }
 
   rowMapSplice(
@@ -654,8 +705,12 @@ export class EditorModel extends MutableDataModel {
     };
     update.gridChangeRecordUpdate = gridChangeRecordUpdate;
 
-    // Emit the change.
-    return update;
+    // Emit the change to the grid.
+    this.emitChanged(update.gridUpdate);
+
+    // TODO: I think it would be better if we refactored so that we were returning
+    // an update object.
+    this._onChangeSignal.emit(update);
   }
 
   columnMapSplice(
@@ -869,14 +924,16 @@ export class EditorModel extends MutableDataModel {
     }
 
     // Set up an udate object for the litestore.
-    const update: DSVEditor.ModelChangedArgs = {};
+    let gridUpdate: DataModel.ChangedArgs;
 
     // submit a signal to the DataGrid based on the change.
     switch (change.type) {
+      case 'model-reset': {
+        gridUpdate = { type: 'model-reset' };
+        break;
+      }
       case 'cells-changed':
-        // add the visual element of reselecting the cell where the change happened.
-
-        update.gridUpdate = {
+        gridUpdate = {
           type: 'cells-changed',
           region: 'body',
           row: change.row,
@@ -886,16 +943,16 @@ export class EditorModel extends MutableDataModel {
         };
         break;
       case 'rows-inserted':
-        update.gridUpdate = {
+        gridUpdate = {
           type: 'rows-removed',
           region: 'body',
           index: change.index,
           span: change.span
         };
-        this._rowsRemoved += update.gridUpdate.span;
+        this._rowsRemoved += gridUpdate.span;
         break;
       case 'columns-inserted':
-        update.gridUpdate = {
+        gridUpdate = {
           type: 'columns-removed',
           region: 'body',
           index: change.index,
@@ -904,25 +961,25 @@ export class EditorModel extends MutableDataModel {
         this._columnsRemoved += change.span;
         break;
       case 'rows-removed':
-        update.gridUpdate = {
+        gridUpdate = {
           type: 'rows-inserted',
           region: 'body',
           index: change.index,
           span: change.span
         };
-        this._rowsAdded += update.gridUpdate.span;
+        this._rowsAdded += gridUpdate.span;
         break;
       case 'columns-removed':
-        update.gridUpdate = {
+        gridUpdate = {
           type: 'columns-inserted',
           region: 'body',
           index: change.index,
           span: change.span
         };
-        this._columnsAdded += update.gridUpdate.span;
+        this._columnsAdded += gridUpdate.span;
         break;
       case 'rows-moved':
-        update.gridUpdate = {
+        gridUpdate = {
           type: 'rows-moved',
           region: 'body',
           index: change.destination,
@@ -931,7 +988,7 @@ export class EditorModel extends MutableDataModel {
         };
         break;
       case 'columns-moved':
-        update.gridUpdate = {
+        gridUpdate = {
           type: 'columns-moved',
           region: 'body',
           index: change.destination,
@@ -940,6 +997,7 @@ export class EditorModel extends MutableDataModel {
         };
         break;
     }
+    this.emitChanged(gridUpdate);
   }
 
   emitCurrentChange(change: DataModel.ChangedArgs): void {
@@ -1435,7 +1493,7 @@ export class EditorModel extends MutableDataModel {
     let nextSlice: number[] = [];
     let delimiterReps = 0;
     while (i < columnMap.length) {
-      while (!Number.isInteger(columnMap[i])) {
+      while (columnMap[i] < 0) {
         i++;
         delimiterReps++;
       }
@@ -1470,7 +1528,7 @@ export class EditorModel extends MutableDataModel {
     // initialize a callback for the map method.
     const mapper = (elem: any, index: number) => {
       const row = rowMap[index];
-      if (!Number.isInteger(row)) {
+      if (row < 0) {
         return this._blankRow(rowMap, columnMap, index, model);
       }
       let str = buffers[0];
@@ -1522,11 +1580,7 @@ export class EditorModel extends MutableDataModel {
     row: number,
     model: DSVModel
   ): string {
-    const rows = rowMap.length;
-    if (row + 1 === rows) {
-      return model.rowDelimiter + model.delimiter.repeat(columnMap.length - 1);
-    }
-    return model.delimiter.repeat(columnMap.length - 1) + model.rowDelimiter;
+    return model.delimiter.repeat(columnMap.length - 1);
   }
 
   private _peformMicroSlice(
