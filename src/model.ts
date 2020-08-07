@@ -764,12 +764,15 @@ export class EditableDSVModel extends MutableDataModel {
     // Emits the updates to the DataModel to the DataGrid for rerender
     this.emitChanged(change);
     // Emits the updated raw data and change args to the CSVViewer
-    this._onChangeSignal.emit({
-      data: this._dsvModel.rawData.slice(this.colHeaderLength),
-      change,
-      useLitestore,
-      type
-    });
+
+    // Deferred fixing this because of the new model
+    // this._onChangeSignal.emit({
+    //
+    //   data: this._dsvModel.rawData.slice(this.colHeaderLength),
+    //   change,
+    //   useLitestore,
+    //   type
+    // });
   }
 
   sliceOut(
