@@ -15,6 +15,8 @@ import {
 } from '@jupyterlab/apputils';
 import { IDocumentWidget } from '@jupyterlab/docregistry';
 import { ISearchProviderRegistry } from '@jupyterlab/documentsearch';
+import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
+import { ILauncher } from '@jupyterlab/launcher';
 import { /*IEditMenu,*/ IMainMenu } from '@jupyterlab/mainmenu';
 import {
   undoIcon,
@@ -22,7 +24,8 @@ import {
   cutIcon,
   copyIcon,
   pasteIcon,
-  saveIcon
+  saveIcon,
+  spreadsheetIcon
 } from '@jupyterlab/ui-components';
 import { DataGrid } from '@lumino/datagrid';
 import { EditableCSVViewer, EditableCSVViewerFactory } from './widget';
@@ -41,12 +44,20 @@ const extension: JupyterFrontEndPlugin<void> = {
   id: 'jupyterlab-tabular-data-editor',
   autoStart: true,
   activate: activateCsv,
-  requires: [],
-  optional: [ILayoutRestorer, IThemeManager, IMainMenu, ISearchProviderRegistry]
+  requires: [IFileBrowserFactory],
+  optional: [
+    ILauncher,
+    ILayoutRestorer,
+    IThemeManager,
+    IMainMenu,
+    ISearchProviderRegistry
+  ]
 };
 
 function activateCsv(
   app: JupyterFrontEnd,
+  browserFactory: IFileBrowserFactory,
+  launcher: ILauncher | null,
   restorer: ILayoutRestorer | null,
   themeManager: IThemeManager | null,
   mainMenu: IMainMenu | null,
@@ -126,7 +137,11 @@ function activateCsv(
     searchregistry.register('csv', CSVSearchProvider);
   }
 
-  addCommands(app, tracker);
+  addCommands(app, tracker, browserFactory);
+
+  if (launcher) {
+    launcher.add({ command: CommandIDs.createNewCSV });
+  }
 }
 
 /*
@@ -134,13 +149,40 @@ Creates commands, adds them to the context menu, and adds keybindings for common
 */
 function addCommands(
   app: JupyterFrontEnd,
-  tracker: WidgetTracker<IDocumentWidget<EditableCSVViewer>>
+  tracker: WidgetTracker<IDocumentWidget<EditableCSVViewer>>,
+  browserFactory: IFileBrowserFactory
 ): void {
   const { commands } = app;
   const GLOBAL_SELECTOR = '.jp-CSVViewer-grid';
   const BODY_SELECTOR = '.jp-background';
   const COLUMN_HEADER_SELECTOR = '.jp-column-header';
   const ROW_HEADER_SELECTOR = '.jp-row-header';
+
+  commands.addCommand(CommandIDs.createNewCSV, {
+    label: args => (args['isPalette'] ? 'New CSV File' : 'CSV File'),
+    caption: 'Create a new CSV file',
+    icon: args => (args['isPalette'] ? null : spreadsheetIcon),
+    execute: async args => {
+      // Get the directory in which the CSV file must be created;
+      // otherwise take the current filebrowser directory
+      const cwd = args['cwd'] || browserFactory.defaultBrowser.model.path;
+
+      // Create a new untitled csv file
+      const model = await commands.execute('docmanager:new-untitled', {
+        path: cwd,
+        type: 'file',
+        ext: 'csv'
+      });
+
+      // Open the newly created file with the Tabular Data Editor
+      await commands.execute('docmanager:open', {
+        path: model.path,
+        factory: FACTORY_CSV
+      });
+
+      return commands.execute(CommandIDs.insertColumnRight);
+    }
+  });
 
   commands.addCommand(CommandIDs.insertRowAbove, {
     label: 'Insert Row Above',
@@ -459,6 +501,7 @@ namespace Private {
 }
 
 export const CommandIDs: { [key: string]: string } = {
+  createNewCSV: 'tde-create-new-csv',
   insertColumnLeft: 'tde:insert-column-left',
   insertColumnRight: 'tde:insert-column-right',
   insertRowAbove: 'tde:insert-row-above',
