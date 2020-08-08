@@ -824,19 +824,19 @@ export class EditorModel extends MutableDataModel {
 
   cut(
     region: DataModel.CellRegion,
-    row: number,
-    column: number,
-    rowEnd: number,
-    columnEnd: number
+    startRow: number,
+    startColumn: number,
+    endRow: number,
+    endColumn: number
   ): DSVEditor.ModelChangedArgs {
     // Set up the update object for the litestore.
     const update: DSVEditor.ModelChangedArgs = {};
     // we use the value map to redefine values within the cut as ''. Need to map
     // to the static values.
     // copy the values
-    const rowSpan = Math.abs(row - rowEnd) + 1;
-    const columnSpan = Math.abs(column - columnEnd) + 1;
-    this.copy('body', row, column, rowSpan, columnSpan);
+    this.copy('body', startRow, startColumn, endRow, endColumn);
+    const rowSpan = Math.abs(startRow - endRow) + 1;
+    const columnSpan = Math.abs(startColumn - endColumn) + 1;
 
     // Fill in the new blank values.
     const values = new Array(rowSpan)
@@ -844,28 +844,39 @@ export class EditorModel extends MutableDataModel {
       .map(elem => new Array(columnSpan).fill(''));
 
     // set the new data.
-    this.setData('body', row, column, values, rowSpan, columnSpan, update);
+    this.setData(
+      'body',
+      startRow,
+      startColumn,
+      values,
+      rowSpan,
+      columnSpan,
+      update
+    );
 
     return update;
   }
 
   copy(
     region: DataModel.CellRegion,
-    row: number,
-    column: number,
-    rowSpan: number,
-    columnSpan: number
+    startRow: number,
+    startColumn: number,
+    endRow: number,
+    endColumn: number
   ): void {
-    // we use the value map to redefine values within the cut as ''. Need to map
-    // to the static values.
-    // clear previous values from the clipboard
+    const rowSpan = Math.abs(startRow - endRow) + 1;
+    const columnSpan = Math.abs(startColumn - endColumn) + 1;
     this._clipboard = new Array(rowSpan)
       .fill(0)
       .map(elem => new Array(columnSpan).fill(0));
     for (let i = 0; i < rowSpan; i++) {
       for (let j = 0; j < columnSpan; j++) {
         // make a temporary copy of the values
-        this._clipboard[i][j] = this.data(region, row + i, column + j);
+        this._clipboard[i][j] = this.data(
+          region,
+          startRow + i,
+          startColumn + j
+        );
       }
     }
   }
@@ -909,7 +920,7 @@ export class EditorModel extends MutableDataModel {
       'body',
       row,
       column,
-      [...this._clipboard],
+      this._clipboard,
       rowSpan,
       columnSpan,
       update
@@ -1051,6 +1062,10 @@ export class EditorModel extends MutableDataModel {
       inverseColumnMap,
       this.model
     );
+    this._rowsAdded = 0;
+    this._rowsRemoved = 0;
+    this._columnsAdded = 0;
+    this._columnsRemoved = 0;
 
     // Give the DSVModel time to parseAsync, then turn saving to false
     setTimeout(() => (this._saving = false), 30);
@@ -1411,6 +1426,9 @@ export class EditorModel extends MutableDataModel {
     };
     update.gridChangeRecordUpdate = gridChangeRecordUpdate;
 
+    // Emit the update to the DSVEditor
+    this._onChangeSignal.emit(update);
+
     // Emit the change.
     this.emitChanged(update.gridUpdate);
   }
@@ -1612,8 +1630,7 @@ export class EditorModel extends MutableDataModel {
       return (
         elem1[0] * this._modelColumns(this.model) +
         elem1[1] -
-        elem2[0] * this._modelColumns(this.model) +
-        elem2[1]
+        (elem2[0] * this._modelColumns(this.model) + elem2[1])
       );
     });
 
@@ -1625,10 +1642,8 @@ export class EditorModel extends MutableDataModel {
       );
     });
 
-    // Define a helper function to get a key back to it's original value.
-    const revertKey = (key: Array<number>) => {
-      return `${rowMap[key[0]]},${columnMap[key[1]]}`;
-    };
+    // Now revert the keys to their corresponding map keys.
+    const valueKeys = keys.map(key => `${rowMap[key[0]]},${columnMap[key[1]]}`);
 
     // Set up an array to map the slices into.
     const mapArray: Array<string | 0> = new Array(keys.length - 1).fill('');
@@ -1644,7 +1659,7 @@ export class EditorModel extends MutableDataModel {
       const endKey = keys[index + 1];
 
       // Check if the previous key is at the last column
-      if (startKey[1] === this._modelColumns(this.model)) {
+      if (startKey[1] + 1 === this._modelColumns(this.model)) {
         sliceStart = this.model.getOffsetIndex(startKey[0] + 1, 0) - rdl;
       } else {
         sliceStart =
@@ -1652,7 +1667,7 @@ export class EditorModel extends MutableDataModel {
       }
       const sliceEnd = this.model.getOffsetIndex(endKey[0], endKey[1]);
       return (
-        valueMap[revertKey(keys[index])] +
+        valueMap[valueKeys[index]] +
         this.model.rawData.slice(sliceStart, sliceEnd)
       );
     };
@@ -1682,7 +1697,7 @@ export class EditorModel extends MutableDataModel {
       );
     }
     // Get the last value.
-    const lastValue = valueMap[revertKey(lastKey)];
+    const lastValue = valueMap[valueKeys[valueKeys.length - 1]];
     return startBuffer + mapArray.map(mapper).join('') + lastValue + endBuffer;
   }
 }

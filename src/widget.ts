@@ -407,6 +407,7 @@ export class DSVEditor extends Widget {
     this.context.save();
 
     // Do a full litestore reset.
+
     this._litestore = new Litestore({
       id: 0,
       schemas: [DSVEditor.DATAMODEL_SCHEMA]
@@ -531,7 +532,7 @@ export class DSVEditor extends Widget {
         this._grid.copyToClipboard();
 
         // Cut the cell selection.
-        update = this.dataModel.cut(this._region, r1, c1, r2, c2);
+        update = this.dataModel.cut('body', r1, r2, c1, c2);
 
         // Type parameter distinguishes between cut/paste.
         update.type = type;
@@ -541,19 +542,16 @@ export class DSVEditor extends Widget {
         this._grid.copyToClipboard();
 
         // Make a local copy of the cells.
-        this.dataModel.copy(this._region, r1, c1, r2, c2);
+        this.dataModel.copy('body', r1, r2, c1, c2);
         break;
       }
       case 'paste-cells': {
-        // we will determine the location based on the current selection
-        const { r1, r2, c1, c2 } = this.getSelectedRange();
-
         // Set row and column to the least row/column.
         const row = Math.min(r1, r2);
         const column = Math.min(c1, c2);
 
         // Paste the cells in the region.
-        update = this.dataModel.paste(this._region, row, column);
+        update = this.dataModel.paste('body', row, column);
 
         // Add type parameter to distinguish between cut/paste.
         update.type = type;
@@ -714,8 +712,11 @@ export class DSVEditor extends Widget {
     const { r1, r2, c1, c2 } = this.getSelectedRange();
     const row = Math.min(r1, r2);
     const column = Math.min(c1, c2);
-    this.dataModel.paste(this._region, row, column, copiedText);
+    const update = this.dataModel.paste(this._region, row, column, copiedText);
     this._cancelEditing();
+    this.litestore.beginTransaction();
+    this.updateLitestore(update);
+    this.litestore.endTransaction();
   }
 
   private _cancelEditing(): void {
