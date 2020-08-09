@@ -30,12 +30,6 @@ function updateLitestore(
   );
 }
 
-let refMatrix = [
-  ['column 0', 'column 1', 'column 2'],
-  ['r0c0', 'r0c1:randomvalue', 'r1c2'],
-  ['r1c0', 'r1c1', 'r1c2:another-random-val'],
-  ['r2c0', 'r2c1', 'r2c2']
-];
 beforeEach(() => {
   const data = [
     'column 0,column 1,column 2',
@@ -193,8 +187,8 @@ describe('Serialization', () => {
     expect(valueMap['3,2']).toBe('world');
 
     // Check that these get properly serialized.
-    model.updateString();
-    expect(model.model.rawData).toBe(
+    const newString = model.updateString();
+    expect(newString).toBe(
       [
         'column 0,column 1,column 2',
         'hello,r0c1:randomvalue,r1c2',
@@ -204,6 +198,12 @@ describe('Serialization', () => {
     );
   });
   it('should serialize a combo of each kind of macro update', () => {
+    let refMatrix = [
+      ['column 0', 'column 1', 'column 2'],
+      ['r0c0', 'r0c1:randomvalue', 'r1c2'],
+      ['r1c0', 'r1c1', 'r1c2:another-random-val'],
+      ['r2c0', 'r2c1', 'r2c2']
+    ];
     // Addition macro update
     let addUpdate: DSVEditor.ModelChangedArgs = {};
     addUpdate = model.addRows('body', 3, 1);
@@ -248,8 +248,43 @@ describe('Serialization', () => {
     expect(columnMap.slice()).toStrictEqual([0, 1]);
 
     // Make the comparison.
-    model.updateString();
+    const newString = model.updateString();
     const data = refMatrix.map(row => row.join(',')).join('\n');
-    expect(model.model.rawData).toStrictEqual(data);
+    expect(newString).toStrictEqual(data);
+  });
+
+  it('Should serialize a combo of micro and macro updates', () => {
+    const refMatrix = [
+      ['column 0', 'column 1', 'column 2'],
+      ['r0c0', 'r0c1:randomvalue', 'r1c2'],
+      ['r1c0', 'r1c1', 'r1c2:another-random-val'],
+      ['r2c0', 'r2c1', 'r2c2']
+    ];
+    // Apply a micro update.
+    const clearUpdate = model.clearContents('body', {
+      r1: 1,
+      r2: 1,
+      c1: 0,
+      c2: 1
+    });
+    model.litestore.beginTransaction();
+    updateLitestore(model, clearUpdate);
+    model.litestore.endTransaction();
+
+    // Update reference matrix.
+    refMatrix[2][0] = '';
+    refMatrix[2][1] = '';
+
+    const addUpdate = model.addRows('body', 2, 1);
+    model.litestore.beginTransaction();
+    updateLitestore(model, addUpdate);
+    model.litestore.endTransaction();
+
+    refMatrix.splice(2, 0, ['', '', '']);
+
+    console.log(refMatrix);
+    const expectedData = refMatrix.map(row => row.join(',')).join('\n');
+    const newString = model.updateString();
+    expect(newString).toBe(expectedData);
   });
 });

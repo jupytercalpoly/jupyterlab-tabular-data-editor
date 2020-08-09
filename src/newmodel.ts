@@ -171,11 +171,9 @@ export class EditorModel extends MutableDataModel {
       // the only thing handled by setData and then the else handled by a different function?
       // Initialize an empty update if we are not provided with one.
       update = {};
-      row = rowMap[row];
-      column = columnMap[column];
 
       // Create the value update
-      valueUpdate[`${row},${column}`] = values;
+      valueUpdate[`${rowMap[row]},${columnMap[column]}`] = values;
 
       // Add the valueMap update to the Litestore update.
       update.valueUpdate = valueUpdate;
@@ -187,7 +185,7 @@ export class EditorModel extends MutableDataModel {
       const gridUpdate: DataModel.ChangedArgs = {
         type: 'cells-changed',
         region,
-        row,
+        row: row,
         column,
         rowSpan,
         columnSpan
@@ -229,7 +227,7 @@ export class EditorModel extends MutableDataModel {
       const gridUpdate: DataModel.ChangedArgs = {
         type: 'cells-changed',
         region,
-        row,
+        row: row,
         column,
         rowSpan,
         columnSpan
@@ -344,9 +342,11 @@ export class EditorModel extends MutableDataModel {
     const values = [];
     const columnHeaders: { [key: string]: string } = {};
     let i = 0;
+    let nextKey: number;
     while (i < span) {
-      values.push(-(this.totalColumns() + this._columnsRemoved));
-      columnHeaders[`0,${columnMap.length}`] = `Column ${start + i + 1}`;
+      nextKey = -(this.totalColumns() + this._columnsRemoved);
+      values.push(nextKey);
+      columnHeaders[`0,${nextKey}`] = `Column ${start + i + 1}`;
       i++;
       this._columnsAdded++;
     }
@@ -1032,9 +1032,9 @@ export class EditorModel extends MutableDataModel {
     this._onChangeSignal.emit(change);
   }
 
-  updateString(): void {
+  updateString(): string {
     // Get the current litestore values.
-    // Unpack the columnMap from the litestore.
+    // Setting saving to true blocks parseAsync from effecting the grid during serialization.
     this._saving = true;
     const {
       rowMap,
@@ -1054,7 +1054,11 @@ export class EditorModel extends MutableDataModel {
       rowValuesUsed,
       columnvaluesUsed
     );
-    this._model.rawData = this._serializer(
+
+    // Create a copy of the string to revert back to.
+    const originalString = this._model.rawData;
+
+    const newString = this._serializer(
       rowMap,
       columnMap,
       valueMap,
@@ -1062,13 +1066,12 @@ export class EditorModel extends MutableDataModel {
       inverseColumnMap,
       this.model
     );
-    this._rowsAdded = 0;
-    this._rowsRemoved = 0;
-    this._columnsAdded = 0;
-    this._columnsRemoved = 0;
-
-    // Give the DSVModel time to parseAsync, then turn saving to false
+    // Give the DSVModel time to finish parseAsync, then set saving to false.
     setTimeout(() => (this._saving = false), 30);
+
+    this._model.rawData = originalString;
+
+    return newString;
   }
 
   private _invertMaps(
@@ -1086,14 +1089,17 @@ export class EditorModel extends MutableDataModel {
     let changeArg: DSVEditor.GridChangeRecordArgs;
     let change: DataModel.ChangedArgs;
     let values: number[] = [];
+    let index: number;
+    let destination: number;
     for (let i = 0; i < gridChangeRecord.length; i++) {
       changeArg = gridChangeRecord[i];
       switch (changeArg.change.type) {
         case 'rows-inserted': {
           change = changeArg.change as DataModel.RowsChangedArgs;
+          index = this._absoluteIndex(change.index, change.region);
           // The inverse change is to move a span's worth of values
           // starting from the insert point to just beyond the current length.
-          values = inverseRowMap.splice(change.index, change.span);
+          values = inverseRowMap.splice(index, change.span);
           inverseRowMap.splice(changeArg.currentRows, 0, ...values);
           break;
         }
@@ -1102,18 +1108,19 @@ export class EditorModel extends MutableDataModel {
           // The inverse change is to move a span's worth of values
           // starting from the insert point to just beyond the current length.
           values = inverseColumnMap.splice(change.index, change.span);
-          inverseRowMap.splice(changeArg.currentColumns, 0, ...values);
+          inverseColumnMap.splice(changeArg.currentColumns, 0, ...values);
           break;
         }
         case 'rows-removed': {
           change = changeArg.change as DataModel.RowsChangedArgs;
+          index = this._absoluteIndex(change.index, change.region);
           // The inverse change is to move a spans worth of items from
           // the end to the remove index.
           values = inverseRowMap.splice(
             inverseRowMap.length - change.span,
             change.span
           );
-          inverseRowMap.splice(change.index, 0, ...values);
+          inverseRowMap.splice(index, 0, ...values);
           break;
         }
         case 'columns-removed': {
@@ -1129,9 +1136,11 @@ export class EditorModel extends MutableDataModel {
         }
         case 'rows-moved': {
           change = changeArg.change as DataModel.RowsMovedArgs;
+          index = this._absoluteIndex(change.index, change.region);
+          destination = this._absoluteIndex(change.destination, change.region);
           // The inverse change is to move a span's worth of values from the destination to the start.
-          values = inverseRowMap.splice(change.destination, change.span);
-          inverseRowMap.splice(change.index, 0, ...values);
+          values = inverseRowMap.splice(destination, change.span);
+          inverseRowMap.splice(index, 0, ...values);
           break;
         }
         case 'columns-moved': {
@@ -1344,7 +1353,9 @@ export class EditorModel extends MutableDataModel {
    * translate from the Grid's row IDs to our own standard
    */
   private _absoluteIndex(row: number, region: DataModel.CellRegion) {
-    return region === 'column-header' ? 0 : row + 1;
+    return region === 'column-header' || region === 'corner-header'
+      ? 0
+      : row + 1;
   }
 
   /**
@@ -1611,7 +1622,7 @@ export class EditorModel extends MutableDataModel {
   ): string {
     // Get the keys of the value map into an array of row/column arrays.
     let keys = Object.keys(valueMap).map(elem =>
-      elem.split(',').map(elem => parseFloat(elem))
+      elem.split(',').map(elem => Math.abs(parseFloat(elem)))
     );
 
     // Bail early if the keys are empty.
@@ -1636,10 +1647,7 @@ export class EditorModel extends MutableDataModel {
 
     // Filter out elements that are out of bounds. (This indicates they were deleted in the process.)
     keys = keys.filter(elem => {
-      return (
-        elem[0] < this._modelRows(this.model) &&
-        elem[1] < this._modelColumns(this.model)
-      );
+      return elem[0] < rowMap.length && elem[1] < columnMap.length;
     });
 
     // Now revert the keys to their corresponding map keys.

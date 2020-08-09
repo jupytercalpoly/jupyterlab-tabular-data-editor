@@ -349,14 +349,16 @@ export class DSVEditor extends Widget {
       // dataModel.cancelEditingSignal.connect(this._cancelEditing, this);
     }
     // update the position of the background row and column headers
-    this._background.style.width = `${this._grid.viewportWidth}px`;
-    this._background.style.height = `${this._grid.viewportHeight}px`;
+    this._background.style.width = `${this._grid.bodyWidth}px`;
+    this._background.style.height = `${this._grid.bodyHeight}px`;
+    this._background.style.left = `${this._grid.headerWidth}px`;
+    this._background.style.top = `${this._grid.headerHeight}px`;
     this._columnHeader.style.left = `${this._grid.headerWidth}px`;
     this._columnHeader.style.height = `${this._grid.headerHeight}px`;
-    this._columnHeader.style.width = `${this._grid.viewportWidth}px`;
+    this._columnHeader.style.width = `${this._grid.bodyWidth}px`;
     this._rowHeader.style.top = `${this._grid.headerHeight}px`;
     this._rowHeader.style.width = `${this._grid.headerWidth}px`;
-    this._rowHeader.style.height = `${this._grid.viewportHeight}px`;
+    this._rowHeader.style.height = `${this._grid.bodyHeight}px`;
   }
 
   /**
@@ -402,42 +404,9 @@ export class DSVEditor extends Widget {
    * Saves the file
    */
   private _save(): void {
-    this.dataModel.updateString();
-    this.context.model.fromString(this.dataModel.model.rawData);
+    const newString = this.dataModel.updateString();
+    this.context.model.fromString(newString);
     this.context.save();
-
-    // Do a full litestore reset.
-
-    this._litestore = new Litestore({
-      id: 0,
-      schemas: [DSVEditor.DATAMODEL_SCHEMA]
-    });
-    // Define the initial update object for the litestore.
-    const update: DSVEditor.ModelChangedArgs = {};
-
-    // Define the initial state of the row and column map.
-    const rowUpdate = {
-      index: 0,
-      remove: 0,
-      values: toArray(range(0, this.dataModel.totalRows()))
-    };
-    const columnUpdate = {
-      index: 0,
-      remove: 0,
-      values: toArray(range(0, this.dataModel.totalColumns()))
-    };
-
-    // Add the map updates to the update object.
-    update.rowUpdate = rowUpdate;
-    update.columnUpdate = columnUpdate;
-
-    // set inital status of litestore
-    this._litestore.beginTransaction();
-    this.updateLitestore(update);
-    this._litestore.endTransaction();
-
-    // Give the datamodel it's litestore.
-    this.dataModel.litestore = this._litestore;
   }
 
   // private _cancelEditing(emitter: EditorModel): void {
@@ -456,10 +425,10 @@ export class DSVEditor extends Widget {
 
     // grab selection if it exists
     if (selection) {
-      r1 = selection.r1;
-      r2 = selection.r2;
-      c1 = selection.c1;
-      c2 = selection.c2;
+      r1 = Math.min(selection.r1, selection.r2);
+      r2 = Math.max(selection.r1, selection.r2);
+      c1 = Math.min(selection.c1, selection.c2);
+      c2 = Math.max(selection.c1, selection.c2);
     }
     // Set up the update object for the litestore.
     let update: DSVEditor.ModelChangedArgs | null = null;
@@ -532,7 +501,7 @@ export class DSVEditor extends Widget {
         this._grid.copyToClipboard();
 
         // Cut the cell selection.
-        update = this.dataModel.cut('body', r1, r2, c1, c2);
+        update = this.dataModel.cut('body', r1, c1, r2, c2);
 
         // Type parameter distinguishes between cut/paste.
         update.type = type;
@@ -542,16 +511,12 @@ export class DSVEditor extends Widget {
         this._grid.copyToClipboard();
 
         // Make a local copy of the cells.
-        this.dataModel.copy('body', r1, r2, c1, c2);
+        this.dataModel.copy('body', r1, c1, r2, c2);
         break;
       }
       case 'paste-cells': {
-        // Set row and column to the least row/column.
-        const row = Math.min(r1, r2);
-        const column = Math.min(c1, c2);
-
         // Paste the cells in the region.
-        update = this.dataModel.paste('body', row, column);
+        update = this.dataModel.paste('body', r1, c1);
 
         // Add type parameter to distinguish between cut/paste.
         update.type = type;
@@ -561,8 +526,7 @@ export class DSVEditor extends Widget {
         break;
       }
       case 'clear-contents': {
-        const selection = this.getSelectedRange();
-        update = this.dataModel.clearContents(this._region, selection);
+        update = this.dataModel.clearContents(this._region, { r1, r2, c1, c2 });
         break;
       }
       case 'undo': {
