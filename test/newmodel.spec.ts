@@ -280,7 +280,7 @@ describe('Serialization', () => {
     updateLitestore(model, addUpdate);
     model.litestore.endTransaction();
 
-    refMatrix.splice(2, 0, ['', '', '']);
+    refMatrix.splice(3, 0, ['', '', '']);
 
     console.log(refMatrix);
     const expectedData = refMatrix.map(row => row.join(',')).join('\n');
