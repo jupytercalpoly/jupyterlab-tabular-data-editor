@@ -535,7 +535,7 @@ export class DSVEditor extends Widget {
           return;
         }
 
-        const { gridChange, selection, type } = this._litestore.getRecord({
+        const { gridChange, selection } = this._litestore.getRecord({
           schema: DSVEditor.DATAMODEL_SCHEMA,
           record: DSVEditor.RECORD_ID
         });
@@ -739,15 +739,29 @@ export namespace DSVEditor {
     currentRows: number;
     currentColumns: number;
     change: DataModel.ChangedArgs;
+    type?: DSVEditor.ModelChangeType;
   };
   /**
-   * The arguments emitted to the Editable CSVViewer when the datamodel changes
+   * The types of mutations that can be made to the model.
+   */
+  export type ModelChangeType =
+    | 'insert-rows-right'
+    | 'insert-rows-left'
+    | 'insert-columns-right'
+    | 'insert-columns-left'
+    | 'remove-rows'
+    | 'remove-columns'
+    | 'move-rows'
+    | 'move-columns'
+    | 'clear-cells'
+    | 'clear-rows'
+    | 'clear-columns';
+  /**
+   * The arguments emitted to the Editor when the datamodel changes
    */
   export type ModelChangedArgs = {
     rowUpdate?: ListField.Update<number>;
-    inverseRowUpdate?: ListField.Update<number>;
     columnUpdate?: ListField.Update<number>;
-    inverseColumnUpdate?: ListField.Update<number>;
     valueUpdate?: MapField.Update<string>;
     gridUpdate?: DataModel.ChangedArgs;
     gridChangeRecordUpdate?: ListField.Update<GridChangeRecordArgs>;
