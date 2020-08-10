@@ -381,7 +381,6 @@ export class RichMouseHandler extends BasicMouseHandler {
     this._clickSignal.emit(hit);
     // if move data exists, handle the move first
     if (this._moveData) {
-
       const model = grid.dataModel as EditorModel;
       const selectionModel = this._grid.selectionModel;
 
