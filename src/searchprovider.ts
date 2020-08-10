@@ -5,7 +5,6 @@ import { DSVEditor } from './widget';
 import { DocumentWidget } from '@jupyterlab/docregistry';
 import { Signal, ISignal } from '@lumino/signaling';
 import { Widget } from '@lumino/widgets';
-import { DataModel } from 'tde-datagrid';
 
 // The type for which canSearchFor returns true
 export type CSVDocumentWidget = DocumentWidget<DSVEditor>;
@@ -147,38 +146,37 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
    * @returns A promise that resolves once the action has completed.
    */
   async replaceAllMatches(newText: string): Promise<boolean> {
-    const litestore = this._target.content.dataModel.litestore;
     const searchService = this._target.content.searchService;
     const startRow = searchService.currentMatch.line;
     const startColumn = searchService.currentMatch.column;
     let endRow, endColumn: number;
 
-    litestore.beginTransaction();
-
-    // Set up the update object for the litestore.
-    const update: DSVEditor.ModelChangedArgs = {};
+    const rows: number[] = [];
+    const columns: number[] = [];
 
     // replace every match individually
-    while (this.matches.length > 0) {
+    let i = 0;
+    while (i < this.matches.length) {
       // when we have one match left, get the last row and column being edited
-      if (this.matches.length === 1) {
-        endRow = searchService.currentMatch.line;
-        endColumn = searchService.currentMatch.column;
+      if (i + 1 === this.matches.length) {
+        endRow = this.matches[i].line;
+        endColumn = this.matches[i].column;
       }
-      this.replaceCurrentMatch(newText, update);
+      const { line, column } = this.matches[i];
+      rows.push(line);
+      columns.push(column);
+      i++;
     }
-
-    const gridUpdate: DataModel.ChangedArgs = {
-      type: 'cells-changed',
-      region: 'body',
-      // the range of cells being edited
-      row: startRow,
-      column: startColumn,
-      rowSpan: endRow - startRow,
-      columnSpan: endColumn - startColumn
-    };
-    this._target.content.updateLitestore({ gridUpdate });
-    litestore.endTransaction();
+    this.selectSingleCell();
+    this._target.content.dataModel.bulkSetData(
+      rows,
+      columns,
+      newText,
+      startRow,
+      startColumn,
+      endRow,
+      endColumn
+    );
     return true;
   }
 

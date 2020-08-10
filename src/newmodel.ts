@@ -248,6 +248,61 @@ export class EditorModel extends MutableDataModel {
   }
 
   /**
+   *
+   * @param rowArray An array of row locations
+   * @param columnArray An array of column locations
+   * @param value A single value to replace at the locations.
+   */
+  bulkSetData(
+    rowArray: Array<number>,
+    columnArray: Array<number>,
+    value: string,
+    startRow: number,
+    startColumn: number,
+    endRow: number,
+    endColumn: number
+  ) {
+    // Set up an udate object for the litestore.
+    const update: DSVEditor.ModelChangedArgs = {};
+
+    // Unpack values from the litestore.
+    const { rowMap, columnMap } = this._litestore.getRecord({
+      schema: DSVEditor.DATAMODEL_SCHEMA,
+      record: DSVEditor.RECORD_ID
+    });
+
+    let row: number;
+    let column: number;
+    // Set up the update to the valueMap.
+    const valueUpdate: { [key: string]: string } = {};
+    for (let i = 0; i <= rowMap.length; i++) {
+      row = rowMap[this._absoluteIndex(rowArray[i], 'body')];
+      column = columnMap[columnArray[i]];
+      valueUpdate[`${row},${column}`] = value;
+    }
+
+    // Add the valueMap update to the Litestore update.
+    update.valueUpdate = valueUpdate;
+
+    const gridUpdate: DataModel.ChangedArgs = {
+      type: 'cells-changed',
+      region: 'body',
+      row: startRow,
+      column: startColumn,
+      rowSpan: endRow - startRow + 1,
+      columnSpan: endColumn - startColumn + 1
+    };
+    // Add the change to the litestore update object.
+    update.gridUpdate = gridUpdate;
+
+    // Emit the change to the Editor.
+    this._onChangeSignal.emit(update);
+
+    // Emit the change to the grid.
+    this.emitChanged(update.gridUpdate);
+  }
+
+  /**
    * @param start: the index at which to start adding rows.
    * @param span: the number of rows to add. Default is 1.
    *
