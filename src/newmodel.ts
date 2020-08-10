@@ -1223,24 +1223,23 @@ export class EditorModel extends MutableDataModel {
             );
             values = inverseRowMap.splice(
               inverseRowMap.length - change.rowSpan,
-              index + change.rowSpan
+              change.rowSpan
             );
             inverseRowMap.splice(index, 0, ...values);
-            break;
+          } else {
+            // The inverse of this change is a dual operation. First, grab a span of
+            values = inverseColumnMap.splice(change.column, change.columnSpan);
+            inverseColumnMap.splice(
+              changeArg.currentColumns - change.columnSpan,
+              0,
+              ...values
+            );
+            values = inverseColumnMap.splice(
+              inverseColumnMap.length - change.columnSpan,
+              change.columnSpan
+            );
+            inverseColumnMap.splice(change.row, 0, ...values);
           }
-          // The inverse of this change is a dual operation. First, grab a span of
-          values = inverseColumnMap.splice(change.column, change.columnSpan);
-          inverseColumnMap.splice(
-            changeArg.currentColumns - change.columnSpan,
-            0,
-            ...values
-          );
-          values = inverseColumnMap.splice(
-            inverseColumnMap.length - change.columnSpan,
-            change.column + change.columnSpan
-          );
-          inverseColumnMap.splice(change.row, 0, ...values);
-          break;
         }
       }
     }
@@ -1446,7 +1445,7 @@ export class EditorModel extends MutableDataModel {
     const update: DSVEditor.ModelChangedArgs = {};
 
     // Unpack values from the litestore.
-    const { rowMap, columnMap } = this._litestore.getRecord({
+    const { rowMap } = this._litestore.getRecord({
       schema: DSVEditor.DATAMODEL_SCHEMA,
       record: DSVEditor.RECORD_ID
     });
@@ -1456,13 +1455,10 @@ export class EditorModel extends MutableDataModel {
 
     // Create the splice data for the litestore.
     const rowUpdate = {
-      index: start,
+      index: rowMap.length,
       remove: 0,
       values
     };
-
-    // Update the row count.
-    this._rowsAdded += span;
 
     // Add the rowUpdate to the litestore update object.
     update.rowUpdate = rowUpdate;
@@ -1478,20 +1474,20 @@ export class EditorModel extends MutableDataModel {
     // Add the change to the litestore update object.
     update.gridUpdate = gridUpdate;
 
-    // Get the grid change record update args
-    const updateArgs = {
-      currentRows: rowMap.length,
-      currentColumns: columnMap.length,
-      change: gridUpdate
-    };
+    // // Get the grid change record update args
+    // const updateArgs = {
+    //   currentRows: rowMap.length,
+    //   currentColumns: columnMap.length,
+    //   change: gridUpdate
+    // };
 
-    // Log the update to the grid.
-    const gridChangeRecordUpdate = {
-      index: 0,
-      remove: 0,
-      values: [updateArgs]
-    };
-    update.gridChangeRecordUpdate = gridChangeRecordUpdate;
+    // // Log the update to the grid.
+    // const gridChangeRecordUpdate = {
+    //   index: 0,
+    //   remove: 0,
+    //   values: [updateArgs]
+    // };
+    // update.gridChangeRecordUpdate = gridChangeRecordUpdate;
 
     // Emit the update to the DSVEditor
     this._onChangeSignal.emit(update);
