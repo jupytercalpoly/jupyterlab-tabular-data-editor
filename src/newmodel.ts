@@ -1213,8 +1213,9 @@ export class EditorModel extends MutableDataModel {
 
           // We assume that if all of the columns were cleared then this is row clear operation.
           if (columns === change.columnSpan) {
+            index = this._absoluteIndex(change.row, change.region);
             // The inverse of this change is a dual operation. First, grab a span of
-            values = inverseRowMap.splice(change.row, change.rowSpan, 0);
+            values = inverseRowMap.splice(index, change.rowSpan);
             inverseRowMap.splice(
               changeArg.currentRows - change.rowSpan,
               0,
@@ -1222,12 +1223,13 @@ export class EditorModel extends MutableDataModel {
             );
             values = inverseRowMap.splice(
               inverseRowMap.length - change.rowSpan,
-              change.row + change.rowSpan
+              index + change.rowSpan
             );
+            inverseRowMap.splice(index, 0, ...values);
             break;
           }
           // The inverse of this change is a dual operation. First, grab a span of
-          values = inverseColumnMap.splice(change.column, change.columnSpan, 0);
+          values = inverseColumnMap.splice(change.column, change.columnSpan);
           inverseColumnMap.splice(
             changeArg.currentColumns - change.columnSpan,
             0,
@@ -1237,6 +1239,7 @@ export class EditorModel extends MutableDataModel {
             inverseColumnMap.length - change.columnSpan,
             change.column + change.columnSpan
           );
+          inverseColumnMap.splice(change.row, 0, ...values);
           break;
         }
       }
@@ -1305,7 +1308,7 @@ export class EditorModel extends MutableDataModel {
       row: start,
       rowSpan: span,
       column: 0,
-      columnSpan: this.model.rowCount('body')
+      columnSpan: this.totalColumns()
     };
 
     // Get the grid change record update args
@@ -1376,7 +1379,7 @@ export class EditorModel extends MutableDataModel {
       region,
       type: 'cells-changed',
       row: 0,
-      rowSpan: this.model.rowCount('body'),
+      rowSpan: this.totalRows(),
       column: start,
       columnSpan: span
     };
