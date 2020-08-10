@@ -535,7 +535,7 @@ export class DSVEditor extends Widget {
           return;
         }
 
-        const { gridChange, selection } = this._litestore.getRecord({
+        const { gridChange, selection, type } = this._litestore.getRecord({
           schema: DSVEditor.DATAMODEL_SCHEMA,
           record: DSVEditor.RECORD_ID
         });
@@ -554,7 +554,7 @@ export class DSVEditor extends Widget {
         this._litestore.undo();
 
         // Have the model emit the opposite change to the Grid.
-        this.dataModel.emitOppositeChange(gridChange);
+        this.dataModel.emitOppositeChange(gridChange, type);
 
         break;
       }

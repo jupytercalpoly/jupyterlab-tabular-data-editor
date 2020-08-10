@@ -1026,7 +1026,7 @@ export class EditorModel extends MutableDataModel {
         this._rowsRemoved += change.span;
       }
     }
-    this._onChangeSignal.emit(change);
+    this.emitChanged(change);
   }
 
   updateString(): string {
@@ -1687,9 +1687,9 @@ export class EditorModel extends MutableDataModel {
     let endBuffer: string;
     const lastKey = keys[keys.length - 1];
     // Check if last key is at end column
-    if (lastKey[1] + 1 === this.totalColumns()) {
+    if (lastKey[1] + 1 === columnMap.length) {
       // check if last key is at last row
-      if (lastKey[0] + 1 === this.totalRows()) {
+      if (lastKey[0] + 1 === rowMap.length) {
         endBuffer = '';
       } else {
         endBuffer = this._model.rawData.slice(
