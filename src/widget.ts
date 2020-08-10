@@ -50,12 +50,13 @@ export class EditableCSVViewer extends Widget {
 
     this.addClass(CSV_CLASS);
 
+    //Datagrid Size
     this._grid = new DataGrid({
       defaultSizes: {
-        rowHeight: 28,
+        rowHeight: 24,
         columnWidth: 144,
         rowHeaderWidth: 64,
-        columnHeaderHeight: 32
+        columnHeaderHeight: 36
       },
       headerVisibility: 'none'
     });
