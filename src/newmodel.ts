@@ -112,6 +112,10 @@ export class EditorModel extends MutableDataModel {
       return this._model.data(region, row, column);
     }
 
+    if (region === 'corner-header') {
+      return '';
+    }
+
     // The row comes to us as an index on a particular region. We need the
     // absolute index (ie index 0 is the first row of data).
     row = this._absoluteIndex(row, region);
@@ -889,16 +893,9 @@ export class EditorModel extends MutableDataModel {
   ): DSVEditor.ModelChangedArgs {
     // Set up an udate object for the litestore.
     const update: DSVEditor.ModelChangedArgs = {};
-
-    // see if we have stored it in our local array
-    if (this._clipboard.length === 0) {
-      if (data !== null) {
-        // convert the copied data to an array
-        this._clipboard = data.split('\n').map(elem => elem.split('\t'));
-      } else {
-        // we have no data, so bail
-        return;
-      }
+    if (data !== null) {
+      // convert the copied data to an array
+      this._clipboard = data.split('\n').map(elem => elem.split('\t'));
     }
     // Row comes to us as an index on a particular region. We need the
     // absolute index (ie index 0 is the first row of data).
@@ -1066,10 +1063,11 @@ export class EditorModel extends MutableDataModel {
       inverseColumnMap,
       this.model
     );
-    // Give the DSVModel time to finish parseAsync, then set saving to false.
-    setTimeout(() => (this._saving = false), 30);
-
     this._model.rawData = originalString;
+
+    this._model.parseAsync();
+
+    this._model.ready.then(() => (this._saving = false));
 
     return newString;
   }

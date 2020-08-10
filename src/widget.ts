@@ -551,12 +551,11 @@ export class DSVEditor extends Widget {
           cursorColumn: c1,
           clear: 'all'
         });
-
-        // undo first and then get the model data
         this._litestore.undo();
 
         // Have the model emit the opposite change to the Grid.
         this.dataModel.emitOppositeChange(gridChange);
+
         break;
       }
       case 'redo': {
