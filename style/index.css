@@ -68,3 +68,18 @@
 .jp-background {
   border: none;
 }
+
+/*scrollbar*/
+
+.lm-ScrollBar[data-orientation='vertical'] {
+  min-width: 14px;
+}
+
+.lm-ScrollBar[data-orientation='horizontal'] {
+  min-height: 14px;
+}
+
+.lm-ScrollBar-button {
+  min-height: 12px;
+  min-width: 12px;
+}
