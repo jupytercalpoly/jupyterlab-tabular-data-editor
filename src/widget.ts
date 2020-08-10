@@ -452,6 +452,8 @@ export class DSVEditor extends Widget {
       c1 = Math.min(selection.c1, selection.c2);
       c2 = Math.max(selection.c1, selection.c2);
     }
+    // Set up the update object for the litestore.
+    let update: DSVEditor.ModelChangedArgs | null = null;
 
     const newSelection: SelectionModel.SelectArgs = {
       r1,
