@@ -2,7 +2,7 @@ import { MutableDataModel, DataModel, SelectionModel } from 'tde-datagrid';
 import { DSVModel } from 'tde-csvviewer';
 import { Signal } from '@lumino/signaling';
 import { numberToCharacter } from './_helper';
-import { EditableCSVViewer } from './widget';
+import { DSVEditor } from './widget';
 
 export class EditableDSVModel extends MutableDataModel {
   private _clipBoardArr: any;
@@ -22,7 +22,7 @@ export class EditableDSVModel extends MutableDataModel {
     return this._cancelEditingSignal;
   }
 
-  get onChangedSignal(): Signal<this, EditableCSVViewer.ModelChangedArgs> {
+  get onChangedSignal(): Signal<this, DSVEditor.ModelChangedArgs> {
     return this._onChangeSignal;
   }
 
@@ -764,12 +764,15 @@ export class EditableDSVModel extends MutableDataModel {
     // Emits the updates to the DataModel to the DataGrid for rerender
     this.emitChanged(change);
     // Emits the updated raw data and change args to the CSVViewer
-    this._onChangeSignal.emit({
-      data: this._dsvModel.rawData.slice(this.colHeaderLength),
-      change,
-      useLitestore,
-      type
-    });
+
+    // Deferred fixing this because of the new model
+    // this._onChangeSignal.emit({
+    //
+    //   data: this._dsvModel.rawData.slice(this.colHeaderLength),
+    //   change,
+    //   useLitestore,
+    //   type
+    // });
   }
 
   sliceOut(
@@ -915,8 +918,8 @@ export class EditableDSVModel extends MutableDataModel {
   private _dsvModel: DSVModel;
   private _onChangeSignal: Signal<
     this,
-    EditableCSVViewer.ModelChangedArgs
-  > = new Signal<this, EditableCSVViewer.ModelChangedArgs>(this);
+    DSVEditor.ModelChangedArgs
+  > = new Signal<this, DSVEditor.ModelChangedArgs>(this);
   private _transmitting = true;
   private _cancelEditingSignal: Signal<this, null> = new Signal<this, null>(
     this

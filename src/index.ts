@@ -28,7 +28,7 @@ import {
   spreadsheetIcon
 } from '@jupyterlab/ui-components';
 import { DataGrid } from '@lumino/datagrid';
-import { EditableCSVViewer, EditableCSVViewerFactory } from './widget';
+import { DSVEditor, EditableCSVViewerFactory } from './widget';
 import { CSVSearchProvider } from './searchprovider';
 
 /**
@@ -72,7 +72,7 @@ function activateCsv(
     },
     app.commands
   );
-  const tracker = new WidgetTracker<IDocumentWidget<EditableCSVViewer>>({
+  const tracker = new WidgetTracker<IDocumentWidget<DSVEditor>>({
     namespace: 'editablecsvviewer'
   });
 
@@ -149,7 +149,7 @@ Creates commands, adds them to the context menu, and adds keybindings for common
 */
 function addCommands(
   app: JupyterFrontEnd,
-  tracker: WidgetTracker<IDocumentWidget<EditableCSVViewer>>,
+  tracker: WidgetTracker<IDocumentWidget<DSVEditor>>,
   browserFactory: IFileBrowserFactory
 ): void {
   const { commands } = app;
@@ -406,12 +406,12 @@ function addCommands(
     keys: ['Accel Shift Z'],
     selector: GLOBAL_SELECTOR
   });
-  app.commands.addKeyBinding({
-    command: CommandIDs.clearContents,
-    args: {},
-    keys: ['Backspace'],
-    selector: GLOBAL_SELECTOR
-  });
+  // app.commands.addKeyBinding({
+  //   command: CommandIDs.clearContents,
+  //   args: {},
+  //   keys: ['Backspace'],
+  //   selector: GLOBAL_SELECTOR
+  // });
 }
 
 /**
