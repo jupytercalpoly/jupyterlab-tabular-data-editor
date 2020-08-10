@@ -41,7 +41,6 @@
     "@jupyterlab/csvviewer-extension": "^2.1.2",
     "@jupyterlab/docregistry": "2.1.2",
     "@jupyterlab/documentsearch": "^2.2.0",
-    "@jupyterlab/filebrowser": "^2.2.1",
     "@jupyterlab/launcher": "^2.2.2",
     "@jupyterlab/mainmenu": "^2.1.1",
     "@jupyterlab/services": "^5.2.1",
