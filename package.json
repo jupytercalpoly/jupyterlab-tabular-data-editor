@@ -44,6 +44,7 @@
     "@jupyterlab/filebrowser": "^2.2.1",
     "@jupyterlab/launcher": "^2.2.2",
     "@jupyterlab/mainmenu": "^2.1.1",
+    "@jupyterlab/services": "^5.2.1",
     "@lumino/algorithm": "^1.2.3",
     "@lumino/coreutils": "^1.4.2",
     "@lumino/datagrid": "^0.11.1",

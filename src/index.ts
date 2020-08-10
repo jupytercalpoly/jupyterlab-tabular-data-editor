@@ -18,6 +18,7 @@ import { ISearchProviderRegistry } from '@jupyterlab/documentsearch';
 import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
 import { ILauncher } from '@jupyterlab/launcher';
 import { /*IEditMenu,*/ IMainMenu } from '@jupyterlab/mainmenu';
+import { Contents } from '@jupyterlab/services';
 import {
   undoIcon,
   redoIcon,
@@ -168,19 +169,20 @@ function addCommands(
       const cwd = args['cwd'] || browserFactory.defaultBrowser.model.path;
 
       // Create a new untitled csv file
-      const model = await commands.execute('docmanager:new-untitled', {
-        path: cwd,
-        type: 'file',
-        ext: 'csv'
-      });
+      const model: Contents.IModel = await commands.execute(
+        'docmanager:new-untitled',
+        {
+          path: cwd,
+          type: 'file',
+          ext: 'csv'
+        }
+      );
 
       // Open the newly created file with the Tabular Data Editor
-      await commands.execute('docmanager:open', {
+      return commands.execute('docmanager:open', {
         path: model.path,
         factory: FACTORY_CSV
       });
-
-      return commands.execute(CommandIDs.insertColumnRight);
     }
   });
 
