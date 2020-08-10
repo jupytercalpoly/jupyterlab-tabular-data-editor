@@ -140,6 +140,7 @@ function activateCsv(
 
   addCommands(app, tracker, browserFactory);
 
+  // Add a new CSV launcher
   if (launcher) {
     launcher.add({ command: CommandIDs.createNewCSV });
   }
@@ -159,6 +160,7 @@ function addCommands(
   const COLUMN_HEADER_SELECTOR = '.jp-column-header';
   const ROW_HEADER_SELECTOR = '.jp-row-header';
 
+  // creates a new csv file and opens it
   commands.addCommand(CommandIDs.createNewCSV, {
     label: args => (args['isPalette'] ? 'New CSV File' : 'CSV File'),
     caption: 'Create a new CSV file',
