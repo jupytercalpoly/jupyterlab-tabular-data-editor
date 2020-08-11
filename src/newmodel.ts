@@ -816,53 +816,22 @@ export class EditorModel extends MutableDataModel {
     selection: SelectionModel.Selection
   ): DSVEditor.ModelChangedArgs {
     // Set up an udate object for the litestore.
-    let update: DSVEditor.ModelChangedArgs = {};
+    const update: DSVEditor.ModelChangedArgs = {};
 
     // Unpack the selection.
     const { r1, r2, c1, c2 } = selection;
+    const row = Math.min(r1, r2);
+    const rowSpan = Math.abs(r1 - r2) + 1;
+    const column = Math.min(c1, c2);
+    const columnSpan = Math.abs(c1 - c2) + 1;
 
-    // Set up variables for the different possible regions.
-    let row, column, rowSpan, columnSpan: number;
+    // Set the values to an array of blanks.
+    const values = new Array(rowSpan)
+      .fill(0)
+      .map(elem => new Array(columnSpan).fill(''));
 
-    switch (region) {
-      case 'corner-header': {
-        // we don't clear all cells, so bail early
-        return;
-      }
-      case 'column-header': {
-        // Set up arguments for clearColumns method.
-        column = Math.min(c1, c2);
-        columnSpan = Math.abs(c1 - c2) + 1;
-
-        // Clear the columns.
-        update = this.clearColumns('body', column, columnSpan);
-        break;
-      }
-      case 'row-header': {
-        // Set up arguments for clearRows method.
-        row = Math.min(r1, r2);
-        rowSpan = Math.abs(r1 - r2) + 1;
-
-        // Clear the rows.
-        update = this.clearRows('body', row, rowSpan);
-        break;
-      }
-      case 'body': {
-        // Set up args for setData.
-        row = Math.min(r1, r2);
-        rowSpan = Math.abs(r1 - r2) + 1;
-        column = Math.min(c1, c2);
-        columnSpan = Math.abs(c1 - c2) + 1;
-
-        // Set the values to an array of blanks.
-        const values = new Array(rowSpan)
-          .fill(0)
-          .map(elem => new Array(columnSpan).fill(''));
-
-        // Set the data.
-        this.setData('body', row, column, values, rowSpan, columnSpan, update);
-      }
-    }
+    // Set the data.
+    this.setData('body', row, column, values, rowSpan, columnSpan, update);
     return update;
   }
 
