@@ -39,11 +39,15 @@ export class EditorModel extends MutableDataModel {
 
     this._litestore = null;
   }
-
+  /**
+   * The model which holds the string containing the contents of the file.
+   */
   get model(): DSVModel {
     return this._model;
   }
-
+  /**
+   * A signal that emits when data is set to notify the Editor.
+   */
   get onChangedSignal(): Signal<this, DSVEditor.ModelChangedArgs> {
     return this._onChangeSignal;
   }
