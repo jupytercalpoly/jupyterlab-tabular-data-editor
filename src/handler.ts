@@ -3,13 +3,17 @@ import {
   BasicMouseHandler,
   DataGrid,
   DataModel,
-  ResizeHandle
+  ResizeHandle,
+  CellEditor,
+  ICellEditResponse,
+  MutableDataModel
 } from 'tde-datagrid';
 import { Drag } from '@lumino/dragdrop';
 import { Signal } from '@lumino/signaling';
 import { renderSelection, IBoundingRegion, BoundedDrag } from './selection';
 import { EditorModel } from './newmodel';
 import { DSVEditor } from './widget';
+import HeaderCellEditor from './headercelleditor';
 
 export class RichMouseHandler extends BasicMouseHandler {
   private _moveLine: BoundedDrag;
@@ -454,6 +458,51 @@ export class RichMouseHandler extends BasicMouseHandler {
     // otherwise select the respective row/column/cell
     super.onMouseDown(grid, event);
   }
+
+  /**
+   * Handles a double click event
+   */
+  onMouseDoubleClick(grid: DataGrid, event: MouseEvent) {
+    const { region, row, column } = grid.hitTest(event.clientX, event.clientY);
+    if (region === 'column-header') {
+      if (grid.editable) {
+        const cell: CellEditor.CellConfig = {
+          grid: grid,
+          row: row,
+          column: column
+        };
+
+        // Define a callback to handle entering data into the column header.
+        const onCommit = (response: ICellEditResponse): void => {
+          const cell = response.cell;
+          if (!cell) {
+            return;
+          }
+          const grid = cell.grid;
+          const dataModel = grid.dataModel as MutableDataModel;
+          dataModel.setData(
+            'column-header',
+            cell.row,
+            cell.column,
+            response.value
+          );
+          grid.viewport.node.focus();
+          if (response.cursorMovement !== 'none') {
+            grid.moveCursor(response.cursorMovement);
+            grid.scrollToCursor();
+          }
+        };
+
+        // Define the Header editor.
+        const editor = new HeaderCellEditor();
+
+        // Begin editing the cell.
+        grid.editorController!.edit(cell, { editor, onCommit });
+      }
+    }
+    super.onMouseDoubleClick(grid, event);
+  }
+
   private _grid: DataGrid;
   private _event: MouseEvent;
   private _cursor: string | null;
