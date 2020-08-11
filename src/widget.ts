@@ -782,9 +782,7 @@ export namespace DSVEditor {
     id: SCHEMA_ID,
     fields: {
       rowMap: Fields.List<number>(),
-      inverseRowMap: Fields.List<number>(),
       columnMap: Fields.List<number>(),
-      inverseColumnMap: Fields.List<number>(),
       valueMap: Fields.Map<string>(),
       gridChange: Fields.Register<DataModel.ChangedArgs>({
         value: { type: 'model-reset' }
