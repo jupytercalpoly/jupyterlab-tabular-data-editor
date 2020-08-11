@@ -638,6 +638,7 @@ export class DSVEditor extends Widget {
         gridChangeRecord:
           update.gridChangeRecordUpdate || DSVEditor.NULL_CHANGE_SPLICE,
         selection: update.selection || null,
+        gridState: update.gridStateUpdate || null,
         type: update.type
       }
     );
@@ -772,6 +773,7 @@ export namespace DSVEditor {
     valueUpdate?: MapField.Update<string>;
     gridUpdate?: DataModel.ChangedArgs;
     gridChangeRecordUpdate?: ListField.Update<GridState>;
+    gridStateUpdate?: GridState;
     type?: string;
     selection?: SelectionModel.Selection;
   };
@@ -789,6 +791,9 @@ export namespace DSVEditor {
       }),
       gridChangeRecord: Fields.List<GridState>(),
       selection: Fields.Register<SelectionModel.Selection>({
+        value: null
+      }),
+      gridState: Fields.Register<GridState>({
         value: null
       }),
       type: Fields.String()
