@@ -421,14 +421,13 @@ export class RichMouseHandler extends BasicMouseHandler {
           clear: 'all'
         });
       }
-
-      if (
-        this.pressData &&
-        (this.pressData.type === 'column-resize' ||
-          this.pressData.type === 'row-resize')
-      ) {
-        this._resizeSignal.emit(null);
-      }
+    }
+    if (
+      this.pressData &&
+      (this.pressData.type === 'column-resize' ||
+        this.pressData.type === 'row-resize')
+    ) {
+      this._resizeSignal.emit(null);
     }
     this.release();
     return;
