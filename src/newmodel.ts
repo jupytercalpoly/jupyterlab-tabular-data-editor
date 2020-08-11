@@ -213,6 +213,8 @@ export class EditorModel extends MutableDataModel {
 
       // Emit the model change to the datagrid.
       this.emitChanged(nextChange);
+
+      this._onChangeSignal.emit(update);
       return true;
     } else {
       // If it is a singleton, coerce it into an array.
