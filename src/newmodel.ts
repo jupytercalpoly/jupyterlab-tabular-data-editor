@@ -621,6 +621,7 @@ export class EditorModel extends MutableDataModel {
     });
     const currentRows = rowMap.length;
     const currentColumns = columnMap.length;
+    const nextCommand: DSVEditor.Commands = 'move-rows';
 
     const rowUpdate = this.rowMapSplice(rowMap, start, end, span);
 
@@ -644,7 +645,8 @@ export class EditorModel extends MutableDataModel {
     const gridState = {
       currentRows,
       currentColumns,
-      nextChange
+      nextChange,
+      nextCommand
     };
 
     // Set the grid state update to the current state of the grid.
@@ -720,6 +722,7 @@ export class EditorModel extends MutableDataModel {
     });
     const currentRows = rowMap.length;
     const currentColumns = columnMap.length;
+    const nextCommand: DSVEditor.Commands = 'move-columns';
 
     const columnUpdate = this.columnMapSplice(columnMap, start, end, span);
 
@@ -739,7 +742,8 @@ export class EditorModel extends MutableDataModel {
     const gridState = {
       currentRows,
       currentColumns,
-      nextChange
+      nextChange,
+      nextCommand
     };
 
     // Set the grid state update to the current state of the grid.
