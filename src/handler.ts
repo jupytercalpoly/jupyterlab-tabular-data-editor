@@ -9,6 +9,7 @@ import { Drag } from '@lumino/dragdrop';
 import { Signal } from '@lumino/signaling';
 import { renderSelection, IBoundingRegion, BoundedDrag } from './selection';
 import { EditorModel } from './newmodel';
+import { DSVEditor } from './widget';
 
 export class RichMouseHandler extends BasicMouseHandler {
   private _moveLine: BoundedDrag;
@@ -386,11 +387,14 @@ export class RichMouseHandler extends BasicMouseHandler {
 
       // we can assume there is a selection as it is necessary to move rows/columns
       const { r1, r2, c1, c2 } = selectionModel.currentSelection();
+      const update: DSVEditor.ModelChangedArgs = {
+        selection: { r1, r2, c1, c2 }
+      };
 
       if (this._moveData.region === 'column-header') {
         const startColumn = this._moveData.column;
         const endColumn = this._selectionIndex;
-        model.moveColumns('body', startColumn, endColumn, 1);
+        model.moveColumns('body', startColumn, endColumn, 1, update);
         // select the row that was just moved
         selectionModel.select({
           r1,
@@ -404,7 +408,7 @@ export class RichMouseHandler extends BasicMouseHandler {
       } else if (this._moveData.region === 'row-header') {
         const startRow = this._moveData.row;
         const endRow = this._selectionIndex;
-        model.moveRows('body', startRow, endRow, 1);
+        model.moveRows('body', startRow, endRow, 1, update);
 
         // select the row that was just moved
         selectionModel.select({

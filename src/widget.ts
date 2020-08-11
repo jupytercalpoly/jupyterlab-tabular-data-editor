@@ -389,8 +389,7 @@ export class DSVEditor extends Widget {
    * Called every time the datamodel updates
    * Updates the file and the litestore
    * @param emitter
-   * @param data The raw data used to update the model
-   * @param change The arguments from the datamodel change used ot update the Litestore
+   * @param args The row, column, value, record update, selection model
    */
   private _updateModel(
     emitter: EditorModel,
