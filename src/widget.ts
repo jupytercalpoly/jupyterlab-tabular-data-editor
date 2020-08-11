@@ -421,9 +421,9 @@ export class DSVEditor extends Widget {
   /**
    * Handles all changes to the data model
    * @param emitter
-   * @param type
+   * @param command
    */
-  private _changeModel(emitter: DSVEditor, type: string): void {
+  private _changeModel(emitter: DSVEditor, command: DSVEditor.Commands): void {
     const selectionModel = this._grid.selectionModel;
     const selection = selectionModel.currentSelection();
     let r1, r2, c1, c2: number;
@@ -447,33 +447,34 @@ export class DSVEditor extends Widget {
     };
     // Set up the update object for the litestore.
     let update: DSVEditor.ModelChangedArgs | null = null;
-    switch (type) {
-      case 'insert-row-above': {
+
+    switch (command) {
+      case 'insert-rows-above': {
         update = this.dataModel.addRows(this._region, this._row);
 
         // Add the type property so we can differentiate an insert above from an insert below.
-        update.type = type;
+        update.type = command;
         break;
       }
-      case 'insert-row-below': {
+      case 'insert-rows-below': {
         update = this.dataModel.addRows(this._region, this._row + 1);
 
-        // Add the type property so that we can differentiate insert above insert below.
-        update.type = type;
+        // Add the command to the grid state.
+        update.gridStateUpdate.nextCommand = command;
 
         // move the selection down a row to account for the new row being inserted
         newSelection.r1 += 1;
         newSelection.r2 += 1;
         break;
       }
-      case 'insert-column-left': {
+      case 'insert-columns-left': {
         update = this.dataModel.addColumns(this._region, this._column);
 
         // type property distinguishes between insert left and insert right.
-        update.type = type;
+        update.type = command;
         break;
       }
-      case 'insert-column-right': {
+      case 'insert-columns-right': {
         update = this.dataModel.addColumns(this._region, this._column + 1);
         update.type = type;
 
@@ -482,11 +483,11 @@ export class DSVEditor extends Widget {
         newSelection.c2 += 1;
         break;
       }
-      case 'remove-row': {
+      case 'remove-rows': {
         update = this.dataModel.removeRows(this._region, this._row);
         break;
       }
-      case 'remove-column': {
+      case 'remove-columns': {
         update = this.dataModel.removeColumns(this._region, this._column);
         break;
       }
@@ -498,7 +499,7 @@ export class DSVEditor extends Widget {
         update = this.dataModel.cut('body', r1, c1, r2, c2);
 
         // Type parameter distinguishes between cut/paste.
-        update.type = type;
+        update.type = command;
         break;
       case 'copy-cells': {
         // Copy to the OS clipboard.
@@ -513,7 +514,7 @@ export class DSVEditor extends Widget {
         update = this.dataModel.paste('body', r1, c1);
 
         // Add type parameter to distinguish between cut/paste.
-        update.type = type;
+        update.type = command;
 
         // By default, upper left cell get's re-edited, so we need to cancel.
         this._cancelEditing();
@@ -751,8 +752,8 @@ export namespace DSVEditor {
    * The types of commands that can be made to the model.
    */
   export type Commands =
-    | 'insert-rows-right'
-    | 'insert-rows-left'
+    | 'insert-rows-above'
+    | 'insert-rows-below'
     | 'insert-columns-right'
     | 'insert-columns-left'
     | 'remove-rows'
@@ -761,7 +762,13 @@ export namespace DSVEditor {
     | 'move-columns'
     | 'clear-cells'
     | 'clear-rows'
-    | 'clear-columns';
+    | 'clear-columns'
+    | 'cut-cells'
+    | 'copy-cells'
+    | 'paste-cells'
+    | 'undo'
+    | 'redo'
+    | 'save';
   /**
    * The arguments emitted to the Editor when the datamodel changes
    */

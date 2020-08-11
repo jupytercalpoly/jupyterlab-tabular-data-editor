@@ -188,29 +188,29 @@ function addCommands(
     }
   });
 
-  commands.addCommand(CommandIDs.insertRowAbove, {
+  commands.addCommand(CommandIDs.insertRowsAbove, {
     label: 'Insert Row Above',
     execute: () => {
       // emit a signal to the EditableDSVModel
       tracker.currentWidget &&
         tracker.currentWidget.content.changeModelSignal.emit(
-          'insert-row-above'
+          'insert-rows-above'
         );
     }
   });
 
-  commands.addCommand(CommandIDs.insertRowBelow, {
+  commands.addCommand(CommandIDs.insertRowsBelow, {
     label: 'Insert Row Below',
     execute: () => {
       // emit a signal to the EditableDSVModel
       tracker.currentWidget &&
         tracker.currentWidget.content.changeModelSignal.emit(
-          'insert-row-below'
+          'insert-rows-below'
         );
     }
   });
 
-  commands.addCommand(CommandIDs.removeRow, {
+  commands.addCommand(CommandIDs.removeRows, {
     label: 'Remove Row',
     execute: () => {
       tracker.currentWidget &&
@@ -218,27 +218,27 @@ function addCommands(
     }
   });
 
-  commands.addCommand(CommandIDs.insertColumnLeft, {
+  commands.addCommand(CommandIDs.insertColumnsLeft, {
     label: 'Insert Column Left',
     execute: () => {
       tracker.currentWidget &&
         tracker.currentWidget.content.changeModelSignal.emit(
-          'insert-column-left'
+          'insert-columns-left'
         );
     }
   });
 
-  commands.addCommand(CommandIDs.insertColumnRight, {
+  commands.addCommand(CommandIDs.insertColumnsRight, {
     label: 'Insert Column Right',
     execute: () => {
       tracker.currentWidget &&
         tracker.currentWidget.content.changeModelSignal.emit(
-          'insert-column-right'
+          'insert-columns-right'
         );
     }
   });
 
-  commands.addCommand(CommandIDs.removeColumn, {
+  commands.addCommand(CommandIDs.removeColumns, {
     label: 'Remove Column',
     execute: () => {
       tracker.currentWidget &&
@@ -344,6 +344,22 @@ function addCommands(
     }
   });
 
+  commands.addCommand(CommandIDs.clearColumns, {
+    label: 'Clear Columns',
+    execute: () => {
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('clear-columns');
+    }
+  });
+
+  commands.addCommand(CommandIDs.clearRows, {
+    label: 'Clear Rows',
+    execute: () => {
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('clear-rows');
+    }
+  });
+
   // these commands are standard for every context menu
   const standardContextMenu = [
     'cutContextMenu',
@@ -355,27 +371,27 @@ function addCommands(
   // extending the standard context menu for different parts of the data
   const bodyContextMenu = [
     ...standardContextMenu,
-    'insertRowAbove',
-    'insertRowBelow',
+    'insertRowsAbove',
+    'insertRowsBelow',
     'separator',
-    'removeRow',
+    'removeRows',
     'clearContents'
   ];
   const columnHeaderContextMenu = [
     ...standardContextMenu,
-    'insertColumnLeft',
-    'insertColumnRight',
+    'insertColumnsLeft',
+    'insertColumnsRight',
     'separator',
-    'removeColumn',
-    'clearContents'
+    'removeColumns',
+    'clearColumns'
   ];
   const rowHeaderContextMenu = [
     ...standardContextMenu,
-    'insertRowAbove',
-    'insertRowBelow',
+    'insertRowsAbove',
+    'insertRowsBelow',
     'separator',
-    'removeRow',
-    'clearContents'
+    'removeRows',
+    'clearRows'
   ];
 
   // build the different context menus
@@ -506,12 +522,12 @@ namespace Private {
 
 export const CommandIDs: { [key: string]: string } = {
   createNewCSV: 'tde-create-new-csv',
-  insertColumnLeft: 'tde:insert-column-left',
-  insertColumnRight: 'tde:insert-column-right',
-  insertRowAbove: 'tde:insert-row-above',
-  insertRowBelow: 'tde:insert-row-below',
-  removeRow: 'tde-remove-row',
-  removeColumn: 'tde:remove-column',
+  insertColumnsLeft: 'tde:insert-column-left',
+  insertColumnsRight: 'tde:insert-column-right',
+  insertRowsAbove: 'tde:insert-row-above',
+  insertRowsBelow: 'tde:insert-row-below',
+  removeRows: 'tde-remove-row',
+  removeColumns: 'tde:remove-column',
   copyContextMenu: 'tde:copy',
   cutContextMenu: 'tde:cut',
   pasteContextMenu: 'tde:paste-cm',
@@ -521,5 +537,7 @@ export const CommandIDs: { [key: string]: string } = {
   undo: 'tde:undo',
   redo: 'tde:redo',
   save: 'tde-save',
-  clearContents: 'tde-clear-contents'
+  clearContents: 'tde-clear-contents',
+  clearColumns: 'tde-clear-columns',
+  clearRows: 'tde-clear-rows'
 };
