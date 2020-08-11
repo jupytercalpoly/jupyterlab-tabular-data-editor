@@ -1103,20 +1103,28 @@ export class EditorModel extends MutableDataModel {
   }
 
   private _invertMaps(rows: number, columns: number): Array<Array<number>> {
-    // Initialize the updates to the inverse row map and inverse column map
-    // with the initial update splice.
+    // Initialize the inverse row map and inverse column map
     const inverseRowMap = toArray(range(0, rows));
     const inverseColumnMap = toArray(range(0, columns));
 
-    // Iterate through each change record, adding to the
-    // inverse column update and inverse row udpate when appropriate.
+    // Get a copy of the undo stack of transaction ids.
+    const ids = [...this._litestore.transactionStore.undoStack];
+
+    // Set up some helpful constants.
+    let id: string;
     let state: DSVEditor.GridState;
     let change: DataModel.ChangedArgs;
     let values: number[] = [];
     let index: number;
     let destination: number;
-    for (let i = 0; i < gridChangeRecord.length; i++) {
-      state = gridChangeRecord[i];
+
+    // Iterate through each transaction id starting with the most recent.
+    while (ids.length > 0) {
+      // Get the most recent ID.
+      id = ids.pop();
+
+      // Get the state of the grid at this point.
+      const { gridState } = 
       switch (state.nextChange.type) {
         case 'rows-inserted': {
           change = state.nextChange as DataModel.RowsChangedArgs;
