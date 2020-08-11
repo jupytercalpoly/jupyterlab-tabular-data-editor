@@ -1252,6 +1252,9 @@ export class EditorModel extends MutableDataModel {
       const gridState = patch.gridState as RegisterField.Patch<
         DSVEditor.GridState
       >;
+      if (!gridState.value) {
+        continue;
+      }
 
       // Unpack the current rows, columns, change, and command from the state.
       const {
