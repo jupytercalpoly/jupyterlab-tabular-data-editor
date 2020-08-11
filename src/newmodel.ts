@@ -166,6 +166,8 @@ export class EditorModel extends MutableDataModel {
       schema: DSVEditor.DATAMODEL_SCHEMA,
       record: DSVEditor.RECORD_ID
     });
+    const currentRows = rowMap.length;
+    const currentColumns = columnMap.length;
 
     // Set up the update to the valueMap.
     const valueUpdate: { [key: string]: string } = {};
@@ -185,8 +187,8 @@ export class EditorModel extends MutableDataModel {
       // Revert to the row index by region, which is what the grid expects.
       row = this._regionIndex(row, region);
 
-      // Define the update for the grid.
-      const gridUpdate: DataModel.ChangedArgs = {
+      // Define the next change to the data model.
+      const nextChange: DataModel.ChangedArgs = {
         type: 'cells-changed',
         region,
         row: row,
@@ -195,15 +197,18 @@ export class EditorModel extends MutableDataModel {
         columnSpan
       };
 
-      // Add the grid update to the liteStore update.
-      update.gridUpdate = gridUpdate;
+      // Get a snapshot of the current state of the grid.
+      const gridState = {
+        currentRows,
+        currentColumns,
+        nextChange
+      };
 
-      // Emit the change to the Editor.
-      this._onChangeSignal.emit(update);
+      // Set the grid state update to the current state of the grid.
+      update.gridStateUpdate = gridState;
 
-      // Emit the change to the grid.
-      this.emitChanged(update.gridUpdate);
-
+      // Emit the model change to the datagrid.
+      this.emitChanged(nextChange);
       return true;
     } else {
       // If it is a singleton, coerce it into an array.
@@ -227,8 +232,8 @@ export class EditorModel extends MutableDataModel {
       // Revert to the row index by region, which is what the grid expects.
       row = this._regionIndex(row, region);
 
-      // Define the update for the grid.
-      const gridUpdate: DataModel.ChangedArgs = {
+      // Define the next change to the data model.
+      const nextChange: DataModel.ChangedArgs = {
         type: 'cells-changed',
         region,
         row: row,
@@ -237,11 +242,18 @@ export class EditorModel extends MutableDataModel {
         columnSpan
       };
 
-      // Add the grid update to the liteStore update.
-      update.gridUpdate = gridUpdate;
+      // Get a snapshot of the current state of the grid.
+      const gridState = {
+        currentRows,
+        currentColumns,
+        nextChange
+      };
 
-      // Emit the change to the grid.
-      this.emitChanged(update.gridUpdate);
+      // Set the grid state update to the current state of the grid.
+      update.gridStateUpdate = gridState;
+
+      // Emit the model change to the datagrid.
+      this.emitChanged(nextChange);
 
       return true;
     }
@@ -270,6 +282,8 @@ export class EditorModel extends MutableDataModel {
       schema: DSVEditor.DATAMODEL_SCHEMA,
       record: DSVEditor.RECORD_ID
     });
+    const currentRows = rowMap.length;
+    const currentColumns = columnMap.length;
 
     let row: number;
     let column: number;
@@ -284,7 +298,8 @@ export class EditorModel extends MutableDataModel {
     // Add the valueMap update to the Litestore update.
     update.valueUpdate = valueUpdate;
 
-    const gridUpdate: DataModel.ChangedArgs = {
+    // Define the next change to the data model.
+    const nextChange: DataModel.ChangedArgs = {
       type: 'cells-changed',
       region: 'body',
       row: startRow,
@@ -292,14 +307,19 @@ export class EditorModel extends MutableDataModel {
       rowSpan: endRow - startRow + 1,
       columnSpan: endColumn - startColumn + 1
     };
-    // Add the change to the litestore update object.
-    update.gridUpdate = gridUpdate;
 
-    // Emit the change to the Editor.
-    this._onChangeSignal.emit(update);
+    // Get a snapshot of the current state of the grid.
+    const gridState = {
+      currentRows,
+      currentColumns,
+      nextChange
+    };
 
-    // Emit the change to the grid.
-    this.emitChanged(update.gridUpdate);
+    // Set the grid state update to the current state of the grid.
+    update.gridStateUpdate = gridState;
+
+    // Emit the model change to the datagrid.
+    this.emitChanged(nextChange);
   }
 
   /**
@@ -325,6 +345,8 @@ export class EditorModel extends MutableDataModel {
       schema: DSVEditor.DATAMODEL_SCHEMA,
       record: DSVEditor.RECORD_ID
     });
+    const currentRows = rowMap.length;
+    const currentColumns = columnMap.length;
 
     // store the next span's worth of values.
     const values = [];
@@ -348,34 +370,26 @@ export class EditorModel extends MutableDataModel {
     // Revert to the row index by region, which is what the grid expects.
     start = this._regionIndex(start, region);
 
-    // Define the update for the grid.
-    const gridUpdate: DataModel.ChangedArgs = {
+    // Define the next change to the data model.
+    const nextChange: DataModel.ChangedArgs = {
       type: 'rows-inserted',
       region: 'body',
       index: start,
       span: span
     };
 
-    // Add the change to the litestore update object.
-    update.gridUpdate = gridUpdate;
-
-    // Get the grid change record update args
-    const updateArgs = {
-      currentRows: rowMap.length,
-      currentColumns: columnMap.length,
-      change: gridUpdate
+    // Get a snapshot of the current state of the grid.
+    const gridState = {
+      currentRows,
+      currentColumns,
+      nextChange
     };
 
-    // Log the update to the grid.
-    const gridChangeRecordUpdate = {
-      index: 0,
-      remove: 0,
-      values: [updateArgs]
-    };
-    update.gridChangeRecordUpdate = gridChangeRecordUpdate;
+    // Set the grid state update to the current state of the grid.
+    update.gridStateUpdate = gridState;
 
-    // Emit the update object for the grid & editor.
-    this.emitChanged(update.gridUpdate);
+    // Emit the model change to the datagrid.
+    this.emitChanged(nextChange);
 
     return update;
   }
@@ -398,6 +412,9 @@ export class EditorModel extends MutableDataModel {
       schema: DSVEditor.DATAMODEL_SCHEMA,
       record: DSVEditor.RECORD_ID
     });
+    const currentRows = rowMap.length;
+    const currentColumns = columnMap.length;
+
     const values = [];
     const columnHeaders: { [key: string]: string } = {};
     let i = 0;
@@ -423,34 +440,26 @@ export class EditorModel extends MutableDataModel {
     // Add the column update to the litestore update object.
     update.columnUpdate = columnUpdate;
 
-    // Define the update for the grid.
-    const gridUpdate: DataModel.ChangedArgs = {
+    // Define the next change to the data model.
+    const nextChange: DataModel.ChangedArgs = {
       type: 'columns-inserted',
       region: 'body',
       index: start,
       span: span
     };
 
-    // Add the change to the litestore update object.
-    update.gridUpdate = gridUpdate;
-
-    // Get the grid change record update args
-    const updateArgs = {
-      currentRows: rowMap.length,
-      currentColumns: columnMap.length,
-      change: gridUpdate
+    // Get a snapshot of the current state of the grid.
+    const gridState = {
+      currentRows,
+      currentColumns,
+      nextChange
     };
 
-    // Log the update to the grid.
-    const gridChangeRecordUpdate = {
-      index: 0,
-      remove: 0,
-      values: [updateArgs]
-    };
-    update.gridChangeRecordUpdate = gridChangeRecordUpdate;
+    // Set the grid state update to the current state of the grid.
+    update.gridStateUpdate = gridState;
 
-    // Emit the change to the grid.
-    this.emitChanged(update.gridUpdate);
+    // Emit the model change to the datagrid.
+    this.emitChanged(nextChange);
 
     return update;
   }
@@ -477,6 +486,8 @@ export class EditorModel extends MutableDataModel {
       schema: DSVEditor.DATAMODEL_SCHEMA,
       record: DSVEditor.RECORD_ID
     });
+    const currentRows = rowMap.length;
+    const currentColumns = columnMap.length;
 
     // Create the row update object for the litestore.
     const nullValues: number[] = [];
@@ -495,34 +506,26 @@ export class EditorModel extends MutableDataModel {
     // Revert to the row index by region, which is what the grid expects.
     start = this._regionIndex(start, region);
 
-    // Define the update for the grid.
-    const gridUpdate: DataModel.ChangedArgs = {
+    // Define the next change to the data model.
+    const nextChange: DataModel.ChangedArgs = {
       type: 'rows-removed',
       region: 'body',
       index: start,
       span: span
     };
 
-    // Add the change to the litestore update object.
-    update.gridUpdate = gridUpdate;
-
-    // Get the grid change record update args
-    const updateArgs = {
-      currentRows: rowMap.length,
-      currentColumns: columnMap.length,
-      change: gridUpdate
+    // Get a snapshot of the current state of the grid.
+    const gridState = {
+      currentRows,
+      currentColumns,
+      nextChange
     };
 
-    // Log the update to the grid.
-    const gridChangeRecordUpdate = {
-      index: 0,
-      remove: 0,
-      values: [updateArgs]
-    };
-    update.gridChangeRecordUpdate = gridChangeRecordUpdate;
+    // Set the grid state update to the current state of the grid.
+    update.gridStateUpdate = gridState;
 
-    // Emit the change to the grid.
-    this.emitChanged(update.gridUpdate);
+    // Emit the model change to the datagrid.
+    this.emitChanged(nextChange);
 
     // return the update object.
     return update;
@@ -546,6 +549,8 @@ export class EditorModel extends MutableDataModel {
       schema: DSVEditor.DATAMODEL_SCHEMA,
       record: DSVEditor.RECORD_ID
     });
+    const currentRows = rowMap.length;
+    const currentColumns = columnMap.length;
 
     // Create the column update object for the litestore.
     const nullValues: number[] = [];
@@ -561,34 +566,26 @@ export class EditorModel extends MutableDataModel {
     // Update the column count.
     this._columnsRemoved += span;
 
-    // Define the update for the grid.
-    const gridUpdate: DataModel.ChangedArgs = {
+    // Define the next change to the data model.
+    const nextChange: DataModel.ChangedArgs = {
       type: 'columns-removed',
       region: 'body',
       index: start,
       span: span
     };
 
-    // Add the change to the litestore update object.
-    update.gridUpdate = gridUpdate;
-
-    // Get the grid change record update args
-    const updateArgs = {
-      currentRows: rowMap.length,
-      currentColumns: columnMap.length,
-      change: gridUpdate
+    // Get a snapshot of the current state of the grid.
+    const gridState = {
+      currentRows,
+      currentColumns,
+      nextChange
     };
 
-    // Log the update to the grid.
-    const gridChangeRecordUpdate = {
-      index: 0,
-      remove: 0,
-      values: [updateArgs]
-    };
-    update.gridChangeRecordUpdate = gridChangeRecordUpdate;
+    // Set the grid state update to the current state of the grid.
+    update.gridStateUpdate = gridState;
 
-    // Emit the change to the grid.
-    this.emitChanged(update.gridUpdate);
+    // Emit the model change to the datagrid.
+    this.emitChanged(nextChange);
 
     return update;
   }
@@ -622,6 +619,8 @@ export class EditorModel extends MutableDataModel {
       schema: DSVEditor.DATAMODEL_SCHEMA,
       record: DSVEditor.RECORD_ID
     });
+    const currentRows = rowMap.length;
+    const currentColumns = columnMap.length;
 
     const rowUpdate = this.rowMapSplice(rowMap, start, end, span);
 
@@ -632,8 +631,8 @@ export class EditorModel extends MutableDataModel {
     start = this._regionIndex(start, region);
     end = this._regionIndex(end, region);
 
-    // Define the update for the grid.
-    const gridUpdate: DataModel.ChangedArgs = {
+    // Define the next change to the data model.
+    const nextChange: DataModel.ChangedArgs = {
       type: 'rows-moved',
       region: 'body',
       index: start,
@@ -641,26 +640,18 @@ export class EditorModel extends MutableDataModel {
       destination: end
     };
 
-    // Add the grid update to the litestore update object.
-    update.gridUpdate = gridUpdate;
-
-    // Get the grid change record update args.
-    const updateArgs = {
-      currentRows: rowMap.length,
-      currentColumns: columnMap.length,
-      change: gridUpdate
+    // Get a snapshot of the current state of the grid.
+    const gridState = {
+      currentRows,
+      currentColumns,
+      nextChange
     };
 
-    // Log the update to the grid.
-    const gridChangeRecordUpdate = {
-      index: 0,
-      remove: 0,
-      values: [updateArgs]
-    };
-    update.gridChangeRecordUpdate = gridChangeRecordUpdate;
+    // Set the grid state update to the current state of the grid.
+    update.gridStateUpdate = gridState;
 
-    // Emit the change to the grid.
-    this.emitChanged(update.gridUpdate);
+    // Emit the model change to the datagrid.
+    this.emitChanged(nextChange);
 
     // Emit the change to the Editor
     // TODO: I think it would be better if we refactored so that we were returning
@@ -727,14 +718,16 @@ export class EditorModel extends MutableDataModel {
       schema: DSVEditor.DATAMODEL_SCHEMA,
       record: DSVEditor.RECORD_ID
     });
+    const currentRows = rowMap.length;
+    const currentColumns = columnMap.length;
 
     const columnUpdate = this.columnMapSplice(columnMap, start, end, span);
 
     // Add the columnUpdate to the litestore update object.
     update.columnUpdate = columnUpdate;
 
-    // Define the update for the grid.
-    const gridUpdate: DataModel.ChangedArgs = {
+    // Define the next change to the data model.
+    const nextChange: DataModel.ChangedArgs = {
       type: 'columns-moved',
       region: 'body',
       index: start,
@@ -742,26 +735,18 @@ export class EditorModel extends MutableDataModel {
       destination: end
     };
 
-    // Add the grid update to the litestore update object.
-    update.gridUpdate = gridUpdate;
-
-    // Get the grid change record update args
-    const updateArgs = {
-      currentRows: rowMap.length,
-      currentColumns: columnMap.length,
-      change: gridUpdate
+    // Get a snapshot of the current state of the grid.
+    const gridState = {
+      currentRows,
+      currentColumns,
+      nextChange
     };
 
-    // Log the update to the grid.
-    const gridChangeRecordUpdate = {
-      index: 0,
-      remove: 0,
-      values: [updateArgs]
-    };
-    update.gridChangeRecordUpdate = gridChangeRecordUpdate;
+    // Set the grid state update to the current state of the grid.
+    update.gridStateUpdate = gridState;
 
-    // Emit the change to the grid.
-    this.emitChanged(update.gridUpdate);
+    // Emit the model change to the datagrid.
+    this.emitChanged(nextChange);
 
     // TODO: I think it would be better if we refactored so that we were returning
     // an update object.
