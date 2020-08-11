@@ -1124,7 +1124,7 @@ export class EditorModel extends MutableDataModel {
   }
 
   private _invertMaps(
-    gridChangeRecord: ListField.Value<DSVEditor.GridChangeRecordArgs>,
+    gridChangeRecord: ListField.Value<DSVEditor.GridState>,
     rows: number,
     columns: number
   ): Array<Array<number>> {
@@ -1135,7 +1135,7 @@ export class EditorModel extends MutableDataModel {
 
     // Iterate through each change record, adding to the
     // inverse column update and inverse row udpate when appropriate.
-    let changeArg: DSVEditor.GridChangeRecordArgs;
+    let changeArg: DSVEditor.GridState;
     let change: DataModel.ChangedArgs;
     let values: number[] = [];
     let index: number;

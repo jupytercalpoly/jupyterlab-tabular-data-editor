@@ -742,7 +742,7 @@ export namespace DSVEditor {
   /**
    * The Grid update args
    */
-  export type GridChangeRecordArgs = {
+  export type GridState = {
     currentRows: number;
     currentColumns: number;
     change: DataModel.ChangedArgs;
@@ -771,7 +771,7 @@ export namespace DSVEditor {
     columnUpdate?: ListField.Update<number>;
     valueUpdate?: MapField.Update<string>;
     gridUpdate?: DataModel.ChangedArgs;
-    gridChangeRecordUpdate?: ListField.Update<GridChangeRecordArgs>;
+    gridChangeRecordUpdate?: ListField.Update<GridState>;
     type?: string;
     selection?: SelectionModel.Selection;
   };
@@ -787,7 +787,7 @@ export namespace DSVEditor {
       gridChange: Fields.Register<DataModel.ChangedArgs>({
         value: { type: 'model-reset' }
       }),
-      gridChangeRecord: Fields.List<GridChangeRecordArgs>(),
+      gridChangeRecord: Fields.List<GridState>(),
       selection: Fields.Register<SelectionModel.Selection>({
         value: null
       }),
@@ -796,7 +796,7 @@ export namespace DSVEditor {
   };
   export const NULL_NUMS: number[] = [];
   export const NULL_NUM_SPLICE = { index: 0, remove: 0, values: NULL_NUMS };
-  export const NULL_CHANGE: GridChangeRecordArgs[] = [];
+  export const NULL_CHANGE: GridState[] = [];
   export const NULL_CHANGE_SPLICE = {
     index: 0,
     remove: 0,
