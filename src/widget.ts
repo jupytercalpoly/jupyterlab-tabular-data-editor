@@ -535,6 +535,10 @@ export class DSVEditor extends Widget {
         // Have the model emit the opposite change to the Grid.
         this.dataModel.emitOppositeChange(gridChange);
 
+        if (!selection) {
+          break;
+        }
+
         // reselect the previous selection.
         const { r1, r2, c1, c2 } = selection;
         this._grid.selectionModel.select({
@@ -562,6 +566,13 @@ export class DSVEditor extends Widget {
           record: DSVEditor.RECORD_ID
         });
 
+        // Have the data model emit the grid change to the grid.
+        this.dataModel.emitCurrentChange(gridChange);
+
+        if (!selection) {
+          break;
+        }
+
         let { r1, r2, c1, c2 } = selection;
         // handle special cases for selection
         if (type === 'insert-row-below') {
@@ -588,8 +599,6 @@ export class DSVEditor extends Widget {
           cursorColumn: c1,
           clear: 'all'
         });
-        // Have the data model emit the grid change to the grid.
-        this.dataModel.emitCurrentChange(gridChange);
         break;
       }
       case 'save':
