@@ -1144,6 +1144,11 @@ export class EditorModel extends MutableDataModel {
         nextCommand
       } = gridState.value;
 
+      // See if there is a command to invert.
+      if (!nextCommand) {
+        continue;
+      }
+
       switch (nextCommand) {
         case 'insert-rows-left':
         case 'insert-rows-right': {
