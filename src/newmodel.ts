@@ -604,7 +604,8 @@ export class EditorModel extends MutableDataModel {
     region: DataModel.CellRegion,
     start: number,
     end: number,
-    span: number
+    span: number,
+    update: DSVEditor.ModelChangedArgs
   ): DSVEditor.ModelChangedArgs {
     // Start and end come to us as an index on a particular region. We need the
     // absolute index (ie index 0 is the first row of data).
@@ -615,9 +616,6 @@ export class EditorModel extends MutableDataModel {
     if (start === end) {
       return;
     }
-
-    // Set up an udate object for the litestore.
-    const update: DSVEditor.ModelChangedArgs = {};
 
     // Unpack values from the litestore.
     const { rowMap, columnMap } = this._litestore.getRecord({
@@ -716,15 +714,13 @@ export class EditorModel extends MutableDataModel {
     region: DataModel.CellRegion,
     start: number,
     end: number,
-    span: number
+    span: number,
+    update: DSVEditor.ModelChangedArgs
   ): DSVEditor.ModelChangedArgs {
     // bail early if we are moving no distance
     if (start === end) {
       return;
     }
-
-    // Set up an udate object for the litestore.
-    const update: DSVEditor.ModelChangedArgs = {};
 
     // Unpack values from the litestore.
     const { columnMap, rowMap } = this._litestore.getRecord({
