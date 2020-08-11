@@ -469,9 +469,6 @@ export class DSVEditor extends Widget {
       }
       case 'insert-columns-left': {
         update = this.dataModel.addColumns(this._region, this._column);
-
-        // type property distinguishes between insert left and insert right.
-        update.gridStateUpdate.nextCommand = command;
         break;
       }
       case 'insert-columns-right': {
@@ -498,8 +495,6 @@ export class DSVEditor extends Widget {
         // Cut the cell selection.
         update = this.dataModel.cut('body', r1, c1, r2, c2);
 
-        // Type parameter distinguishes between cut/paste.
-        update.type = command;
         break;
       case 'copy-cells': {
         // Copy to the OS clipboard.
@@ -512,9 +507,6 @@ export class DSVEditor extends Widget {
       case 'paste-cells': {
         // Paste the cells in the region.
         update = this.dataModel.paste('body', r1, c1);
-
-        // Add type parameter to distinguish between cut/paste.
-        update.type = command;
 
         // By default, upper left cell get's re-edited, so we need to cancel.
         this._cancelEditing();
@@ -576,7 +568,7 @@ export class DSVEditor extends Widget {
 
         // Redo first, then get the new selection and the new grid change.
         this._litestore.redo();
-        const { gridState, selection, type } = this._litestore.getRecord({
+        const { gridState, selection } = this._litestore.getRecord({
           schema: DSVEditor.DATAMODEL_SCHEMA,
           record: DSVEditor.RECORD_ID
         });
@@ -587,22 +579,26 @@ export class DSVEditor extends Widget {
         if (!selection) {
           break;
         }
+        const command = gridState.nextCommand;
         const gridChange = gridState.nextChange;
 
         let { r1, r2, c1, c2 } = selection;
+        let move: DataModel.ChangedArgs;
         // handle special cases for selection
-        if (type === 'insert-row-below') {
+        if (command === 'insert-rows-below') {
           r1 += 1;
           r2 += 1;
-        } else if (type === 'insert-column-right') {
+        } else if (command === 'insert-columns-right') {
           c1 += 1;
           c2 += 1;
-        } else if (gridChange.type === 'rows-moved') {
-          r1 = gridChange.destination;
-          r2 = gridChange.destination;
-        } else if (gridChange.type === 'columns-moved') {
-          c1 = gridChange.destination;
-          c2 = gridChange.destination;
+        } else if (command === 'move-rows') {
+          move = gridChange as DataModel.RowsMovedArgs;
+          r1 = move.destination;
+          r2 = move.destination;
+        } else if (command === 'move-columns') {
+          move = gridChange as DataModel.ColumnsMovedArgs;
+          c1 = move.destination;
+          c2 = move.destination;
         }
 
         // Make the new selection.
@@ -623,6 +619,8 @@ export class DSVEditor extends Widget {
     }
     if (update) {
       update.selection = selection;
+      // Add the command to the grid state.
+      update.gridStateUpdate.nextCommand = command;
       this._litestore.beginTransaction();
       this.updateLitestore(update);
       this._litestore.endTransaction();
