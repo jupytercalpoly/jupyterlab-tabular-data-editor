@@ -746,14 +746,14 @@ export namespace DSVEditor {
     currentRows: number;
     currentColumns: number;
     change: DataModel.ChangedArgs;
-    type?: DSVEditor.ModelChangeType;
+    type?: DSVEditor.Commands;
   };
   /**
    * The types of mutations that can be made to the model.
    */
-  export type ModelChangeType =
-    | 'insert-rows-above'
-    | 'insert-rows-below'
+  export type Commands =
+    | 'insert-rows-right'
+    | 'insert-rows-left'
     | 'insert-columns-right'
     | 'insert-columns-left'
     | 'remove-rows'
