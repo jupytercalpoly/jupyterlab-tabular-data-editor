@@ -835,7 +835,7 @@ export class EditorModel extends MutableDataModel {
         columnSpan = Math.abs(c1 - c2) + 1;
 
         // Clear the columns.
-        update = this._clearColumns('body', column, columnSpan);
+        update = this.clearColumns('body', column, columnSpan);
         break;
       }
       case 'row-header': {
@@ -844,7 +844,7 @@ export class EditorModel extends MutableDataModel {
         rowSpan = Math.abs(r1 - r2) + 1;
 
         // Clear the rows.
-        update = this._clearRows('body', row, rowSpan);
+        update = this.clearRows('body', row, rowSpan);
         break;
       }
       case 'body': {
@@ -863,6 +863,150 @@ export class EditorModel extends MutableDataModel {
         this.setData('body', row, column, values, rowSpan, columnSpan, update);
       }
     }
+    return update;
+  }
+
+  clearRows(
+    region: DataModel.CellRegion,
+    start: number,
+    span = 1
+  ): DSVEditor.ModelChangedArgs {
+    // Set up an udate object for the litestore.
+    const update: DSVEditor.ModelChangedArgs = {};
+
+    // The row comes to us as an index on a particular region. We need the
+    // absolute index (ie index 0 is the first row of data).
+    start = this._absoluteIndex(start, region);
+
+    // Unpack values from the litestore.
+    const { rowMap, columnMap } = this._litestore.getRecord({
+      schema: DSVEditor.DATAMODEL_SCHEMA,
+      record: DSVEditor.RECORD_ID
+    });
+    const currentRows = rowMap.length;
+    const currentColumns = columnMap.length;
+
+    // Set up values to stand in for the blank rows.
+    const values = [];
+    let i = 0;
+    while (i < span) {
+      values.push(-(this.totalRows() + this._rowsRemoved));
+      i++;
+      this._rowsAdded++;
+    }
+
+    this._rowsRemoved += span;
+
+    // Set up the row splice object to update the litestore.
+    const rowUpdate = {
+      index: start,
+      remove: span,
+      values
+    };
+
+    // Add the rowUpdate to the litestore update object.
+    update.rowUpdate = rowUpdate;
+
+    // Revert to the row index by region, which is what the grid expects.
+    start = this._regionIndex(start, region);
+
+    // The DataGrid is slow to process a cells-change argument with
+    // a very large span, so in this instance we elect to use the "big
+    // hammer".
+
+    const gridUpdate: DataModel.ChangedArgs = { type: 'model-reset' };
+
+    // Emit the model change to the datagrid.
+    this.emitChanged(gridUpdate);
+
+    // Define the next change to the data model.
+    const nextChange: DataModel.ChangedArgs = {
+      region,
+      type: 'cells-changed',
+      row: start,
+      rowSpan: span,
+      column: 0,
+      columnSpan: currentColumns
+    };
+
+    // Get a snapshot of the current state of the grid.
+    const gridState = {
+      currentRows,
+      currentColumns,
+      nextChange
+    };
+
+    // Set the grid state update to the current state of the grid.
+    update.gridStateUpdate = gridState;
+
+    return update;
+  }
+
+  clearColumns(
+    region: DataModel.CellRegion,
+    start: number,
+    span = 1
+  ): DSVEditor.ModelChangedArgs {
+    // Set up an udate object for the litestore.
+    const update: DSVEditor.ModelChangedArgs = {};
+
+    // Unpack values from the litestore.
+    const { columnMap, rowMap } = this._litestore.getRecord({
+      schema: DSVEditor.DATAMODEL_SCHEMA,
+      record: DSVEditor.RECORD_ID
+    });
+    const currentRows = rowMap.length;
+    const currentColumns = columnMap.length;
+
+    // Set up values to stand in for the blank columns.
+    const values = [];
+    let i = 0;
+    while (i < span) {
+      values.push(-(this.totalColumns() + this._columnsAdded));
+      i++;
+      this._columnsAdded++;
+    }
+
+    this._columnsRemoved += span;
+
+    // Set up the column splice object to update the litestore.
+    const columnUpdate = {
+      index: start,
+      remove: span,
+      values
+    };
+
+    // Add the columnUpdate to the litestore update object.
+    update.columnUpdate = columnUpdate;
+
+    // The DataGrid is slow to process a cells-change argument with
+    // a very large span, so in this instance we elect to use the "big
+    // hammer".
+    const gridUpdate: DataModel.ChangedArgs = { type: 'model-reset' };
+
+    // Emit the model change to the datagrid.
+    this.emitChanged(gridUpdate);
+
+    // Define the next change to the data model.
+    const nextChange: DataModel.ChangedArgs = {
+      region,
+      type: 'cells-changed',
+      row: 0,
+      rowSpan: currentRows,
+      column: start,
+      columnSpan: span
+    };
+
+    // Get a snapshot of the current state of the grid.
+    const gridState = {
+      currentRows,
+      currentColumns,
+      nextChange
+    };
+
+    // Set the grid state update to the current state of the grid.
+    update.gridStateUpdate = gridState;
+
     return update;
   }
 
@@ -1240,152 +1384,6 @@ export class EditorModel extends MutableDataModel {
       }
     }
     return [inverseRowMap, inverseColumnMap];
-  }
-
-  private _clearRows(
-    region: DataModel.CellRegion,
-    start: number,
-    span = 1
-  ): DSVEditor.ModelChangedArgs {
-    // Set up an udate object for the litestore.
-    const update: DSVEditor.ModelChangedArgs = {};
-
-    // The row comes to us as an index on a particular region. We need the
-    // absolute index (ie index 0 is the first row of data).
-    start = this._absoluteIndex(start, region);
-
-    // Unpack values from the litestore.
-    const { rowMap, columnMap } = this._litestore.getRecord({
-      schema: DSVEditor.DATAMODEL_SCHEMA,
-      record: DSVEditor.RECORD_ID
-    });
-    const currentRows = rowMap.length;
-    const currentColumns = columnMap.length;
-
-    // Set up values to stand in for the blank rows.
-    const values = [];
-    let i = 0;
-    while (i < span) {
-      values.push(-(this.totalRows() + this._rowsRemoved));
-      i++;
-      this._rowsAdded++;
-    }
-
-    this._rowsRemoved += span;
-
-    // Set up the row splice object to update the litestore.
-    const rowUpdate = {
-      index: start,
-      remove: span,
-      values
-    };
-
-    console.log('rowupdate in clearRows', rowUpdate);
-
-    // Add the rowUpdate to the litestore update object.
-    update.rowUpdate = rowUpdate;
-
-    // Revert to the row index by region, which is what the grid expects.
-    start = this._regionIndex(start, region);
-
-    // The DataGrid is slow to process a cells-change argument with
-    // a very large span, so in this instance we elect to use the "big
-    // hammer".
-
-    const gridUpdate: DataModel.ChangedArgs = { type: 'model-reset' };
-
-    // Emit the model change to the datagrid.
-    this.emitChanged(gridUpdate);
-
-    // Define the next change to the data model.
-    const nextChange: DataModel.ChangedArgs = {
-      region,
-      type: 'cells-changed',
-      row: start,
-      rowSpan: span,
-      column: 0,
-      columnSpan: currentColumns
-    };
-
-    // Get a snapshot of the current state of the grid.
-    const gridState = {
-      currentRows,
-      currentColumns,
-      nextChange
-    };
-
-    // Set the grid state update to the current state of the grid.
-    update.gridStateUpdate = gridState;
-
-    return update;
-  }
-
-  private _clearColumns(
-    region: DataModel.CellRegion,
-    start: number,
-    span = 1
-  ): DSVEditor.ModelChangedArgs {
-    // Set up an udate object for the litestore.
-    const update: DSVEditor.ModelChangedArgs = {};
-
-    // Unpack values from the litestore.
-    const { columnMap, rowMap } = this._litestore.getRecord({
-      schema: DSVEditor.DATAMODEL_SCHEMA,
-      record: DSVEditor.RECORD_ID
-    });
-    const currentRows = rowMap.length;
-    const currentColumns = columnMap.length;
-
-    // Set up values to stand in for the blank columns.
-    const values = [];
-    let i = 0;
-    while (i < span) {
-      values.push(-(this.totalColumns() + this._columnsAdded));
-      i++;
-      this._columnsAdded++;
-    }
-
-    this._columnsRemoved += span;
-
-    // Set up the column splice object to update the litestore.
-    const columnUpdate = {
-      index: start,
-      remove: span,
-      values
-    };
-
-    // Add the columnUpdate to the litestore update object.
-    update.columnUpdate = columnUpdate;
-
-    // The DataGrid is slow to process a cells-change argument with
-    // a very large span, so in this instance we elect to use the "big
-    // hammer".
-    const gridUpdate: DataModel.ChangedArgs = { type: 'model-reset' };
-
-    // Emit the model change to the datagrid.
-    this.emitChanged(gridUpdate);
-
-    // Define the next change to the data model.
-    const nextChange: DataModel.ChangedArgs = {
-      region,
-      type: 'cells-changed',
-      row: 0,
-      rowSpan: currentRows,
-      column: start,
-      columnSpan: span
-    };
-
-    // Get a snapshot of the current state of the grid.
-    const gridState = {
-      currentRows,
-      currentColumns,
-      nextChange
-    };
-
-    // Set the grid state update to the current state of the grid.
-    update.gridStateUpdate = gridState;
-
-    return update;
   }
 
   /**

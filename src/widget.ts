@@ -520,7 +520,7 @@ export class DSVEditor extends Widget {
         this._cancelEditing();
         break;
       }
-      case 'clear-contents': {
+      case 'clear-columns': {
         update = this.dataModel.clearContents(this._region, { r1, r2, c1, c2 });
         break;
       }
