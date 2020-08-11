@@ -1,7 +1,6 @@
 
 
 # Model Changes
-_This document is a work in progress. The model it describes is currently in developement and not implemented yet_.
 
 ## Motivation:
 
@@ -82,10 +81,10 @@ That is essentially how the new model works. The only part that is left out of t
 ### TODOs:
 - [x] editing single cell working
 - [x] adding/removing/moving rows columns working
-- [x ] cut/copy/paste working
-- [x ] undo/redo working
-- [ ] saving working
-- [ ] S & R working
-- [x ] clearing working
+- [x] cut/copy/paste working
+- [x] undo/redo working
+- [x] saving working
+- [x] S & R working
+- [x] clearing working
 
 
