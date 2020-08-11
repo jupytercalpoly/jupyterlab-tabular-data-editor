@@ -471,7 +471,7 @@ export class DSVEditor extends Widget {
         update = this.dataModel.addColumns(this._region, this._column);
 
         // type property distinguishes between insert left and insert right.
-        update.type = command;
+        update.gridStateUpdate.nextCommand = command;
         break;
       }
       case 'insert-columns-right': {

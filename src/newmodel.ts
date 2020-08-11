@@ -45,6 +45,7 @@ export class EditorModel extends MutableDataModel {
   get model(): DSVModel {
     return this._model;
   }
+
   /**
    * A signal that emits when data is set to notify the Editor.
    */
@@ -52,9 +53,15 @@ export class EditorModel extends MutableDataModel {
     return this._onChangeSignal;
   }
 
+  /**
+   * The datastore used by the this class to read properties.
+   */
   get litestore(): Litestore {
     return this._litestore;
   }
+  /**
+   * The setter used by parent classes to intialize the litestore.
+   */
   set litestore(value: Litestore) {
     this._litestore = value;
   }
@@ -110,6 +117,10 @@ export class EditorModel extends MutableDataModel {
     );
   }
 
+  /**
+   * This function is called by the datagrid to fill in values. It is called many times
+   * and so should be efficient.
+   */
   data(region: DataModel.CellRegion, row: number, column: number): any {
     // The model is defered to if the region is a row header.
     if (region === 'row-header') {
@@ -152,6 +163,9 @@ export class EditorModel extends MutableDataModel {
     return this._model.data(region, row, column);
   }
 
+  /**
+   * The method for setting data in a single cell.
+   */
   setData(
     region: DataModel.CellRegion,
     row: number,
@@ -266,10 +280,7 @@ export class EditorModel extends MutableDataModel {
   }
 
   /**
-   *
-   * @param rowArray An array of row locations
-   * @param columnArray An array of column locations
-   * @param value A single value to replace at the locations.
+   * The method for setting data in a range of cells.
    */
   bulkSetData(
     rowArray: Array<number>,
@@ -329,10 +340,7 @@ export class EditorModel extends MutableDataModel {
   }
 
   /**
-   * @param start: the index at which to start adding rows.
-   * @param span: the number of rows to add. Default is 1.
-   *
-   * Notes: this method (and all others that follow it)
+   * Add rows to the Editor.
    */
   addRows(
     region: DataModel.CellRegion,
@@ -401,9 +409,7 @@ export class EditorModel extends MutableDataModel {
   }
 
   /**
-   *
-   * @param start the index at which to start adding columns.
-   * @param span the number of columns to add. Default is 1.
+   * Add columns to the editor.
    */
   addColumns(
     region: DataModel.CellRegion,
@@ -471,9 +477,7 @@ export class EditorModel extends MutableDataModel {
   }
 
   /**
-   *
-   * @param start the index to start removing the rows
-   * @param span the number of rows to remove
+   * Add rows to the editor.
    */
   removeRows(
     region: DataModel.CellRegion,
@@ -538,9 +542,7 @@ export class EditorModel extends MutableDataModel {
   }
 
   /**
-   *
-   * @param start the index to start removing the columns
-   * @param span the number of columns to remove
+   * Remove rows from the editor.
    */
   removeColumns(
     region: DataModel.CellRegion,
@@ -597,10 +599,7 @@ export class EditorModel extends MutableDataModel {
   }
 
   /**
-   *
-   * @param start the index of the first row to move
-   * @param end the index to insert the first row
-   * @param span the number of rows moving
+   * Move rows in the grid.
    */
 
   moveRows(
@@ -667,6 +666,9 @@ export class EditorModel extends MutableDataModel {
     this._onChangeSignal.emit(update);
   }
 
+  /**
+   * Handles the computations involved in moving rows in the grid.
+   */
   rowMapSplice(
     rowMap: ListField.Value<number>,
     start: number,
@@ -704,10 +706,7 @@ export class EditorModel extends MutableDataModel {
   }
 
   /**
-   *
-   * @param start the index of the first column to move
-   * @param end the index to insert the first column
-   * @param span the number of columns moving
+   * Move columns in the grid.
    */
   moveColumns(
     region: DataModel.CellRegion,
@@ -763,6 +762,9 @@ export class EditorModel extends MutableDataModel {
     this._onChangeSignal.emit(update);
   }
 
+  /**
+   * Handles computations associated with moving columns in the grid.
+   */
   columnMapSplice(
     columnMap: ListField.Value<number>,
     start: number,
@@ -801,21 +803,8 @@ export class EditorModel extends MutableDataModel {
     return columnSplice;
   }
 
-  inverseSpliceParams(start: number, end: number, span: number) {
-    let iStart, iEnd: number;
-    if (start < end) {
-      iStart = end - span + 1;
-      iEnd = start;
-      return [iStart, iEnd];
-    }
-    iStart = end;
-    iEnd = start + span - 1;
-    return [iStart, iEnd];
-  }
-
   /**
-   * Clears the contents of the selected region
-   * Keybind: ['Backspace']
+   * Clear a region of cells in the grid.
    */
   clearCells(
     region: DataModel.CellRegion,
@@ -841,6 +830,9 @@ export class EditorModel extends MutableDataModel {
     return update;
   }
 
+  /**
+   * Clear rows in the grid.
+   */
   clearRows(
     region: DataModel.CellRegion,
     start: number,
@@ -917,6 +909,9 @@ export class EditorModel extends MutableDataModel {
     return update;
   }
 
+  /**
+   * Clear columns in the grid.
+   */
   clearColumns(
     region: DataModel.CellRegion,
     start: number,
@@ -985,6 +980,13 @@ export class EditorModel extends MutableDataModel {
     return update;
   }
 
+  /**
+   * Cut a selection of cells.
+   * NOTE: this method both copies the cells to the _clipboard property and clears them
+   * from the region.
+   *
+   * TODO: refactor so that cut uses the already existing method clearCells.
+   */
   cut(
     region: DataModel.CellRegion,
     startRow: number,
@@ -1020,6 +1022,11 @@ export class EditorModel extends MutableDataModel {
     return update;
   }
 
+  /**
+   * Copies a selection of data to the local propery _clipboard.
+   * NOTE: this does not copy to the system clipboard. For this use the DataGrid method
+   * copyToClipboard
+   */
   copy(
     region: DataModel.CellRegion,
     startRow: number,
@@ -1043,7 +1050,11 @@ export class EditorModel extends MutableDataModel {
       }
     }
   }
-
+  /**
+   * Paste a selection of cells onto the grid.
+   * NOTE: this method first checks if we have data stored in our local clipboard. It
+   * only checks for the data parameter if the local clipboard is empty.
+   */
   paste(
     region: DataModel.CellRegion,
     row: number,
@@ -1084,6 +1095,9 @@ export class EditorModel extends MutableDataModel {
     return update;
   }
 
+  /**
+   * Emits the change which undoes the change passed in.
+   */
   emitOppositeChange(change: DataModel.ChangedArgs): void {
     // Bail early if there is no change.
     if (!change) {
@@ -1167,6 +1181,9 @@ export class EditorModel extends MutableDataModel {
     this.emitChanged(gridUpdate);
   }
 
+  /**
+   * Emits the change which is passed in as an argument.
+   */
   emitCurrentChange(change: DataModel.ChangedArgs): void {
     switch (change.type) {
       case 'columns-inserted': {
@@ -1188,6 +1205,9 @@ export class EditorModel extends MutableDataModel {
     this.emitChanged(change);
   }
 
+  /**
+   * Returns the serializes string with the changes added.
+   */
   updateString(): string {
     // Get the current litestore values.
     // Setting saving to true blocks parseAsync from effecting the grid during serialization.
@@ -1225,6 +1245,11 @@ export class EditorModel extends MutableDataModel {
     return newString;
   }
 
+  /**
+   * Produces two arrays inverseRowMap and inverseColumnMap such that for each x
+   * in rowMap, inverseRowMap[x] === rowMap.indexOf(x). Likewise for inverseColumnMap
+   * and columnMap.
+   */
   private _invertMaps(rows: number, columns: number): Array<Array<number>> {
     // Initialize the inverse row map and inverse column map
     const inverseRowMap = toArray(range(0, rows));
@@ -1380,6 +1405,9 @@ export class EditorModel extends MutableDataModel {
     return region === 'column-header' ? 0 : row - 1;
   }
 
+  /**
+   * Processes updates from the DSVModel.
+   */
   private _receiveModelSignal(
     emitter: DSVModel,
     message: DataModel.ChangedArgs
@@ -1400,6 +1428,9 @@ export class EditorModel extends MutableDataModel {
     }
   }
 
+  /**
+   * Adds new rows coming in from the asynchronous parsing of string by the DSVModel.
+   */
   private _assimilateNewRows(start: number, span: number) {
     // Set up an udate object for the litestore.
     const update: DSVEditor.ModelChangedArgs = {};
@@ -1449,45 +1480,23 @@ export class EditorModel extends MutableDataModel {
     this.emitChanged(nextChange);
   }
 
-  // private _invertUpdate(type: MapUpdate, update: ListField.Splice<number>, map: ListField.Value<number>): ListField.Update<number> {
-  //   let inverseUpdate: ListField.Update<number>;
-  //   const noValues: number[] = [];
-  //   switch(type) {
-  //     case 'add': {
-  //       // For inverting, we treat addition as moving a span of values from the end of the array to the insertion
-  //       // point. The inverse of this is moving a span of values from the start to the end of the array.
-  //       inverseUpdate = [
-  //         { index: update.index, remove: update.remove, values: noValues },
-  //         { index: map.length, remove: 0, values: update.values }
-  //       ];
-  //       break;
-  //     }
-  //     case 'remove': {
-  //       // For inverting, we treat removal as the opposite of how we treat addition, as a moving a span of
-  //       // values from the index to the end fo the array. The inverse is moving from the end to the index.
-  //       inverseUpdate = [
-  //         { index: map.length, remove: update.remove, values: noValues },
-  //         { index: update.index, remove: 0, values: update.values }
-  //       ];
-  //       break;
-  //     }
-  //     case 'move': {
-  //       break;
-  //     }
-  //     case 'clear': {
-  //       break;
-  //     }
-  //   }
-  //   return
-  // }
+  /**
+   * The total rows currently stored in the DSVModel.
+   */
   private _modelRows(model: DSVModel): number {
     return model.rowCount('body') + 1;
   }
 
+  /**
+   * The total columns currently stored in the DSVModel.
+   */
   private _modelColumns(model: DSVModel): number {
     return model.columnCount('body');
   }
 
+  /**
+   * Computes the offset index at the end of a given row (note: row delimeter not included).
+   */
   private _rowEnd(model: DSVModel, row: number): number {
     const rows = this._modelRows(model);
     const rowTrim = model.rowDelimiter.length;
