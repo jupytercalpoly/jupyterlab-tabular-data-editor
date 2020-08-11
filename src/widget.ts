@@ -395,6 +395,11 @@ export class DSVEditor extends Widget {
     emitter: EditorModel,
     args: DSVEditor.ModelChangedArgs
   ): void {
+    // if not selection was passed through, take the current selection
+    if (!args.selection) {
+      args.selection = this._grid.selectionModel.currentSelection();
+    }
+
     this._litestore.beginTransaction();
     this.updateLitestore(args);
     this._litestore.endTransaction();
@@ -442,7 +447,6 @@ export class DSVEditor extends Widget {
     };
     // Set up the update object for the litestore.
     let update: DSVEditor.ModelChangedArgs | null = null;
-
     switch (type) {
       case 'insert-row-above': {
         update = this.dataModel.addRows(this._region, this._row);
