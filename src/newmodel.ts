@@ -811,7 +811,7 @@ export class EditorModel extends MutableDataModel {
    * Clears the contents of the selected region
    * Keybind: ['Backspace']
    */
-  clearContents(
+  clearCells(
     region: DataModel.CellRegion,
     selection: SelectionModel.Selection
   ): DSVEditor.ModelChangedArgs {

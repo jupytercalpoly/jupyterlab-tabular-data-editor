@@ -336,7 +336,7 @@ function addCommands(
     }
   });
 
-  commands.addCommand(CommandIDs.clearContents, {
+  commands.addCommand(CommandIDs.clearCells, {
     label: 'Clear Contents',
     execute: () => {
       tracker.currentWidget &&
@@ -375,7 +375,7 @@ function addCommands(
     'insertRowsBelow',
     'separator',
     'removeRows',
-    'clearContents'
+    'clearCells'
   ];
   const columnHeaderContextMenu = [
     ...standardContextMenu,
@@ -537,7 +537,7 @@ export const CommandIDs: { [key: string]: string } = {
   undo: 'tde:undo',
   redo: 'tde:redo',
   save: 'tde-save',
-  clearContents: 'tde-clear-contents',
+  clearCells: 'tde-clear-contents',
   clearColumns: 'tde-clear-columns',
   clearRows: 'tde-clear-rows'
 };
