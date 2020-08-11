@@ -711,10 +711,10 @@ export class DSVEditor extends Widget {
   }
 
   private _onResize(emitter: RichMouseHandler): void {
-    this._background.style.width = `${this._grid.viewportWidth}px`;
-    this._background.style.height = `${this._grid.viewportHeight}px`;
-    this._columnHeader.style.left = `${this._grid.headerWidth}px`;
-    this._columnHeader.style.height = `${this._grid.headerHeight}px`;
+    this._background.style.width = `${this._grid.bodyWidth}px`;
+    this._background.style.height = `${this._grid.bodyHeight}px`;
+    this._background.style.left = `${this._grid.headerWidth}px`;
+    this._background.style.top = `${this._grid.headerHeight}px`;
     this._columnHeader.style.width = `${this._grid.viewportWidth}px`;
     this._rowHeader.style.top = `${this._grid.headerHeight}px`;
     this._rowHeader.style.width = `${this._grid.headerWidth}px`;
