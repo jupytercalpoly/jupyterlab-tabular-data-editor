@@ -1263,8 +1263,8 @@ export class EditorModel extends MutableDataModel {
       }
 
       switch (nextCommand) {
-        case 'insert-rows-left':
-        case 'insert-rows-right': {
+        case 'insert-rows-above':
+        case 'insert-rows-below': {
           change = nextChange as DataModel.RowsChangedArgs;
           index = this._absoluteIndex(change.index, change.region);
           // The inverse change is to move a span's worth of values

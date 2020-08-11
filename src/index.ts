@@ -214,7 +214,7 @@ function addCommands(
     label: 'Remove Row',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('remove-row');
+        tracker.currentWidget.content.changeModelSignal.emit('remove-rows');
     }
   });
 
@@ -242,7 +242,7 @@ function addCommands(
     label: 'Remove Column',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('remove-column');
+        tracker.currentWidget.content.changeModelSignal.emit('remove-columns');
     }
   });
 
@@ -340,7 +340,7 @@ function addCommands(
     label: 'Clear Contents',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('clear-contents');
+        tracker.currentWidget.content.changeModelSignal.emit('clear-cells');
     }
   });
 

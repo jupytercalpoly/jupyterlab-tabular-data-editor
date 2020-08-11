@@ -197,7 +197,7 @@ export class DSVEditor extends Widget {
     return this._litestore;
   }
 
-  get changeModelSignal(): Signal<this, string> {
+  get changeModelSignal(): Signal<this, DSVEditor.Commands> {
     return this._changeModelSignal;
   }
 
@@ -741,9 +741,7 @@ export class DSVEditor extends Widget {
   private _litestore: Litestore;
 
   // Signals for basic editing functionality
-  private _changeModelSignal: Signal<this, string> = new Signal<this, string>(
-    this
-  );
+  private _changeModelSignal = new Signal<this, DSVEditor.Commands>(this);
   private _columnHeader: HTMLElement;
   private _rowHeader: HTMLElement;
 }
