@@ -14,7 +14,7 @@ An account of tasks and features that are completed or planned
 - [x] Command Toolbar
 - [x] Search and Replace
 - [x] Clear contents
-- [ ] CSV launcher
+- [x] CSV launcher
 - [ ] Multi row/column moving
 - [ ] Ghost row/column
 - [ ] Data type detection
@@ -30,7 +30,9 @@ An account of tasks and features that are completed or planned
 
 ### 08/03/20 - 08/7/20
 #### [Demo 2](https://docs.google.com/presentation/d/1ZGjFb3RkoR5Cc39DDdtU-AYAoYMNVMyUM9g80qgNzos/edit?usp=sharing)
-- 
+- Litestore refactor - Kalen
+- Selection UI/UX fixes - Kalen
+- Moving shadow/line UI/UX fixes - Kalen
 
 **Completed Prototypes - Ryan**
 - Ghost add
