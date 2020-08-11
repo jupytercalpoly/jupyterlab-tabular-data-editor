@@ -452,8 +452,6 @@ export class DSVEditor extends Widget {
       c1 = Math.min(selection.c1, selection.c2);
       c2 = Math.max(selection.c1, selection.c2);
     }
-    // Set up the update object for the litestore.
-    let update: DSVEditor.ModelChangedArgs | null = null;
 
     const newSelection: SelectionModel.SelectArgs = {
       r1,
@@ -492,6 +490,7 @@ export class DSVEditor extends Widget {
       }
       case 'insert-columns-right': {
         update = this.dataModel.addColumns(this._region, this._column + 1);
+        update.type = command;
 
         // move the selection right a column to account for the new column being inserted
         newSelection.c1 += 1;
