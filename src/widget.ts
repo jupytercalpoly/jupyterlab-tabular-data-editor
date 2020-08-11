@@ -473,7 +473,6 @@ export class DSVEditor extends Widget {
       }
       case 'insert-columns-right': {
         update = this.dataModel.addColumns(this._region, this._column + 1);
-        update.type = type;
 
         // move the selection right a column to account for the new column being inserted
         newSelection.c1 += 1;
@@ -645,8 +644,7 @@ export class DSVEditor extends Widget {
         columnMap: update.columnUpdate || DSVEditor.NULL_NUM_SPLICE,
         valueMap: update.valueUpdate || null,
         selection: update.selection || null,
-        gridState: update.gridStateUpdate || null,
-        type: update.type
+        gridState: update.gridStateUpdate || null
       }
     );
   }
