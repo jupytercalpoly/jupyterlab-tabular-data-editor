@@ -745,11 +745,11 @@ export namespace DSVEditor {
   export type GridState = {
     currentRows: number;
     currentColumns: number;
-    change: DataModel.ChangedArgs;
-    type?: DSVEditor.Commands;
+    lastChange: DataModel.ChangedArgs;
+    lastCommand?: DSVEditor.Commands;
   };
   /**
-   * The types of mutations that can be made to the model.
+   * The types of commands that can be made to the model.
    */
   export type Commands =
     | 'insert-rows-right'
