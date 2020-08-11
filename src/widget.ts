@@ -524,6 +524,16 @@ export class DSVEditor extends Widget {
         update = this.dataModel.clearCells(this._region, { r1, r2, c1, c2 });
         break;
       }
+      case 'clear-rows': {
+        const rowSpan = Math.abs(r1 - r2) + 1;
+        update = this.dataModel.clearRows(this._region, r1, rowSpan);
+        break;
+      }
+      case 'clear-columns': {
+        const columnSpan = Math.abs(c1 - c2) + 1;
+        update = this.dataModel.clearColumns(this._region, c1, columnSpan);
+        break;
+      }
       case 'undo': {
         // check to see if an undo exists (one undo will exist because that's the initial transaction)
         if (this._litestore.transactionStore.undoStack.length === 1) {
