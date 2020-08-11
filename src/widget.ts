@@ -529,7 +529,7 @@ export class DSVEditor extends Widget {
           return;
         }
 
-        const { gridChange, selection } = this._litestore.getRecord({
+        const { gridState, selection } = this._litestore.getRecord({
           schema: DSVEditor.DATAMODEL_SCHEMA,
           record: DSVEditor.RECORD_ID
         });
@@ -537,7 +537,7 @@ export class DSVEditor extends Widget {
         this._litestore.undo();
 
         // Have the model emit the opposite change to the Grid.
-        this.dataModel.emitOppositeChange(gridChange);
+        this.dataModel.emitOppositeChange(gridState.lastChange);
 
         if (!selection) {
           break;
@@ -565,17 +565,18 @@ export class DSVEditor extends Widget {
 
         // Redo first, then get the new selection and the new grid change.
         this._litestore.redo();
-        const { gridChange, selection, type } = this._litestore.getRecord({
+        const { gridState, selection, type } = this._litestore.getRecord({
           schema: DSVEditor.DATAMODEL_SCHEMA,
           record: DSVEditor.RECORD_ID
         });
 
         // Have the data model emit the grid change to the grid.
-        this.dataModel.emitCurrentChange(gridChange);
+        this.dataModel.emitCurrentChange(gridState.lastChange);
 
         if (!selection) {
           break;
         }
+        const gridChange = gridState.lastChange;
 
         let { r1, r2, c1, c2 } = selection;
         // handle special cases for selection
