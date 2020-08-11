@@ -22,10 +22,8 @@ function updateLitestore(
       rowMap: update.rowUpdate || DSVEditor.NULL_NUM_SPLICE,
       columnMap: update.columnUpdate || DSVEditor.NULL_NUM_SPLICE,
       valueMap: update.valueUpdate || null,
-      gridChange: update.gridUpdate || null,
-      gridChangeRecord:
-        update.gridChangeRecordUpdate || DSVEditor.NULL_CHANGE_SPLICE,
-      type: update.type || null
+      selection: update.selection || null,
+      gridState: update.gridStateUpdate || null
     }
   );
 }
@@ -126,12 +124,7 @@ describe('Row & Column Map Manipulation', () => {
     expect(columnMap.slice()).toStrictEqual([-3, 1, 2]);
   });
   it('should handle clear a row', () => {
-    const update = model.clearContents('row-header', {
-      r1: 1,
-      r2: 1,
-      c1: 0,
-      c2: 2
-    });
+    const update = model.clearRows('row-header', 1, 1);
     model.litestore.beginTransaction();
     updateLitestore(model, update);
     model.litestore.endTransaction();
@@ -142,12 +135,7 @@ describe('Row & Column Map Manipulation', () => {
     expect(rowMap.slice()).toStrictEqual([0, 1, -4, 3]);
   });
   it('should handle clear a column', () => {
-    const update = model.clearContents('column-header', {
-      r1: 0,
-      r2: 3,
-      c1: 2,
-      c2: 2
-    });
+    const update = model.clearColumns('column-header', 2, 1);
     model.litestore.beginTransaction();
     updateLitestore(model, update);
     model.litestore.endTransaction();
@@ -227,12 +215,7 @@ describe('Serialization', () => {
 
     // Clear macro update.
     let clearUpdate: DSVEditor.ModelChangedArgs = {};
-    clearUpdate = model.clearContents('row-header', {
-      r1: 1,
-      r2: 1,
-      c1: 0,
-      c2: 1
-    });
+    clearUpdate = model.clearRows('row-header', 1, 1);
     model.litestore.beginTransaction();
     updateLitestore(model, clearUpdate);
     model.litestore.endTransaction();
@@ -261,7 +244,7 @@ describe('Serialization', () => {
       ['r2c0', 'r2c1', 'r2c2']
     ];
     // Apply a micro update.
-    const clearUpdate = model.clearContents('body', {
+    const clearUpdate = model.clearCells('body', {
       r1: 1,
       r2: 1,
       c1: 0,

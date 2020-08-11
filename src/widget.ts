@@ -197,7 +197,7 @@ export class DSVEditor extends Widget {
     return this._litestore;
   }
 
-  get changeModelSignal(): Signal<this, string> {
+  get changeModelSignal(): Signal<this, DSVEditor.Commands> {
     return this._changeModelSignal;
   }
 
@@ -421,9 +421,9 @@ export class DSVEditor extends Widget {
   /**
    * Handles all changes to the data model
    * @param emitter
-   * @param type
+   * @param command
    */
-  private _changeModel(emitter: DSVEditor, type: string): void {
+  private _changeModel(emitter: DSVEditor, command: DSVEditor.Commands): void {
     const selectionModel = this._grid.selectionModel;
     const selection = selectionModel.currentSelection();
     let r1, r2, c1, c2: number;
@@ -447,46 +447,43 @@ export class DSVEditor extends Widget {
     };
     // Set up the update object for the litestore.
     let update: DSVEditor.ModelChangedArgs | null = null;
-    switch (type) {
-      case 'insert-row-above': {
+
+    switch (command) {
+      case 'insert-rows-above': {
         update = this.dataModel.addRows(this._region, this._row);
 
         // Add the type property so we can differentiate an insert above from an insert below.
-        update.type = type;
+        update.type = command;
         break;
       }
-      case 'insert-row-below': {
+      case 'insert-rows-below': {
         update = this.dataModel.addRows(this._region, this._row + 1);
 
-        // Add the type property so that we can differentiate insert above insert below.
-        update.type = type;
+        // Add the command to the grid state.
+        update.gridStateUpdate.nextCommand = command;
 
         // move the selection down a row to account for the new row being inserted
         newSelection.r1 += 1;
         newSelection.r2 += 1;
         break;
       }
-      case 'insert-column-left': {
+      case 'insert-columns-left': {
         update = this.dataModel.addColumns(this._region, this._column);
-
-        // type property distinguishes between insert left and insert right.
-        update.type = type;
         break;
       }
-      case 'insert-column-right': {
+      case 'insert-columns-right': {
         update = this.dataModel.addColumns(this._region, this._column + 1);
-        update.type = type;
 
         // move the selection right a column to account for the new column being inserted
         newSelection.c1 += 1;
         newSelection.c2 += 1;
         break;
       }
-      case 'remove-row': {
+      case 'remove-rows': {
         update = this.dataModel.removeRows(this._region, this._row);
         break;
       }
-      case 'remove-column': {
+      case 'remove-columns': {
         update = this.dataModel.removeColumns(this._region, this._column);
         break;
       }
@@ -497,8 +494,6 @@ export class DSVEditor extends Widget {
         // Cut the cell selection.
         update = this.dataModel.cut('body', r1, c1, r2, c2);
 
-        // Type parameter distinguishes between cut/paste.
-        update.type = type;
         break;
       case 'copy-cells': {
         // Copy to the OS clipboard.
@@ -512,15 +507,22 @@ export class DSVEditor extends Widget {
         // Paste the cells in the region.
         update = this.dataModel.paste('body', r1, c1);
 
-        // Add type parameter to distinguish between cut/paste.
-        update.type = type;
-
         // By default, upper left cell get's re-edited, so we need to cancel.
         this._cancelEditing();
         break;
       }
-      case 'clear-contents': {
-        update = this.dataModel.clearContents(this._region, { r1, r2, c1, c2 });
+      case 'clear-cells': {
+        update = this.dataModel.clearCells(this._region, { r1, r2, c1, c2 });
+        break;
+      }
+      case 'clear-rows': {
+        const rowSpan = Math.abs(r1 - r2) + 1;
+        update = this.dataModel.clearRows(this._region, r1, rowSpan);
+        break;
+      }
+      case 'clear-columns': {
+        const columnSpan = Math.abs(c1 - c2) + 1;
+        update = this.dataModel.clearColumns(this._region, c1, columnSpan);
         break;
       }
       case 'undo': {
@@ -529,7 +531,7 @@ export class DSVEditor extends Widget {
           return;
         }
 
-        const { gridChange, selection } = this._litestore.getRecord({
+        const { gridState, selection } = this._litestore.getRecord({
           schema: DSVEditor.DATAMODEL_SCHEMA,
           record: DSVEditor.RECORD_ID
         });
@@ -537,7 +539,7 @@ export class DSVEditor extends Widget {
         this._litestore.undo();
 
         // Have the model emit the opposite change to the Grid.
-        this.dataModel.emitOppositeChange(gridChange);
+        this.dataModel.emitOppositeChange(gridState.nextChange);
 
         if (!selection) {
           break;
@@ -565,32 +567,37 @@ export class DSVEditor extends Widget {
 
         // Redo first, then get the new selection and the new grid change.
         this._litestore.redo();
-        const { gridChange, selection, type } = this._litestore.getRecord({
+        const { gridState, selection } = this._litestore.getRecord({
           schema: DSVEditor.DATAMODEL_SCHEMA,
           record: DSVEditor.RECORD_ID
         });
 
         // Have the data model emit the grid change to the grid.
-        this.dataModel.emitCurrentChange(gridChange);
+        this.dataModel.emitCurrentChange(gridState.nextChange);
 
         if (!selection) {
           break;
         }
+        const command = gridState.nextCommand;
+        const gridChange = gridState.nextChange;
 
         let { r1, r2, c1, c2 } = selection;
+        let move: DataModel.ChangedArgs;
         // handle special cases for selection
-        if (type === 'insert-row-below') {
+        if (command === 'insert-rows-below') {
           r1 += 1;
           r2 += 1;
-        } else if (type === 'insert-column-right') {
+        } else if (command === 'insert-columns-right') {
           c1 += 1;
           c2 += 1;
-        } else if (gridChange.type === 'rows-moved') {
-          r1 = gridChange.destination;
-          r2 = gridChange.destination;
-        } else if (gridChange.type === 'columns-moved') {
-          c1 = gridChange.destination;
-          c2 = gridChange.destination;
+        } else if (command === 'move-rows') {
+          move = gridChange as DataModel.RowsMovedArgs;
+          r1 = move.destination;
+          r2 = move.destination;
+        } else if (command === 'move-columns') {
+          move = gridChange as DataModel.ColumnsMovedArgs;
+          c1 = move.destination;
+          c2 = move.destination;
         }
 
         // Make the new selection.
@@ -611,6 +618,8 @@ export class DSVEditor extends Widget {
     }
     if (update) {
       update.selection = selection;
+      // Add the command to the grid state.
+      update.gridStateUpdate.nextCommand = command;
       this._litestore.beginTransaction();
       this.updateLitestore(update);
       this._litestore.endTransaction();
@@ -634,11 +643,8 @@ export class DSVEditor extends Widget {
         rowMap: update.rowUpdate || DSVEditor.NULL_NUM_SPLICE,
         columnMap: update.columnUpdate || DSVEditor.NULL_NUM_SPLICE,
         valueMap: update.valueUpdate || null,
-        gridChange: update.gridUpdate || null,
-        gridChangeRecord:
-          update.gridChangeRecordUpdate || DSVEditor.NULL_CHANGE_SPLICE,
         selection: update.selection || null,
-        type: update.type
+        gridState: update.gridStateUpdate || null
       }
     );
   }
@@ -731,9 +737,7 @@ export class DSVEditor extends Widget {
   private _litestore: Litestore;
 
   // Signals for basic editing functionality
-  private _changeModelSignal: Signal<this, string> = new Signal<this, string>(
-    this
-  );
+  private _changeModelSignal = new Signal<this, DSVEditor.Commands>(this);
   private _columnHeader: HTMLElement;
   private _rowHeader: HTMLElement;
 }
@@ -742,16 +746,16 @@ export namespace DSVEditor {
   /**
    * The Grid update args
    */
-  export type GridChangeRecordArgs = {
+  export type GridState = {
     currentRows: number;
     currentColumns: number;
-    change: DataModel.ChangedArgs;
-    type?: DSVEditor.ModelChangeType;
+    nextChange: DataModel.ChangedArgs;
+    nextCommand?: DSVEditor.Commands;
   };
   /**
-   * The types of mutations that can be made to the model.
+   * The types of commands that can be made to the model.
    */
-  export type ModelChangeType =
+  export type Commands =
     | 'insert-rows-above'
     | 'insert-rows-below'
     | 'insert-columns-right'
@@ -762,7 +766,13 @@ export namespace DSVEditor {
     | 'move-columns'
     | 'clear-cells'
     | 'clear-rows'
-    | 'clear-columns';
+    | 'clear-columns'
+    | 'cut-cells'
+    | 'copy-cells'
+    | 'paste-cells'
+    | 'undo'
+    | 'redo'
+    | 'save';
   /**
    * The arguments emitted to the Editor when the datamodel changes
    */
@@ -770,8 +780,7 @@ export namespace DSVEditor {
     rowUpdate?: ListField.Update<number>;
     columnUpdate?: ListField.Update<number>;
     valueUpdate?: MapField.Update<string>;
-    gridUpdate?: DataModel.ChangedArgs;
-    gridChangeRecordUpdate?: ListField.Update<GridChangeRecordArgs>;
+    gridStateUpdate?: GridState;
     type?: string;
     selection?: SelectionModel.Selection;
   };
@@ -782,15 +791,12 @@ export namespace DSVEditor {
     id: SCHEMA_ID,
     fields: {
       rowMap: Fields.List<number>(),
-      inverseRowMap: Fields.List<number>(),
       columnMap: Fields.List<number>(),
-      inverseColumnMap: Fields.List<number>(),
       valueMap: Fields.Map<string>(),
-      gridChange: Fields.Register<DataModel.ChangedArgs>({
-        value: { type: 'model-reset' }
-      }),
-      gridChangeRecord: Fields.List<GridChangeRecordArgs>(),
       selection: Fields.Register<SelectionModel.Selection>({
+        value: null
+      }),
+      gridState: Fields.Register<GridState>({
         value: null
       }),
       type: Fields.String()
@@ -798,7 +804,7 @@ export namespace DSVEditor {
   };
   export const NULL_NUMS: number[] = [];
   export const NULL_NUM_SPLICE = { index: 0, remove: 0, values: NULL_NUMS };
-  export const NULL_CHANGE: GridChangeRecordArgs[] = [];
+  export const NULL_CHANGE: GridState[] = [];
   export const NULL_CHANGE_SPLICE = {
     index: 0,
     remove: 0,
