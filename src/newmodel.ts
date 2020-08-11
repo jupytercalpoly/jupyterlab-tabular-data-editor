@@ -1124,7 +1124,11 @@ export class EditorModel extends MutableDataModel {
       id = ids.pop();
 
       // Get the state of the grid at this point.
-      const { gridState } = 
+      const { gridState } = this._litestore.getTransaction(id).patch[
+        DSVEditor.SCHEMA_ID
+      ][DSVEditor.RECORD_ID];
+      console.log(gridState);
+
       switch (state.nextChange.type) {
         case 'rows-inserted': {
           change = state.nextChange as DataModel.RowsChangedArgs;
