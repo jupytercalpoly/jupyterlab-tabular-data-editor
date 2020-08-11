@@ -1142,9 +1142,9 @@ export class EditorModel extends MutableDataModel {
     let destination: number;
     for (let i = 0; i < gridChangeRecord.length; i++) {
       changeArg = gridChangeRecord[i];
-      switch (changeArg.lastChange.type) {
+      switch (changeArg.nextChange.type) {
         case 'rows-inserted': {
-          change = changeArg.lastChange as DataModel.RowsChangedArgs;
+          change = changeArg.nextChange as DataModel.RowsChangedArgs;
           index = this._absoluteIndex(change.index, change.region);
           // The inverse change is to move a span's worth of values
           // starting from the insert point to just beyond the current length.
@@ -1153,7 +1153,7 @@ export class EditorModel extends MutableDataModel {
           break;
         }
         case 'columns-inserted': {
-          change = changeArg.lastChange as DataModel.ColumnsChangedArgs;
+          change = changeArg.nextChange as DataModel.ColumnsChangedArgs;
           // The inverse change is to move a span's worth of values
           // starting from the insert point to just beyond the current length.
           values = inverseColumnMap.splice(change.index, change.span);
@@ -1161,7 +1161,7 @@ export class EditorModel extends MutableDataModel {
           break;
         }
         case 'rows-removed': {
-          change = changeArg.lastChange as DataModel.RowsChangedArgs;
+          change = changeArg.nextChange as DataModel.RowsChangedArgs;
           index = this._absoluteIndex(change.index, change.region);
           // The inverse change is to move a spans worth of items from
           // the end to the remove index.
@@ -1173,7 +1173,7 @@ export class EditorModel extends MutableDataModel {
           break;
         }
         case 'columns-removed': {
-          change = changeArg.lastChange as DataModel.ColumnsChangedArgs;
+          change = changeArg.nextChange as DataModel.ColumnsChangedArgs;
           // The inverse change is to move a spans worth of items from
           // the end to the remove index.
           values = inverseColumnMap.splice(
@@ -1184,7 +1184,7 @@ export class EditorModel extends MutableDataModel {
           break;
         }
         case 'rows-moved': {
-          change = changeArg.lastChange as DataModel.RowsMovedArgs;
+          change = changeArg.nextChange as DataModel.RowsMovedArgs;
           index = this._absoluteIndex(change.index, change.region);
           destination = this._absoluteIndex(change.destination, change.region);
           // The inverse change is to move a span's worth of values from the destination to the start.
@@ -1193,14 +1193,14 @@ export class EditorModel extends MutableDataModel {
           break;
         }
         case 'columns-moved': {
-          change = changeArg.lastChange as DataModel.ColumnsMovedArgs;
+          change = changeArg.nextChange as DataModel.ColumnsMovedArgs;
           // The inverse change is to move a span's worth of values from the destination to the start.
           values = inverseColumnMap.splice(change.destination, change.span);
           inverseColumnMap.splice(change.index, 0, ...values);
           break;
         }
         case 'cells-changed': {
-          change = changeArg.lastChange as DataModel.CellsChangedArgs;
+          change = changeArg.nextChange as DataModel.CellsChangedArgs;
           // trickiest case. This is when there was a clear operation. We first need to see whether
           // columns were cleared or rows were cleared.
 

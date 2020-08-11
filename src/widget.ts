@@ -537,7 +537,7 @@ export class DSVEditor extends Widget {
         this._litestore.undo();
 
         // Have the model emit the opposite change to the Grid.
-        this.dataModel.emitOppositeChange(gridState.lastChange);
+        this.dataModel.emitOppositeChange(gridState.nextChange);
 
         if (!selection) {
           break;
@@ -571,12 +571,12 @@ export class DSVEditor extends Widget {
         });
 
         // Have the data model emit the grid change to the grid.
-        this.dataModel.emitCurrentChange(gridState.lastChange);
+        this.dataModel.emitCurrentChange(gridState.nextChange);
 
         if (!selection) {
           break;
         }
-        const gridChange = gridState.lastChange;
+        const gridChange = gridState.nextChange;
 
         let { r1, r2, c1, c2 } = selection;
         // handle special cases for selection
@@ -744,8 +744,8 @@ export namespace DSVEditor {
   export type GridState = {
     currentRows: number;
     currentColumns: number;
-    lastChange: DataModel.ChangedArgs;
-    lastCommand?: DSVEditor.Commands;
+    nextChange: DataModel.ChangedArgs;
+    nextCommand?: DSVEditor.Commands;
   };
   /**
    * The types of commands that can be made to the model.
