@@ -431,6 +431,16 @@ export class DSVEditor extends Widget {
       c1 = Math.min(selection.c1, selection.c2);
       c2 = Math.max(selection.c1, selection.c2);
     }
+
+    const newSelection: SelectionModel.SelectArgs = {
+      r1,
+      r2,
+      c1,
+      c2,
+      cursorColumn: c1,
+      cursorRow: r1,
+      clear: 'all'
+    };
     // Set up the update object for the litestore.
     let update: DSVEditor.ModelChangedArgs | null = null;
 
@@ -443,24 +453,14 @@ export class DSVEditor extends Widget {
         break;
       }
       case 'insert-row-below': {
-        if (!selection) {
-          break;
-        }
         update = this.dataModel.addRows(this._region, this._row + 1);
 
         // Add the type property so that we can differentiate insert above insert below.
         update.type = type;
 
         // move the selection down a row to account for the new row being inserted
-        selectionModel.select({
-          r1: r1 + 1,
-          r2: r2 + 1,
-          c1,
-          c2,
-          cursorRow: r1,
-          cursorColumn: c1,
-          clear: 'all'
-        });
+        newSelection.r1 += 1;
+        newSelection.r2 += 1;
         break;
       }
       case 'insert-column-left': {
@@ -471,22 +471,12 @@ export class DSVEditor extends Widget {
         break;
       }
       case 'insert-column-right': {
-        // Bail early if no selection was made.
-        if (!selection) {
-          break;
-        }
         update = this.dataModel.addColumns(this._region, this._column + 1);
+        update.type = type;
 
-        // move the selection down a row to account for the new column being inserted
-        selectionModel.select({
-          r1,
-          r2,
-          c1: c1 + 1,
-          c2: c2 + 1,
-          cursorRow: r1,
-          cursorColumn: c1,
-          clear: 'all'
-        });
+        // move the selection right a column to account for the new column being inserted
+        newSelection.c1 += 1;
+        newSelection.c2 += 1;
         break;
       }
       case 'remove-row': {
@@ -541,6 +531,11 @@ export class DSVEditor extends Widget {
           record: DSVEditor.RECORD_ID
         });
 
+        this._litestore.undo();
+
+        // Have the model emit the opposite change to the Grid.
+        this.dataModel.emitOppositeChange(gridChange);
+
         // reselect the previous selection.
         const { r1, r2, c1, c2 } = selection;
         this._grid.selectionModel.select({
@@ -552,10 +547,6 @@ export class DSVEditor extends Widget {
           cursorColumn: c1,
           clear: 'all'
         });
-        this._litestore.undo();
-
-        // Have the model emit the opposite change to the Grid.
-        this.dataModel.emitOppositeChange(gridChange);
 
         break;
       }
@@ -607,9 +598,11 @@ export class DSVEditor extends Widget {
         break;
     }
     if (update) {
+      update.selection = selection;
       this._litestore.beginTransaction();
       this.updateLitestore(update);
       this._litestore.endTransaction();
+      this._grid.selectionModel.select(newSelection);
     }
   }
 
@@ -619,7 +612,7 @@ export class DSVEditor extends Widget {
    * @param change The change args for the Datagrid (may be null)
    */
   public updateLitestore(update?: DSVEditor.ModelChangedArgs): void {
-    const selection = this._grid.selectionModel.currentSelection();
+    //const selection = this._grid.selectionModel.currentSelection();
     this._litestore.updateRecord(
       {
         schema: DSVEditor.DATAMODEL_SCHEMA,
@@ -632,7 +625,7 @@ export class DSVEditor extends Widget {
         gridChange: update.gridUpdate || null,
         gridChangeRecord:
           update.gridChangeRecordUpdate || DSVEditor.NULL_CHANGE_SPLICE,
-        selection: selection,
+        selection: update.selection || null,
         type: update.type
       }
     );
@@ -668,6 +661,7 @@ export class DSVEditor extends Widget {
     super.onAfterAttach(msg);
     this.node.addEventListener('paste', this._handlePaste.bind(this));
   }
+
   private _handlePaste(event: ClipboardEvent): void {
     const copiedText: string = event.clipboardData.getData('text/plain');
     // prevent default behavior
@@ -746,8 +740,8 @@ export namespace DSVEditor {
    * The types of mutations that can be made to the model.
    */
   export type ModelChangeType =
-    | 'insert-rows-right'
-    | 'insert-rows-left'
+    | 'insert-rows-above'
+    | 'insert-rows-below'
     | 'insert-columns-right'
     | 'insert-columns-left'
     | 'remove-rows'
@@ -767,6 +761,7 @@ export namespace DSVEditor {
     gridUpdate?: DataModel.ChangedArgs;
     gridChangeRecordUpdate?: ListField.Update<GridChangeRecordArgs>;
     type?: string;
+    selection?: SelectionModel.Selection;
   };
 
   export const SCHEMA_ID = 'datamodel';
