@@ -634,9 +634,6 @@ export class DSVEditor extends Widget {
         rowMap: update.rowUpdate || DSVEditor.NULL_NUM_SPLICE,
         columnMap: update.columnUpdate || DSVEditor.NULL_NUM_SPLICE,
         valueMap: update.valueUpdate || null,
-        gridChange: update.gridUpdate || null,
-        gridChangeRecord:
-          update.gridChangeRecordUpdate || DSVEditor.NULL_CHANGE_SPLICE,
         selection: update.selection || null,
         gridState: update.gridStateUpdate || null,
         type: update.type
@@ -771,8 +768,6 @@ export namespace DSVEditor {
     rowUpdate?: ListField.Update<number>;
     columnUpdate?: ListField.Update<number>;
     valueUpdate?: MapField.Update<string>;
-    gridUpdate?: DataModel.ChangedArgs;
-    gridChangeRecordUpdate?: ListField.Update<GridState>;
     gridStateUpdate?: GridState;
     type?: string;
     selection?: SelectionModel.Selection;
@@ -786,10 +781,6 @@ export namespace DSVEditor {
       rowMap: Fields.List<number>(),
       columnMap: Fields.List<number>(),
       valueMap: Fields.Map<string>(),
-      gridChange: Fields.Register<DataModel.ChangedArgs>({
-        value: { type: 'model-reset' }
-      }),
-      gridChangeRecord: Fields.List<GridState>(),
       selection: Fields.Register<SelectionModel.Selection>({
         value: null
       }),
