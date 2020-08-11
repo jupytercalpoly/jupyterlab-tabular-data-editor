@@ -522,10 +522,10 @@ namespace Private {
 
 export const CommandIDs: { [key: string]: string } = {
   createNewCSV: 'tde-create-new-csv',
-  insertColumnsLeft: 'tde:insert-column-left',
-  insertColumnsRight: 'tde:insert-column-right',
-  insertRowsAbove: 'tde:insert-row-above',
-  insertRowsBelow: 'tde:insert-row-below',
+  insertColumnsLeft: 'tde:insert-columns-left',
+  insertColumnsRight: 'tde:insert-columns-right',
+  insertRowsAbove: 'tde:insert-rows-above',
+  insertRowsBelow: 'tde:insert-rows-below',
   removeRows: 'tde-remove-row',
   removeColumns: 'tde:remove-column',
   copyContextMenu: 'tde:copy',
