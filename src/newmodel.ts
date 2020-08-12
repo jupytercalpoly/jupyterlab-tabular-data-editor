@@ -14,10 +14,9 @@ export class EditorModel extends MutableDataModel {
   private _model: DSVModel;
   private _rowsAdded: number;
   private _columnsAdded: number;
-  private _onChangeSignal: Signal<
-    this,
-    DSVEditor.ModelChangedArgs
-  > = new Signal<this, DSVEditor.ModelChangedArgs>(this);
+  private _onChangeSignal = new Signal<this, DSVEditor.ModelChangedArgs | null>(
+    this
+  );
   private _rowsRemoved: number;
   private _columnsRemoved: number;
   private _saving = false;
@@ -1166,6 +1165,8 @@ export class EditorModel extends MutableDataModel {
         break;
     }
     this.emitChanged(gridUpdate);
+
+    this.onChangedSignal.emit(null);
   }
 
   /**
@@ -1190,6 +1191,8 @@ export class EditorModel extends MutableDataModel {
       }
     }
     this.emitChanged(change);
+
+    this.onChangedSignal.emit(null);
   }
 
   /**

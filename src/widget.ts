@@ -78,7 +78,7 @@ export class DSVEditor extends Widget {
     const handler = new RichMouseHandler({ grid: this._grid });
     this._grid.mouseHandler = handler;
     handler.clickSignal.connect(this._onMouseClick, this);
-    handler.resizeSignal.connect(this._onResize, this);
+    handler.resizeSignal.connect(this._moveElements, this);
     handler.ghostHoverSignal.connect(this._onGhostHover, this);
     layout.addWidget(this._grid);
 
@@ -462,7 +462,7 @@ export class DSVEditor extends Widget {
    */
   private _onModelSignal(
     emitter: EditorModel,
-    args: DSVEditor.ModelChangedArgs
+    args: DSVEditor.ModelChangedArgs | null
   ): void {
     this.updateModel(args);
   }
@@ -713,8 +713,6 @@ export class DSVEditor extends Widget {
       update.gridStateUpdate.nextCommand === 'init'
         ? false
         : true;
-    
-    this._onResize();
     // Update the litestore.
     this._litestore.beginTransaction();
     this._litestore.updateRecord(
@@ -792,7 +790,7 @@ export class DSVEditor extends Widget {
     this._column = hit.column;
   }
 
-  private _onResize(emitter?: RichMouseHandler): void {
+  private _moveElements(emitter?: RichMouseHandler): void {
     this._background.style.width = `${this._grid.bodyWidth}px`;
     this._background.style.height = `${this._grid.bodyHeight}px`;
     this._background.style.left = `${this._grid.headerWidth}px`;
@@ -803,6 +801,20 @@ export class DSVEditor extends Widget {
     this._rowHeader.style.top = `${this._grid.headerHeight}px`;
     this._rowHeader.style.width = `${this._grid.headerWidth}px`;
     this._rowHeader.style.height = `${this._grid.bodyHeight}px`;
+
+    const lastRowOffset =
+      this._grid.headerHeight +
+      this._grid.rowOffset('body', this.dataModel.rowCount('body') - 1);
+    const lastColumnOffset =
+      this._grid.headerWidth +
+      this._grid.columnOffset('body', this.dataModel.columnCount('body') - 1);
+    this._hiddenCorner.style.top = `${lastRowOffset}px`;
+    this._hiddenCorner.style.left = `${lastColumnOffset}px`;
+
+    const gridBottom = this._grid.headerHeight + this._grid.bodyHeight;
+    const gridRightEnd = this._grid.headerWidth + this._grid.bodyWidth;
+    this._hiddenCorner.style.height = `${gridBottom - lastRowOffset + 1}px`;
+    this._hiddenCorner.style.width = `${gridRightEnd - lastColumnOffset + 1}px`;
   }
 
   /**
