@@ -2,18 +2,13 @@ import { MutableDataModel, DataModel, SelectionModel } from 'tde-datagrid';
 import { DSVModel } from 'tde-csvviewer';
 import { Signal } from '@lumino/signaling';
 import { numberToCharacter } from './_helper';
-import { Litestore } from './litestore';
-import { Fields } from '@lumino/datastore';
+import { DSVEditor } from './widget';
 
 export class EditableDSVModel extends MutableDataModel {
   private _clipBoardArr: any;
   constructor(options: DSVModel.IOptions) {
     super();
     this._dsvModel = new DSVModel(options);
-    this._litestore = new Litestore({ id: 0, schemas: [DATAMODEL_SCHEMA] });
-
-    // set inital status of litestore
-    this.updateLitestore();
 
     // propagate changes in the dsvModel up to the grid
     this.dsvModel.changed.connect(this._passMessage, this);
@@ -27,17 +22,13 @@ export class EditableDSVModel extends MutableDataModel {
     return this._cancelEditingSignal;
   }
 
-  get onChangedSignal(): Signal<this, string> {
+  get onChangedSignal(): Signal<this, DSVEditor.ModelChangedArgs> {
     return this._onChangeSignal;
   }
 
   get colHeaderLength(): number {
     const model = this._dsvModel;
     return (model.header.join(model.delimiter) + model.rowDelimiter).length;
-  }
-
-  get litestore(): Litestore {
-    return this._litestore;
   }
 
   private _silenceDsvModel(): void {
@@ -95,10 +86,7 @@ export class EditableDSVModel extends MutableDataModel {
       rowSpan: 1,
       columnSpan: 1
     };
-    if (useLitestore) {
-      this.updateLitestore(change);
-    }
-    this.handleEmits(change);
+    this.handleEmits(change, 'cells-changed', useLitestore);
     return true;
   }
 
@@ -106,7 +94,7 @@ export class EditableDSVModel extends MutableDataModel {
    * Adds a row to the body of the model
    * @param row The index of the row to be inserted (0-indexed)
    */
-  addRow(row: number): void {
+  addRow(row: number, type: string): void {
     const model = this.dsvModel;
     const newRow = this.blankRow(model, row);
     this.insertAt(newRow, model, { row: row });
@@ -116,15 +104,14 @@ export class EditableDSVModel extends MutableDataModel {
       index: row,
       span: 1
     };
-    this.updateLitestore(change);
-    this.handleEmits(change);
+    this.handleEmits(change, type);
   }
 
   /**
    * Adds a column to the body of the model
    * @param column The index of the column to be inserted (0-indexed)
    */
-  addColumn(column: number): void {
+  addColumn(column: number, type: string): void {
     const model = this.dsvModel;
     const data = this.dsvModel.rawData;
     // initalize an array to hold each row
@@ -179,15 +166,14 @@ export class EditableDSVModel extends MutableDataModel {
       index: column,
       span: 1
     };
-    this.updateLitestore(change);
-    this.handleEmits(change);
+    this.handleEmits(change, type);
   }
 
   /**
    * Removes a row from the body of the model
    * @param row The index of the row removed (0-indexed)
    */
-  removeRow(row: number): void {
+  removeRow(row: number, type: string): void {
     const model = this.dsvModel;
     this.sliceOut(model, { row: row });
 
@@ -197,16 +183,14 @@ export class EditableDSVModel extends MutableDataModel {
       index: row,
       span: 1
     };
-
-    this.updateLitestore(change);
-    this.handleEmits(change);
+    this.handleEmits(change, type);
   }
 
   /**
    * Removes a column from the body of the model
    * @param column The index of the column removed (0-indexed)
    */
-  removeColumn(column: number): void {
+  removeColumn(column: number, type: string): void {
     const model = this.dsvModel;
     const data = this.dsvModel.rawData;
     // initialize the replacement array
@@ -259,21 +243,19 @@ export class EditableDSVModel extends MutableDataModel {
       index: column,
       span: 1
     };
-
-    this.updateLitestore(change);
-    this.handleEmits(change);
+    this.handleEmits(change, type);
   }
 
   /**
    * Copies the current selection and potential removes it (cut)
    * @param selection The current selction
-   * @param mode 'cut-cells' or 'copy-cells'
+   * @param type 'cut-cells' or 'copy-cells'
    */
   cutAndCopy(
     selection: ICellSelection,
-    mode: 'cut-cells' | 'copy-cells' = 'cut-cells'
+    type: 'cut-cells' | 'copy-cells' = 'cut-cells'
   ): void {
-    const keepingValue = mode === 'copy-cells' ? true : false;
+    const keepingValue = type === 'copy-cells' ? true : false;
     const model = this.dsvModel;
     const { startRow, startColumn, endRow, endColumn } = selection;
     const numRows = endRow - startRow + 1;
@@ -304,8 +286,7 @@ export class EditableDSVModel extends MutableDataModel {
       rowSpan: numRows,
       columnSpan: numColumns
     };
-    this.updateLitestore(change);
-    this.handleEmits(change);
+    this.handleEmits(change, type, !keepingValue);
   }
 
   /**
@@ -313,7 +294,11 @@ export class EditableDSVModel extends MutableDataModel {
    * @param startCoord The start coordinates of the paste
    * @param data The data being pasted
    */
-  paste(startCoord: ICoordinates, data: string | null = null): void {
+  paste(
+    startCoord: ICoordinates,
+    type: string,
+    data: string | null = null
+  ): void {
     let clipboardArray = this._clipBoardArr;
     const model = this.dsvModel;
 
@@ -362,15 +347,15 @@ export class EditableDSVModel extends MutableDataModel {
       rowSpan: rowSpan,
       columnSpan: columnSpan
     };
-    this.updateLitestore(change);
-    this.handleEmits(change);
+    this.handleEmits(change, type);
   }
 
   /**
    * Utilizes the litestore to undo the last change
+   * @param data The previous data as a result of the undo
    * @param change The arguments of the last change
    */
-  undo(change: DataModel.ChangedArgs): void {
+  undo(data: string, change: DataModel.ChangedArgs): void {
     const model = this._dsvModel;
     let undoChange: DataModel.ChangedArgs;
 
@@ -378,15 +363,8 @@ export class EditableDSVModel extends MutableDataModel {
       return;
     }
 
-    // undo first and then get the model data
-    this._litestore.undo();
-    const { modelData } = this._litestore.getRecord({
-      schema: DATAMODEL_SCHEMA,
-      record: RECORD_ID
-    });
-
     // update model with data from the transaction
-    model.rawData = modelData;
+    model.rawData = data;
 
     switch (change.type) {
       case 'cells-changed':
@@ -456,14 +434,15 @@ export class EditableDSVModel extends MutableDataModel {
         };
         break;
     }
-    this.handleEmits(undoChange);
+    // don't use litestore for undo
+    this.handleEmits(undoChange, '', false);
   }
 
   /**
    * Utilizes the litestore to redo the last undo
    * @param change The arguments of the change to be redone
    */
-  redo(change: DataModel.ChangedArgs, modelData: string): void {
+  redo(data: string, change: DataModel.ChangedArgs): void {
     const model = this._dsvModel;
 
     if (!change) {
@@ -477,8 +456,9 @@ export class EditableDSVModel extends MutableDataModel {
       model.header.pop();
     }
 
-    model.rawData = modelData;
-    this.handleEmits(change);
+    model.rawData = data;
+    // don't use litestore for redo
+    this.handleEmits(change, '', false);
   }
 
   /**
@@ -534,8 +514,7 @@ export class EditableDSVModel extends MutableDataModel {
       span: 1,
       destination: endRow
     };
-    this.updateLitestore(change);
-    this.handleEmits(change);
+    this.handleEmits(change, 'rows-moved');
   }
 
   /**
@@ -666,25 +645,29 @@ export class EditableDSVModel extends MutableDataModel {
       span: 1,
       destination: endColumn
     };
-    this.updateLitestore(change);
-    this.handleEmits(change);
+    this.handleEmits(change, 'columns-moved');
   }
 
   /**
    * Clears the contents of the selected region
    * Keybind: ['Backspace']
+   * @param regionClicked The clicked region, used to determine which areas of to clear
+   * @param rowClicked The row clicked
+   * @param columnClicked The column clicked
+   * @param selection The curent selection
+   *
+   * @returns The DataModel change args
    */
   clearContents(
     regionClicked: DataModel.CellRegion,
     rowClicked: number,
     columnClicked: number,
     selection: SelectionModel.Selection
-  ): void {
+  ): DataModel.ChangedArgs {
     if (regionClicked === 'corner-header') {
       return;
     }
 
-    const model = this._dsvModel;
     const { r1, r2, c1, c2 } = selection;
     let row, column, rowSpan, columnSpan: number;
     let change: DataModel.ChangedArgs;
@@ -708,22 +691,10 @@ export class EditableDSVModel extends MutableDataModel {
           columnSpan: columnSpan
         };
 
-        this._litestore.beginTransaction();
         // iterate through column to clear contents
         for (let i = 0; i < rowSpan; i++) {
           this.setData('body', i, column, '', false);
         }
-        this._litestore.updateRecord(
-          {
-            schema: DATAMODEL_SCHEMA,
-            record: RECORD_ID
-          },
-          {
-            modelData: model.rawData,
-            change: change
-          }
-        );
-        this._litestore.endTransaction();
         break;
       // clear contents of that row
       case 'row-header':
@@ -743,22 +714,10 @@ export class EditableDSVModel extends MutableDataModel {
           columnSpan: columnSpan
         };
 
-        this._litestore.beginTransaction();
         // iterate through row to clear contents
         for (let i = 0; i < columnSpan; i++) {
           this.setData('body', row, i, '', false);
         }
-        this._litestore.updateRecord(
-          {
-            schema: DATAMODEL_SCHEMA,
-            record: RECORD_ID
-          },
-          {
-            modelData: model.rawData,
-            change: change
-          }
-        );
-        this._litestore.endTransaction();
         break;
       // region === 'body'
       // clear contents in the current selection
@@ -779,42 +738,41 @@ export class EditableDSVModel extends MutableDataModel {
           columnSpan: columnSpan
         };
 
-        this._litestore.beginTransaction();
         // iterate through row to clear contents
         for (let curRow = row; curRow < row + rowSpan; curRow++) {
           for (let curCol = column; curCol < column + columnSpan; curCol++) {
             this.setData('body', curRow, curCol, '', false);
           }
         }
-        this._litestore.updateRecord(
-          {
-            schema: DATAMODEL_SCHEMA,
-            record: RECORD_ID
-          },
-          {
-            modelData: model.rawData,
-            change: change
-          }
-        );
-        this._litestore.endTransaction();
         break;
     }
+    return change;
   }
 
   /**
    * Handles all signal emitting and model parsing after the raw data is manipulated
    * @param change The current change to be emitted to the Datagrid
    */
-  handleEmits(change: DataModel.ChangedArgs): void {
+  handleEmits(
+    change: DataModel.ChangedArgs,
+    type: string,
+    useLitestore = true
+  ): void {
     this._silenceDsvModel();
     this._dsvModel.parseAsync();
 
     // Emits the updates to the DataModel to the DataGrid for rerender
     this.emitChanged(change);
-    // Emits the updated raw data to the CSVViewer
-    this._onChangeSignal.emit(
-      this._dsvModel.rawData.slice(this.colHeaderLength)
-    );
+    // Emits the updated raw data and change args to the CSVViewer
+
+    // Deferred fixing this because of the new model
+    // this._onChangeSignal.emit({
+    //
+    //   data: this._dsvModel.rawData.slice(this.colHeaderLength),
+    //   change,
+    //   useLitestore,
+    //   type
+    // });
   }
 
   sliceOut(
@@ -957,36 +915,15 @@ export class EditableDSVModel extends MutableDataModel {
     }
   }
 
-  /**
-   * Creates a new transaction containing the raw data, header, and changeArgs
-   * @param change The change args for the Datagrid (may be null)
-   */
-  updateLitestore(change?: DataModel.ChangedArgs): void {
-    const model = this._dsvModel;
-    this._litestore.beginTransaction();
-    this._litestore.updateRecord(
-      {
-        schema: DATAMODEL_SCHEMA,
-        record: RECORD_ID
-      },
-      {
-        modelData: model.rawData,
-        modelHeader: model.header,
-        change: change
-      }
-    );
-    this._litestore.endTransaction();
-  }
-
   private _dsvModel: DSVModel;
-  private _onChangeSignal: Signal<this, string> = new Signal<this, string>(
-    this
-  );
+  private _onChangeSignal: Signal<
+    this,
+    DSVEditor.ModelChangedArgs
+  > = new Signal<this, DSVEditor.ModelChangedArgs>(this);
   private _transmitting = true;
   private _cancelEditingSignal: Signal<this, null> = new Signal<this, null>(
     this
   );
-  private _litestore: Litestore;
 }
 
 interface ICoordinates {
@@ -1000,16 +937,3 @@ export interface ICellSelection {
   endColumn: number;
   endRow: number;
 }
-
-export const SCHEMA_ID = 'datamodel';
-export const RECORD_ID = 'datamodel';
-export const DATAMODEL_SCHEMA = {
-  id: SCHEMA_ID,
-  fields: {
-    modelData: Fields.String(),
-    modelHeader: Fields.Register<string[]>({ value: [] }),
-    change: Fields.Register<DataModel.ChangedArgs>({
-      value: { type: 'model-reset' }
-    })
-  }
-};

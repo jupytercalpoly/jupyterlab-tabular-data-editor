@@ -1,14 +1,13 @@
 // Copyright (c) Jupyter Development Team.
 // Distributed under the terms of the Modified BSD License.
 import { ISearchProvider, ISearchMatch } from '@jupyterlab/documentsearch';
-import { EditableCSVViewer } from './widget';
+import { DSVEditor } from './widget';
 import { DocumentWidget } from '@jupyterlab/docregistry';
 import { Signal, ISignal } from '@lumino/signaling';
 import { Widget } from '@lumino/widgets';
-import { DATAMODEL_SCHEMA, RECORD_ID } from './model';
 
 // The type for which canSearchFor returns true
-export type CSVDocumentWidget = DocumentWidget<EditableCSVViewer>;
+export type CSVDocumentWidget = DocumentWidget<DSVEditor>;
 
 /**
  * Responsible for managing the state of the search-and-replace UI element in JupyterLab
@@ -23,8 +22,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
     // check to see if the CSVSearchProvider can search on the
     // first cell, false indicates another editor is present
     return (
-      domain instanceof DocumentWidget &&
-      domain.content instanceof EditableCSVViewer
+      domain instanceof DocumentWidget && domain.content instanceof DSVEditor
     );
   }
 
@@ -125,7 +123,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
    */
   async replaceCurrentMatch(
     newText: string,
-    useLitestore = true
+    update?: DSVEditor.ModelChangedArgs
   ): Promise<boolean> {
     const { line, column } = this._target.content.searchService.currentMatch;
     await this._target.content.dataModel.setData(
@@ -133,7 +131,9 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
       line,
       column,
       newText,
-      useLitestore
+      1,
+      1,
+      update
     );
     this.selectSingleCell();
     return true;
@@ -146,44 +146,37 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
    * @returns A promise that resolves once the action has completed.
    */
   async replaceAllMatches(newText: string): Promise<boolean> {
-    const model = this._target.content.dataModel.dsvModel;
-    const litestore = this._target.content.dataModel.litestore;
     const searchService = this._target.content.searchService;
     const startRow = searchService.currentMatch.line;
     const startColumn = searchService.currentMatch.column;
     let endRow, endColumn: number;
 
-    litestore.beginTransaction();
+    const rows: number[] = [];
+    const columns: number[] = [];
 
     // replace every match individually
-    while (this.matches.length > 0) {
+    let i = 0;
+    while (i < this.matches.length) {
       // when we have one match left, get the last row and column being edited
-      if (this.matches.length === 1) {
-        endRow = searchService.currentMatch.line;
-        endColumn = searchService.currentMatch.column;
+      if (i + 1 === this.matches.length) {
+        endRow = this.matches[i].line;
+        endColumn = this.matches[i].column;
       }
-      this.replaceCurrentMatch(newText, false);
+      const { line, column } = this.matches[i];
+      rows.push(line);
+      columns.push(column);
+      i++;
     }
-    litestore.updateRecord(
-      {
-        schema: DATAMODEL_SCHEMA,
-        record: RECORD_ID
-      },
-      {
-        modelData: model.rawData,
-        modelHeader: model.header,
-        change: {
-          type: 'cells-changed',
-          region: 'body',
-          // the range of cells being edited
-          row: startRow,
-          column: startColumn,
-          rowSpan: endRow - startRow,
-          columnSpan: endColumn - startColumn
-        }
-      }
+    this.selectSingleCell();
+    this._target.content.dataModel.bulkSetData(
+      rows,
+      columns,
+      newText,
+      startRow,
+      startColumn,
+      endRow,
+      endColumn
     );
-    litestore.endTransaction();
     return true;
   }
 

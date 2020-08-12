@@ -19,14 +19,17 @@ import {
 } from 'tde-datagrid';
 import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget } from '@lumino/widgets';
-import { EditableDSVModel, DATAMODEL_SCHEMA, RECORD_ID } from './model';
+import { EditorModel } from './newmodel';
 import { RichMouseHandler } from './handler';
 import { numberToCharacter } from './_helper';
-import { toArray } from '@lumino/algorithm';
+import { toArray, range } from '@lumino/algorithm';
 import { CommandRegistry } from '@lumino/commands';
 import { CommandIDs } from './index';
 import { VirtualDOM, h } from '@lumino/virtualdom';
 import { GridSearchService } from './searchservice';
+import { Litestore } from './litestore';
+import { Fields } from 'tde-datastore';
+import { ListField, MapField } from 'tde-datastore';
 
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
@@ -35,12 +38,12 @@ const ROW_HEADER_CLASS = 'jp-row-header';
 const BACKGROUND_CLASS = 'jp-background';
 const RENDER_TIMEOUT = 1000;
 
-export class EditableCSVViewer extends Widget {
+export class DSVEditor extends Widget {
   private _background: HTMLElement;
   /**
    * Construct a new CSV viewer.
    */
-  constructor(options: EditableCSVViewer.IOptions) {
+  constructor(options: DSVEditor.IOptions) {
     super();
 
     const context = (this._context = options.context);
@@ -48,14 +51,15 @@ export class EditableCSVViewer extends Widget {
 
     this.addClass(CSV_CLASS);
 
+    //Datagrid Size
     this._grid = new DataGrid({
       defaultSizes: {
-        rowHeight: 28,
+        rowHeight: 24,
         columnWidth: 144,
         rowHeaderWidth: 64,
-        columnHeaderHeight: 32
+        columnHeaderHeight: 36
       },
-      headerVisibility: 'none'
+      headerVisibility: 'all'
     });
 
     this._grid.addClass(CSV_GRID_CLASS);
@@ -69,7 +73,7 @@ export class EditableCSVViewer extends Widget {
     };
     const handler = new RichMouseHandler({ grid: this._grid });
     this._grid.mouseHandler = handler;
-    handler.rightClickSignal.connect(this._onRightClick, this);
+    handler.clickSignal.connect(this._onMouseClick, this);
     handler.resizeSignal.connect(this._onResize, this);
     layout.addWidget(this._grid);
 
@@ -185,11 +189,15 @@ export class EditableCSVViewer extends Widget {
   /**
    * The DataModel used to render the DataGrid
    */
-  get dataModel(): EditableDSVModel {
-    return this._grid.dataModel as EditableDSVModel;
+  get dataModel(): EditorModel {
+    return this._grid.dataModel as EditorModel;
   }
 
-  get changeModelSignal(): Signal<this, string> {
+  get litestore(): Litestore {
+    return this._litestore;
+  }
+
+  get changeModelSignal(): Signal<this, DSVEditor.Commands> {
     return this._changeModelSignal;
   }
 
@@ -290,32 +298,68 @@ export class EditableCSVViewer extends Widget {
 
   /**
    * Create the model for the grid.
+   * TODO: is there a reason we can't just do this once in the constructor?
    */
   protected _updateGrid(): void {
     const delimiter = this.delimiter;
-    const model = this._grid.dataModel as EditableDSVModel;
+    const model = this._grid.dataModel as EditorModel;
     let data: string;
 
     if (!model) {
-      const header = this._buildColHeader(this.delimiter);
-      data = header + this._context.model.toString();
-      const dataModel = (this._grid.dataModel = new EditableDSVModel({
+      data = this._context.model.toString();
+      const dataModel = (this._grid.dataModel = new EditorModel({
         data,
         delimiter
       }));
       this._grid.selectionModel = new BasicSelectionModel({ dataModel });
+
+      // create litestore
+      this._litestore = new Litestore({
+        id: 0,
+        schemas: [DSVEditor.DATAMODEL_SCHEMA]
+      });
+
+      // Give the litestore as a property of the model for it to read from.
+      this.dataModel.litestore = this._litestore;
+
+      // Define the initial update object for the litestore.
+      const update: DSVEditor.ModelChangedArgs = {};
+
+      // Define the initial state of the row and column map.
+      const rowUpdate = {
+        index: 0,
+        remove: 0,
+        values: toArray(range(0, this.dataModel.totalRows()))
+      };
+      const columnUpdate = {
+        index: 0,
+        remove: 0,
+        values: toArray(range(0, this.dataModel.totalColumns()))
+      };
+
+      // Add the map updates to the update object.
+      update.rowUpdate = rowUpdate;
+      update.columnUpdate = columnUpdate;
+
+      // set inital status of litestore
+      this._litestore.beginTransaction();
+      this.updateLitestore(update);
+      this._litestore.endTransaction();
+
       dataModel.onChangedSignal.connect(this._updateModel, this);
-      dataModel.cancelEditingSignal.connect(this._cancelEditing, this);
+      // dataModel.cancelEditingSignal.connect(this._cancelEditing, this);
     }
     // update the position of the background row and column headers
-    this._background.style.width = `${this._grid.viewportWidth}px`;
-    this._background.style.height = `${this._grid.viewportHeight}px`;
+    this._background.style.width = `${this._grid.bodyWidth}px`;
+    this._background.style.height = `${this._grid.bodyHeight}px`;
+    this._background.style.left = `${this._grid.headerWidth}px`;
+    this._background.style.top = `${this._grid.headerHeight}px`;
     this._columnHeader.style.left = `${this._grid.headerWidth}px`;
     this._columnHeader.style.height = `${this._grid.headerHeight}px`;
-    this._columnHeader.style.width = `${this._grid.viewportWidth}px`;
+    this._columnHeader.style.width = `${this._grid.bodyWidth}px`;
     this._rowHeader.style.top = `${this._grid.headerHeight}px`;
     this._rowHeader.style.width = `${this._grid.headerWidth}px`;
-    this._rowHeader.style.height = `${this._grid.viewportHeight}px`;
+    this._rowHeader.style.height = `${this._grid.bodyHeight}px`;
   }
 
   /**
@@ -342,121 +386,267 @@ export class EditableCSVViewer extends Widget {
   }
 
   /**
-   * Updates the file based on the data model
+   * Called every time the datamodel updates
+   * Updates the file and the litestore
    * @param emitter
-   * @param data The raw data used to update the model
+   * @param args The row, column, value, record update, selection model
    */
-  private _updateModel(emitter: EditableDSVModel, data: string): void {
-    this.context.model.fromString(data);
+  private _updateModel(
+    emitter: EditorModel,
+    args: DSVEditor.ModelChangedArgs
+  ): void {
+    // if not selection was passed through, take the current selection
+    if (!args.selection) {
+      args.selection = this._grid.selectionModel.currentSelection();
+    }
+
+    this._litestore.beginTransaction();
+    this.updateLitestore(args);
+    this._litestore.endTransaction();
   }
 
   /**
    * Saves the file
    */
   private _save(): void {
+    const newString = this.dataModel.updateString();
+    this.context.model.fromString(newString);
     this.context.save();
   }
 
-  private _cancelEditing(emitter: EditableDSVModel): void {
-    this._grid.editorController.cancel();
-  }
+  // private _cancelEditing(emitter: EditorModel): void {
+  //   this._grid.editorController.cancel();
+  // }
 
   /**
    * Handles all changes to the data model
    * @param emitter
-   * @param type
+   * @param command
    */
-  private _changeModel(emitter: EditableCSVViewer, type: string): void {
-    switch (type) {
-      case 'insert-row-above': {
-        this.dataModel.addRow(this._row);
+  private _changeModel(emitter: DSVEditor, command: DSVEditor.Commands): void {
+    const selectionModel = this._grid.selectionModel;
+    const selection = selectionModel.currentSelection();
+    let r1, r2, c1, c2: number;
+
+    // grab selection if it exists
+    if (selection) {
+      r1 = Math.min(selection.r1, selection.r2);
+      r2 = Math.max(selection.r1, selection.r2);
+      c1 = Math.min(selection.c1, selection.c2);
+      c2 = Math.max(selection.c1, selection.c2);
+    }
+
+    const newSelection: SelectionModel.SelectArgs = {
+      r1,
+      r2,
+      c1,
+      c2,
+      cursorColumn: c1,
+      cursorRow: r1,
+      clear: 'all'
+    };
+    // Set up the update object for the litestore.
+    let update: DSVEditor.ModelChangedArgs | null = null;
+
+    switch (command) {
+      case 'insert-rows-above': {
+        update = this.dataModel.addRows(this._region, this._row);
+
+        // Add the type property so we can differentiate an insert above from an insert below.
+        update.type = command;
         break;
       }
-      case 'insert-row-below': {
-        this.dataModel.addRow(this._row + 1);
+      case 'insert-rows-below': {
+        update = this.dataModel.addRows(this._region, this._row + 1);
+
+        // Add the command to the grid state.
+        update.gridStateUpdate.nextCommand = command;
+
+        // move the selection down a row to account for the new row being inserted
+        newSelection.r1 += 1;
+        newSelection.r2 += 1;
         break;
       }
-      case 'insert-column-left': {
-        this.dataModel.addColumn(this._column);
+      case 'insert-columns-left': {
+        update = this.dataModel.addColumns(this._region, this._column);
         break;
       }
-      case 'insert-column-right': {
-        this.dataModel.addColumn(this._column + 1);
+      case 'insert-columns-right': {
+        update = this.dataModel.addColumns(this._region, this._column + 1);
+
+        // move the selection right a column to account for the new column being inserted
+        newSelection.c1 += 1;
+        newSelection.c2 += 1;
         break;
       }
-      case 'remove-row': {
-        this.dataModel.removeRow(this._row);
+      case 'remove-rows': {
+        update = this.dataModel.removeRows(this._region, this._row);
         break;
       }
-      case 'remove-column': {
-        this.dataModel.removeColumn(this._column);
+      case 'remove-columns': {
+        update = this.dataModel.removeColumns(this._region, this._column);
         break;
       }
       case 'cut-cells':
-      case 'copy-cells': {
+        // Copy to the OS clipboard.
         this._grid.copyToClipboard();
-        const { r1, c1, r2, c2 } = this.getSelectedRange();
-        this.dataModel.cutAndCopy(
-          {
-            startRow: r1,
-            startColumn: c1,
-            endRow: r2,
-            endColumn: c2
-          },
-          type
-        );
+
+        // Cut the cell selection.
+        update = this.dataModel.cut('body', r1, c1, r2, c2);
+
+        break;
+      case 'copy-cells': {
+        // Copy to the OS clipboard.
+        this._grid.copyToClipboard();
+
+        // Make a local copy of the cells.
+        this.dataModel.copy('body', r1, c1, r2, c2);
         break;
       }
       case 'paste-cells': {
-        // we will determine the location based on the current selection
-        const { r1, c1 } = this.getSelectedRange();
-        this.dataModel.paste({ row: r1, column: c1 });
+        // Paste the cells in the region.
+        update = this.dataModel.paste('body', r1, c1);
+
+        // By default, upper left cell get's re-edited, so we need to cancel.
+        this._cancelEditing();
         break;
       }
-      case 'clear-contents': {
-        this.dataModel.clearContents(
-          this._region,
-          this._row,
-          this._column,
-          this.getSelectedRange()
-        );
+      case 'clear-cells': {
+        update = this.dataModel.clearCells(this._region, { r1, r2, c1, c2 });
+        break;
+      }
+      case 'clear-rows': {
+        const rowSpan = Math.abs(r1 - r2) + 1;
+        update = this.dataModel.clearRows(this._region, r1, rowSpan);
+        break;
+      }
+      case 'clear-columns': {
+        const columnSpan = Math.abs(c1 - c2) + 1;
+        update = this.dataModel.clearColumns(this._region, c1, columnSpan);
         break;
       }
       case 'undo': {
-        const { change } = this.dataModel.litestore.getRecord({
-          schema: DATAMODEL_SCHEMA,
-          record: RECORD_ID
-        });
-
-        // reselect the cell that was edited
-        if (change && change.type === 'cells-changed') {
-          const { row, column } = change;
-          this.selectSingleCell(row, column);
+        // check to see if an undo exists (one undo will exist because that's the initial transaction)
+        if (this._litestore.transactionStore.undoStack.length === 1) {
+          return;
         }
 
-        // undo changes in the model
-        this.dataModel.undo(change);
+        const { gridState, selection } = this._litestore.getRecord({
+          schema: DSVEditor.DATAMODEL_SCHEMA,
+          record: DSVEditor.RECORD_ID
+        });
+
+        this._litestore.undo();
+
+        // Have the model emit the opposite change to the Grid.
+        this.dataModel.emitOppositeChange(gridState.nextChange);
+
+        if (!selection) {
+          break;
+        }
+
+        // reselect the previous selection.
+        const { r1, r2, c1, c2 } = selection;
+        this._grid.selectionModel.select({
+          r1,
+          r2,
+          c1,
+          c2,
+          cursorRow: r1,
+          cursorColumn: c1,
+          clear: 'all'
+        });
+
         break;
       }
       case 'redo': {
-        this.dataModel.litestore.redo();
-        const { change, modelData } = this.dataModel.litestore.getRecord({
-          schema: DATAMODEL_SCHEMA,
-          record: RECORD_ID
+        // check to see if an redo exists (one redo will exist because that's the initial transaction)
+        if (this._litestore.transactionStore.redoStack.length === 0) {
+          return;
+        }
+
+        // Redo first, then get the new selection and the new grid change.
+        this._litestore.redo();
+        const { gridState, selection } = this._litestore.getRecord({
+          schema: DSVEditor.DATAMODEL_SCHEMA,
+          record: DSVEditor.RECORD_ID
         });
 
-        // reselect the cell that was edited
-        if (change && change.type === 'cells-changed') {
-          const { row, column } = change;
-          this.selectSingleCell(row, column);
+        // Have the data model emit the grid change to the grid.
+        this.dataModel.emitCurrentChange(gridState.nextChange);
+
+        if (!selection) {
+          break;
         }
-        this.dataModel.redo(change, modelData);
+        const command = gridState.nextCommand;
+        const gridChange = gridState.nextChange;
+
+        let { r1, r2, c1, c2 } = selection;
+        let move: DataModel.ChangedArgs;
+        // handle special cases for selection
+        if (command === 'insert-rows-below') {
+          r1 += 1;
+          r2 += 1;
+        } else if (command === 'insert-columns-right') {
+          c1 += 1;
+          c2 += 1;
+        } else if (command === 'move-rows') {
+          move = gridChange as DataModel.RowsMovedArgs;
+          r1 = move.destination;
+          r2 = move.destination;
+        } else if (command === 'move-columns') {
+          move = gridChange as DataModel.ColumnsMovedArgs;
+          c1 = move.destination;
+          c2 = move.destination;
+        }
+
+        // Make the new selection.
+        this._grid.selectionModel.select({
+          r1,
+          r2,
+          c1,
+          c2,
+          cursorRow: r1,
+          cursorColumn: c1,
+          clear: 'all'
+        });
         break;
       }
       case 'save':
         this._save();
         break;
     }
+    if (update) {
+      update.selection = selection;
+      // Add the command to the grid state.
+      update.gridStateUpdate.nextCommand = command;
+      this._litestore.beginTransaction();
+      this.updateLitestore(update);
+      this._litestore.endTransaction();
+      this._grid.selectionModel.select(newSelection);
+    }
+  }
+
+  /**
+   * Updates the current transaction with the raw data, header, and changeArgs
+   * Requires Litestore.beginTransaction() to be called before and Litestore.endTransaction to be called after
+   * @param change The change args for the Datagrid (may be null)
+   */
+  public updateLitestore(update?: DSVEditor.ModelChangedArgs): void {
+    //const selection = this._grid.selectionModel.currentSelection();
+    this._litestore.updateRecord(
+      {
+        schema: DSVEditor.DATAMODEL_SCHEMA,
+        record: DSVEditor.RECORD_ID
+      },
+      {
+        rowMap: update.rowUpdate || DSVEditor.NULL_NUM_SPLICE,
+        columnMap: update.columnUpdate || DSVEditor.NULL_NUM_SPLICE,
+        valueMap: update.valueUpdate || null,
+        selection: update.selection || null,
+        gridState: update.gridStateUpdate || null
+      }
+    );
   }
 
   /**
@@ -489,16 +679,27 @@ export class EditableCSVViewer extends Widget {
     super.onAfterAttach(msg);
     this.node.addEventListener('paste', this._handlePaste.bind(this));
   }
+
   private _handlePaste(event: ClipboardEvent): void {
     const copiedText: string = event.clipboardData.getData('text/plain');
     // prevent default behavior
     event.preventDefault();
     event.stopPropagation();
-    const { r1, c1 } = this.getSelectedRange();
-    this.dataModel.paste({ row: r1, column: c1 }, copiedText);
+    const { r1, r2, c1, c2 } = this.getSelectedRange();
+    const row = Math.min(r1, r2);
+    const column = Math.min(c1, c2);
+    const update = this.dataModel.paste(this._region, row, column, copiedText);
+    this._cancelEditing();
+    this.litestore.beginTransaction();
+    this.updateLitestore(update);
+    this.litestore.endTransaction();
   }
 
-  private _onRightClick(
+  private _cancelEditing(): void {
+    this._grid.editorController.cancel();
+  }
+
+  private _onMouseClick(
     emitter: RichMouseHandler,
     hit: DataGrid.HitTestResult
   ): void {
@@ -510,14 +711,16 @@ export class EditableCSVViewer extends Widget {
   }
 
   private _onResize(emitter: RichMouseHandler): void {
-    this._background.style.width = `${this._grid.viewportWidth}px`;
-    this._background.style.height = `${this._grid.viewportHeight}px`;
+    this._background.style.width = `${this._grid.bodyWidth}px`;
+    this._background.style.height = `${this._grid.bodyHeight}px`;
+    this._background.style.left = `${this._grid.headerWidth}px`;
+    this._background.style.top = `${this._grid.headerHeight}px`;
     this._columnHeader.style.left = `${this._grid.headerWidth}px`;
     this._columnHeader.style.height = `${this._grid.headerHeight}px`;
-    this._columnHeader.style.width = `${this._grid.viewportWidth}px`;
+    this._columnHeader.style.width = `${this._grid.bodyWidth}px`;
     this._rowHeader.style.top = `${this._grid.headerHeight}px`;
     this._rowHeader.style.width = `${this._grid.headerWidth}px`;
-    this._rowHeader.style.height = `${this._grid.viewportHeight}px`;
+    this._rowHeader.style.height = `${this._grid.bodyHeight}px`;
   }
 
   private _region: DataModel.CellRegion;
@@ -533,22 +736,89 @@ export class EditableCSVViewer extends Widget {
   private _delimiter = ',';
   private _revealed = new PromiseDelegate<void>();
   private _baseRenderer: TextRenderConfig | null = null;
+  private _litestore: Litestore;
 
   // Signals for basic editing functionality
-  private _changeModelSignal: Signal<this, string> = new Signal<this, string>(
-    this
-  );
+  private _changeModelSignal = new Signal<this, DSVEditor.Commands>(this);
   private _columnHeader: HTMLElement;
   private _rowHeader: HTMLElement;
 }
 
-export class EditableCSVDocumentWidget extends DocumentWidget<
-  EditableCSVViewer
-> {
+export namespace DSVEditor {
+  /**
+   * The Grid update args
+   */
+  export type GridState = {
+    currentRows: number;
+    currentColumns: number;
+    nextChange: DataModel.ChangedArgs;
+    nextCommand?: DSVEditor.Commands;
+  };
+  /**
+   * The types of commands that can be made to the model.
+   */
+  export type Commands =
+    | 'insert-rows-above'
+    | 'insert-rows-below'
+    | 'insert-columns-right'
+    | 'insert-columns-left'
+    | 'remove-rows'
+    | 'remove-columns'
+    | 'move-rows'
+    | 'move-columns'
+    | 'clear-cells'
+    | 'clear-rows'
+    | 'clear-columns'
+    | 'cut-cells'
+    | 'copy-cells'
+    | 'paste-cells'
+    | 'undo'
+    | 'redo'
+    | 'save';
+  /**
+   * The arguments emitted to the Editor when the datamodel changes
+   */
+  export type ModelChangedArgs = {
+    rowUpdate?: ListField.Update<number>;
+    columnUpdate?: ListField.Update<number>;
+    valueUpdate?: MapField.Update<string>;
+    gridStateUpdate?: GridState;
+    type?: string;
+    selection?: SelectionModel.Selection;
+  };
+
+  export const SCHEMA_ID = 'datamodel';
+  export const RECORD_ID = 'datamodel';
+  export const DATAMODEL_SCHEMA = {
+    id: SCHEMA_ID,
+    fields: {
+      rowMap: Fields.List<number>(),
+      columnMap: Fields.List<number>(),
+      valueMap: Fields.Map<string>(),
+      selection: Fields.Register<SelectionModel.Selection>({
+        value: null
+      }),
+      gridState: Fields.Register<GridState>({
+        value: null
+      }),
+      type: Fields.String()
+    }
+  };
+  export const NULL_NUMS: number[] = [];
+  export const NULL_NUM_SPLICE = { index: 0, remove: 0, values: NULL_NUMS };
+  export const NULL_CHANGE: GridState[] = [];
+  export const NULL_CHANGE_SPLICE = {
+    index: 0,
+    remove: 0,
+    values: NULL_CHANGE
+  };
+}
+
+export class EditableCSVDocumentWidget extends DocumentWidget<DSVEditor> {
   constructor(options: EditableCSVDocumentWidget.IOptions) {
     let { content, reveal } = options;
     const { context, commandRegistry, ...other } = options;
-    content = content || new EditableCSVViewer({ context });
+    content = content || new DSVEditor({ context });
     reveal = Promise.all([reveal, content.revealed]);
     super({ context, content, reveal, ...other });
 
@@ -620,15 +890,14 @@ export class EditableCSVDocumentWidget extends DocumentWidget<
   }
 }
 export declare namespace EditableCSVDocumentWidget {
-  interface IOptions
-    extends DocumentWidget.IOptionsOptionalContent<EditableCSVViewer> {
+  interface IOptions extends DocumentWidget.IOptionsOptionalContent<DSVEditor> {
     delimiter?: string;
     commandRegistry: CommandRegistry;
   }
 }
 
 export class EditableCSVViewerFactory extends ABCWidgetFactory<
-  IDocumentWidget<EditableCSVViewer>
+  IDocumentWidget<DSVEditor>
 > {
   constructor(
     options: DocumentRegistry.IWidgetFactoryOptions<IDocumentWidget>,
@@ -640,14 +909,14 @@ export class EditableCSVViewerFactory extends ABCWidgetFactory<
 
   createNewWidget(
     context: DocumentRegistry.Context
-  ): IDocumentWidget<EditableCSVViewer> {
+  ): IDocumentWidget<DSVEditor> {
     const commandRegistry = this._commandReigstry;
     return new EditableCSVDocumentWidget({ context, commandRegistry });
   }
 
   private _commandReigstry: CommandRegistry;
 }
-export namespace EditableCSVViewer {
+export namespace DSVEditor {
   /**
    * Instantiation options for CSV widgets.
    */

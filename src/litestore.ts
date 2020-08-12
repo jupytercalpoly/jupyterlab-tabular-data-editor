@@ -6,7 +6,7 @@ import {
   Schema,
   Table,
   Record
-} from '@lumino/datastore';
+} from 'tde-datastore';
 
 import { IDisposable } from '@lumino/disposable';
 
@@ -28,6 +28,20 @@ export class TransactionStore {
     this._order = [];
     this._undoStack = [];
     this._redoStack = [];
+  }
+
+  /**
+   * Returns the current undo stack
+   */
+  get undoStack(): string[] {
+    return this._undoStack;
+  }
+
+  /**
+   * Returns the current redo stack
+   */
+  get redoStack(): string[] {
+    return this._redoStack;
   }
 
   /**
@@ -361,6 +375,10 @@ export class Litestore implements IDisposable, IIterable<Table<Schema>> {
    */
   get cemetery(): { [id: string]: number } {
     return this._transactionStore.cemetery;
+  }
+
+  get transactionStore(): TransactionStore {
+    return this._transactionStore;
   }
 
   /**

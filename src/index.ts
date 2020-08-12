@@ -15,17 +15,21 @@ import {
 } from '@jupyterlab/apputils';
 import { IDocumentWidget } from '@jupyterlab/docregistry';
 import { ISearchProviderRegistry } from '@jupyterlab/documentsearch';
+import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
+import { ILauncher } from '@jupyterlab/launcher';
 import { /*IEditMenu,*/ IMainMenu } from '@jupyterlab/mainmenu';
+import { Contents } from '@jupyterlab/services';
 import {
   undoIcon,
   redoIcon,
   cutIcon,
   copyIcon,
   pasteIcon,
-  saveIcon
+  saveIcon,
+  spreadsheetIcon
 } from '@jupyterlab/ui-components';
 import { DataGrid } from '@lumino/datagrid';
-import { EditableCSVViewer, EditableCSVViewerFactory } from './widget';
+import { DSVEditor, EditableCSVViewerFactory } from './widget';
 import { CSVSearchProvider } from './searchprovider';
 
 /**
@@ -41,12 +45,20 @@ const extension: JupyterFrontEndPlugin<void> = {
   id: 'jupyterlab-tabular-data-editor',
   autoStart: true,
   activate: activateCsv,
-  requires: [],
-  optional: [ILayoutRestorer, IThemeManager, IMainMenu, ISearchProviderRegistry]
+  requires: [IFileBrowserFactory],
+  optional: [
+    ILauncher,
+    ILayoutRestorer,
+    IThemeManager,
+    IMainMenu,
+    ISearchProviderRegistry
+  ]
 };
 
 function activateCsv(
   app: JupyterFrontEnd,
+  browserFactory: IFileBrowserFactory,
+  launcher: ILauncher | null,
   restorer: ILayoutRestorer | null,
   themeManager: IThemeManager | null,
   mainMenu: IMainMenu | null,
@@ -61,7 +73,7 @@ function activateCsv(
     },
     app.commands
   );
-  const tracker = new WidgetTracker<IDocumentWidget<EditableCSVViewer>>({
+  const tracker = new WidgetTracker<IDocumentWidget<DSVEditor>>({
     namespace: 'editablecsvviewer'
   });
 
@@ -126,7 +138,12 @@ function activateCsv(
     searchregistry.register('csv', CSVSearchProvider);
   }
 
-  addCommands(app, tracker);
+  addCommands(app, tracker, browserFactory);
+
+  // Add a new CSV launcher
+  if (launcher) {
+    launcher.add({ command: CommandIDs.createNewCSV });
+  }
 }
 
 /*
@@ -134,7 +151,8 @@ Creates commands, adds them to the context menu, and adds keybindings for common
 */
 function addCommands(
   app: JupyterFrontEnd,
-  tracker: WidgetTracker<IDocumentWidget<EditableCSVViewer>>
+  tracker: WidgetTracker<IDocumentWidget<DSVEditor>>,
+  browserFactory: IFileBrowserFactory
 ): void {
   const { commands } = app;
   const GLOBAL_SELECTOR = '.jp-CSVViewer-grid';
@@ -142,61 +160,89 @@ function addCommands(
   const COLUMN_HEADER_SELECTOR = '.jp-column-header';
   const ROW_HEADER_SELECTOR = '.jp-row-header';
 
-  commands.addCommand(CommandIDs.insertRowAbove, {
+  // creates a new csv file and opens it
+  commands.addCommand(CommandIDs.createNewCSV, {
+    label: args => (args['isPalette'] ? 'New CSV File' : 'CSV File'),
+    caption: 'Create a new CSV file',
+    icon: args => (args['isPalette'] ? null : spreadsheetIcon),
+    execute: async args => {
+      // Get the directory in which the CSV file must be created;
+      // otherwise take the current filebrowser directory
+      const cwd = args['cwd'] || browserFactory.defaultBrowser.model.path;
+
+      // Create a new untitled csv file
+      const model: Contents.IModel = await commands.execute(
+        'docmanager:new-untitled',
+        {
+          path: cwd,
+          type: 'file',
+          ext: 'csv'
+        }
+      );
+
+      // Open the newly created file with the Tabular Data Editor
+      return commands.execute('docmanager:open', {
+        path: model.path,
+        factory: FACTORY_CSV
+      });
+    }
+  });
+
+  commands.addCommand(CommandIDs.insertRowsAbove, {
     label: 'Insert Row Above',
     execute: () => {
       // emit a signal to the EditableDSVModel
       tracker.currentWidget &&
         tracker.currentWidget.content.changeModelSignal.emit(
-          'insert-row-above'
+          'insert-rows-above'
         );
     }
   });
 
-  commands.addCommand(CommandIDs.insertRowBelow, {
+  commands.addCommand(CommandIDs.insertRowsBelow, {
     label: 'Insert Row Below',
     execute: () => {
       // emit a signal to the EditableDSVModel
       tracker.currentWidget &&
         tracker.currentWidget.content.changeModelSignal.emit(
-          'insert-row-below'
+          'insert-rows-below'
         );
     }
   });
 
-  commands.addCommand(CommandIDs.removeRow, {
+  commands.addCommand(CommandIDs.removeRows, {
     label: 'Remove Row',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('remove-row');
+        tracker.currentWidget.content.changeModelSignal.emit('remove-rows');
     }
   });
 
-  commands.addCommand(CommandIDs.insertColumnLeft, {
+  commands.addCommand(CommandIDs.insertColumnsLeft, {
     label: 'Insert Column Left',
     execute: () => {
       tracker.currentWidget &&
         tracker.currentWidget.content.changeModelSignal.emit(
-          'insert-column-left'
+          'insert-columns-left'
         );
     }
   });
 
-  commands.addCommand(CommandIDs.insertColumnRight, {
+  commands.addCommand(CommandIDs.insertColumnsRight, {
     label: 'Insert Column Right',
     execute: () => {
       tracker.currentWidget &&
         tracker.currentWidget.content.changeModelSignal.emit(
-          'insert-column-right'
+          'insert-columns-right'
         );
     }
   });
 
-  commands.addCommand(CommandIDs.removeColumn, {
+  commands.addCommand(CommandIDs.removeColumns, {
     label: 'Remove Column',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('remove-column');
+        tracker.currentWidget.content.changeModelSignal.emit('remove-columns');
     }
   });
 
@@ -290,11 +336,27 @@ function addCommands(
     }
   });
 
-  commands.addCommand(CommandIDs.clearContents, {
+  commands.addCommand(CommandIDs.clearCells, {
     label: 'Clear Contents',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('clear-contents');
+        tracker.currentWidget.content.changeModelSignal.emit('clear-cells');
+    }
+  });
+
+  commands.addCommand(CommandIDs.clearColumns, {
+    label: 'Clear Columns',
+    execute: () => {
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('clear-columns');
+    }
+  });
+
+  commands.addCommand(CommandIDs.clearRows, {
+    label: 'Clear Rows',
+    execute: () => {
+      tracker.currentWidget &&
+        tracker.currentWidget.content.changeModelSignal.emit('clear-rows');
     }
   });
 
@@ -309,27 +371,27 @@ function addCommands(
   // extending the standard context menu for different parts of the data
   const bodyContextMenu = [
     ...standardContextMenu,
-    'insertRowAbove',
-    'insertRowBelow',
+    'insertRowsAbove',
+    'insertRowsBelow',
     'separator',
-    'removeRow',
-    'clearContents'
+    'removeRows',
+    'clearCells'
   ];
   const columnHeaderContextMenu = [
     ...standardContextMenu,
-    'insertColumnLeft',
-    'insertColumnRight',
+    'insertColumnsLeft',
+    'insertColumnsRight',
     'separator',
-    'removeColumn',
-    'clearContents'
+    'removeColumns',
+    'clearColumns'
   ];
   const rowHeaderContextMenu = [
     ...standardContextMenu,
-    'insertRowAbove',
-    'insertRowBelow',
+    'insertRowsAbove',
+    'insertRowsBelow',
     'separator',
-    'removeRow',
-    'clearContents'
+    'removeRows',
+    'clearRows'
   ];
 
   // build the different context menus
@@ -364,12 +426,12 @@ function addCommands(
     keys: ['Accel Shift Z'],
     selector: GLOBAL_SELECTOR
   });
-  app.commands.addKeyBinding({
-    command: CommandIDs.clearContents,
-    args: {},
-    keys: ['Backspace'],
-    selector: GLOBAL_SELECTOR
-  });
+  // app.commands.addKeyBinding({
+  //   command: CommandIDs.clearContents,
+  //   args: {},
+  //   keys: ['Backspace'],
+  //   selector: GLOBAL_SELECTOR
+  // });
 }
 
 /**
@@ -459,12 +521,13 @@ namespace Private {
 }
 
 export const CommandIDs: { [key: string]: string } = {
-  insertColumnLeft: 'tde:insert-column-left',
-  insertColumnRight: 'tde:insert-column-right',
-  insertRowAbove: 'tde:insert-row-above',
-  insertRowBelow: 'tde:insert-row-below',
-  removeRow: 'tde-remove-row',
-  removeColumn: 'tde:remove-column',
+  createNewCSV: 'tde-create-new-csv',
+  insertColumnsLeft: 'tde:insert-columns-left',
+  insertColumnsRight: 'tde:insert-columns-right',
+  insertRowsAbove: 'tde:insert-rows-above',
+  insertRowsBelow: 'tde:insert-rows-below',
+  removeRows: 'tde-remove-row',
+  removeColumns: 'tde:remove-column',
   copyContextMenu: 'tde:copy',
   cutContextMenu: 'tde:cut',
   pasteContextMenu: 'tde:paste-cm',
@@ -474,5 +537,7 @@ export const CommandIDs: { [key: string]: string } = {
   undo: 'tde:undo',
   redo: 'tde:redo',
   save: 'tde-save',
-  clearContents: 'tde-clear-contents'
+  clearCells: 'tde-clear-contents',
+  clearColumns: 'tde-clear-columns',
+  clearRows: 'tde-clear-rows'
 };
