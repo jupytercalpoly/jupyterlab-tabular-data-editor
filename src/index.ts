@@ -408,6 +408,13 @@ function addCommands(
   });
 
   app.commands.addKeyBinding({
+    command: CommandIDs.save,
+    args: {},
+    keys: ['Accel S'],
+    selector: GLOBAL_SELECTOR
+  });
+
+  app.commands.addKeyBinding({
     command: CommandIDs.cutContextMenu,
     args: {},
     keys: ['Accel X'],

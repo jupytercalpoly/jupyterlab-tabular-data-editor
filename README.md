@@ -5,7 +5,6 @@
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/jupytercalpoly/jupyterlab-tabular-data-editor/master?urlpath=lab) ![Github Actions Status](https://github.com/jupytercalpoly/jupyterlab-tabular-data-editor/workflows/Build/badge.svg)
 
 ### EXPERIMENTAL: This extension is still in alpha. The API is subject to frequent changes.
-
 ### Please contact [Kalen](https://github.com/kgoo124), [Logan](https://github.com/lmcnichols), or [Ryan](https://github.com/ryuntalan) if you would like to contribute!
 
 Try our extension [here](https://mybinder.org/v2/gh/jupytercalpoly/jupyterlab-tabular-data-editor/master?urlpath=lab)!
@@ -16,7 +15,7 @@ Read more about the Jupyter Tabular Data Editor Extension in our [press release]
 
 Check out our [current progress and future plans](https://github.com/jupytercalpoly/jupyterlab-tabular-data-editor/blob/master/PROGRESS.md)!
 
-See our progress as of 07/09/2020 from these [slides](https://docs.google.com/presentation/d/1b-cH0wQz6oAtlLLPSqETVqasltpMQd9ceNx0LXjgJyU/edit?usp=sharing)!
+See our progress as of 08/07/2020 from these [slides](https://docs.google.com/presentation/d/1ZGjFb3RkoR5Cc39DDdtU-AYAoYMNVMyUM9g80qgNzos/edit?usp=sharing)!
 
 View a report of our code coverage [here](http://htmlpreview.github.io/?https://github.com/jupytercalpoly/jupyterlab-tabular-data-editor/blob/master/coverage/lcov-report/index.html)!
 

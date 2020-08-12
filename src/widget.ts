@@ -59,7 +59,7 @@ export class DSVEditor extends Widget {
         rowHeaderWidth: 64,
         columnHeaderHeight: 36
       },
-      headerVisibility: 'none'
+      headerVisibility: 'all'
     });
 
     this._grid.addClass(CSV_GRID_CLASS);
