@@ -410,7 +410,6 @@ export class DSVEditor extends Widget {
     emitter: EditorModel,
     args: DSVEditor.ModelChangedArgs
   ): void {
-    // if not selection was passed through, take the current selection
     this.updateModel(args);
   }
 
