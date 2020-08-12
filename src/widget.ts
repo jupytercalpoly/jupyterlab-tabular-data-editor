@@ -205,6 +205,7 @@ export class DSVEditor extends Widget {
    * Dispose of the resources used by the widget.
    */
   dispose(): void {
+    console.log(this._dirty);
     if (this._monitor) {
       this._monitor.dispose();
     }
@@ -345,7 +346,6 @@ export class DSVEditor extends Widget {
       this._litestore.beginTransaction();
       this.updateLitestore(update);
       this._litestore.endTransaction();
-
       dataModel.onChangedSignal.connect(this._updateModel, this);
       // dataModel.cancelEditingSignal.connect(this._cancelEditing, this);
     }
@@ -412,6 +412,9 @@ export class DSVEditor extends Widget {
     const newString = this.dataModel.updateString();
     this.context.model.fromString(newString);
     this.context.save();
+
+    // reset boolean since no new changes exist
+    this._dirty = false;
   }
 
   // private _cancelEditing(emitter: EditorModel): void {
@@ -630,10 +633,17 @@ export class DSVEditor extends Widget {
   /**
    * Updates the current transaction with the raw data, header, and changeArgs
    * Requires Litestore.beginTransaction() to be called before and Litestore.endTransaction to be called after
-   * @param change The change args for the Datagrid (may be null)
+   * @param update The modelChanged args for the Datagrid (may be null)
    */
   public updateLitestore(update?: DSVEditor.ModelChangedArgs): void {
-    //const selection = this._grid.selectionModel.currentSelection();
+    // for every litestore change except the init, set the dirty boolean to true
+    this._dirty =
+      update &&
+      update.gridStateUpdate &&
+      update.gridStateUpdate.nextCommand === 'init'
+        ? false
+        : true;
+
     this._litestore.updateRecord(
       {
         schema: DSVEditor.DATAMODEL_SCHEMA,
@@ -737,6 +747,7 @@ export class DSVEditor extends Widget {
   private _revealed = new PromiseDelegate<void>();
   private _baseRenderer: TextRenderConfig | null = null;
   private _litestore: Litestore;
+  private _dirty = false;
 
   // Signals for basic editing functionality
   private _changeModelSignal = new Signal<this, DSVEditor.Commands>(this);
@@ -758,6 +769,7 @@ export namespace DSVEditor {
    * The types of commands that can be made to the model.
    */
   export type Commands =
+    | 'init'
     | 'insert-rows-above'
     | 'insert-rows-below'
     | 'insert-columns-right'

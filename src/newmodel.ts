@@ -1465,10 +1465,11 @@ export class EditorModel extends MutableDataModel {
     };
 
     // Get a snapshot of the current state of the grid.
-    const gridState = {
+    const gridState: DSVEditor.GridState = {
       currentRows,
       currentColumns,
-      nextChange
+      nextChange,
+      nextCommand: 'init'
     };
 
     update.gridStateUpdate = gridState;
