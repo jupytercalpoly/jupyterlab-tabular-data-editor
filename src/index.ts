@@ -193,9 +193,7 @@ function addCommands(
     execute: () => {
       // emit a signal to the EditableDSVModel
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit(
-          'insert-rows-above'
-        );
+        tracker.currentWidget.content.commandSignal.emit('insert-rows-above');
     }
   });
 
@@ -204,9 +202,7 @@ function addCommands(
     execute: () => {
       // emit a signal to the EditableDSVModel
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit(
-          'insert-rows-below'
-        );
+        tracker.currentWidget.content.commandSignal.emit('insert-rows-below');
     }
   });
 
@@ -214,7 +210,7 @@ function addCommands(
     label: 'Remove Row',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('remove-rows');
+        tracker.currentWidget.content.commandSignal.emit('remove-rows');
     }
   });
 
@@ -222,9 +218,7 @@ function addCommands(
     label: 'Insert Column Left',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit(
-          'insert-columns-left'
-        );
+        tracker.currentWidget.content.commandSignal.emit('insert-columns-left');
     }
   });
 
@@ -232,7 +226,7 @@ function addCommands(
     label: 'Insert Column Right',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit(
+        tracker.currentWidget.content.commandSignal.emit(
           'insert-columns-right'
         );
     }
@@ -242,7 +236,7 @@ function addCommands(
     label: 'Remove Column',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('remove-columns');
+        tracker.currentWidget.content.commandSignal.emit('remove-columns');
     }
   });
 
@@ -253,7 +247,7 @@ function addCommands(
     caption: 'Copy',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('copy-cells');
+        tracker.currentWidget.content.commandSignal.emit('copy-cells');
     }
   });
 
@@ -264,7 +258,7 @@ function addCommands(
     caption: 'Cut',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('cut-cells');
+        tracker.currentWidget.content.commandSignal.emit('cut-cells');
     }
   });
 
@@ -275,7 +269,7 @@ function addCommands(
     caption: 'Paste',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('paste-cells');
+        tracker.currentWidget.content.commandSignal.emit('paste-cells');
     }
   });
 
@@ -283,7 +277,7 @@ function addCommands(
     label: 'Copy',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('copy-cells');
+        tracker.currentWidget.content.commandSignal.emit('copy-cells');
     }
   });
 
@@ -291,7 +285,7 @@ function addCommands(
     label: 'Cut',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('cut-cells');
+        tracker.currentWidget.content.commandSignal.emit('cut-cells');
     }
   });
 
@@ -299,7 +293,7 @@ function addCommands(
     label: 'Paste',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('paste-cells');
+        tracker.currentWidget.content.commandSignal.emit('paste-cells');
     }
   });
 
@@ -310,7 +304,7 @@ function addCommands(
     caption: 'Undo',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('undo');
+        tracker.currentWidget.content.commandSignal.emit('undo');
     }
   });
 
@@ -321,7 +315,7 @@ function addCommands(
     caption: 'Redo',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('redo');
+        tracker.currentWidget.content.commandSignal.emit('redo');
     }
   });
 
@@ -332,7 +326,7 @@ function addCommands(
     caption: 'Redo',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('save');
+        tracker.currentWidget.content.commandSignal.emit('save');
     }
   });
 
@@ -340,7 +334,7 @@ function addCommands(
     label: 'Clear Contents',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('clear-cells');
+        tracker.currentWidget.content.commandSignal.emit('clear-cells');
     }
   });
 
@@ -348,7 +342,7 @@ function addCommands(
     label: 'Clear Columns',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('clear-columns');
+        tracker.currentWidget.content.commandSignal.emit('clear-columns');
     }
   });
 
@@ -356,7 +350,7 @@ function addCommands(
     label: 'Clear Rows',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('clear-rows');
+        tracker.currentWidget.content.commandSignal.emit('clear-rows');
     }
   });
 

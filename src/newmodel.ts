@@ -290,7 +290,7 @@ export class EditorModel extends MutableDataModel {
     startColumn: number,
     endRow: number,
     endColumn: number
-  ) {
+  ): void {
     // Set up an udate object for the litestore.
     const update: DSVEditor.ModelChangedArgs = {};
 
