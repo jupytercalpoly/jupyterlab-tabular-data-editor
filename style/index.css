@@ -83,3 +83,8 @@
   min-height: 12px;
   min-width: 12px;
 }
+
+.jp-grid-corner {
+  background-color: white;
+  border: none;
+}

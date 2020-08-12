@@ -17,10 +17,15 @@ import HeaderCellEditor from './headercelleditor';
 
 export class RichMouseHandler extends BasicMouseHandler {
   private _moveLine: BoundedDrag;
+  private _lastHoverRegion: 'ghostRow' | 'ghostColumn' | 'other';
   constructor(options: RichMouseHandler.IOptions) {
     super();
     this._grid = options.grid;
     this._cursor = null;
+  }
+
+  get ghostHoverSignal(): Signal<this, 'ghostRow' | 'ghostColumn' | 'other'> {
+    return this._ghostHoverSignal;
   }
 
   get resizeSignal(): Signal<this, null> {
@@ -128,6 +133,20 @@ export class RichMouseHandler extends BasicMouseHandler {
    * @param event
    */
   onMouseHover(grid: DataGrid, event: MouseEvent): void {
+    // See if we are on a ghost row or ghost column.
+    const { row, column } = grid.hitTest(event.clientX, event.clientY);
+    let hoverRegion: 'ghostRow' | 'ghostColumn' | 'other';
+    if (row === grid.dataModel.rowCount('body') - 1) {
+      hoverRegion = 'ghostRow';
+    } else if (column === grid.dataModel.columnCount('body') - 1) {
+      hoverRegion = 'ghostColumn';
+    } else {
+      hoverRegion = 'other';
+    }
+    if (this._lastHoverRegion !== hoverRegion) {
+      this.ghostHoverSignal.emit(hoverRegion);
+    }
+    this._lastHoverRegion = hoverRegion;
     this._event = event;
     super.onMouseHover(grid, event);
   }
@@ -139,6 +158,15 @@ export class RichMouseHandler extends BasicMouseHandler {
    * @param event - The mouse down event of interest.
    */
   onMouseDown(grid: DataGrid, event: MouseEvent): void {
+    const model = grid.dataModel as EditorModel;
+    if (this._lastHoverRegion === 'ghostRow') {
+      model.addRows('body', model.rowCount('body') - 1);
+      return;
+    }
+    if (this._lastHoverRegion === 'ghostColumn') {
+      model.addColumns('body', model.columnCount('body') - 1);
+      return;
+    }
     super.onMouseDown(grid, event);
     if (this._cursor === 'grab') {
       this._cursor = 'grabbing';
@@ -474,7 +502,7 @@ export class RichMouseHandler extends BasicMouseHandler {
       return;
     }
     // otherwise select the respective row/column/cell
-    super.onMouseDown(grid, event);
+    this.onMouseDown(grid, event);
   }
 
   /**
@@ -527,6 +555,10 @@ export class RichMouseHandler extends BasicMouseHandler {
   private _moveData: MoveData | null;
   private _clickSignal = new Signal<this, DataGrid.HitTestResult>(this);
   private _resizeSignal = new Signal<this, null>(this);
+  private _ghostHoverSignal = new Signal<
+    this,
+    'ghostRow' | 'ghostColumn' | 'other'
+  >(this);
   private _selectionIndex: number; // The index of the row/column where the move line is present
 }
 

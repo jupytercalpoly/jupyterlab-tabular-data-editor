@@ -68,11 +68,14 @@ export class EditorModel extends MutableDataModel {
 
   /**
    * The grid's current number of rows by region.
+   * NOTE: we add one so that a ghost row appears.
    *
    */
   rowCount(region: DataModel.RowRegion): number {
     if (region === 'body') {
-      return this._model.rowCount('body') + this._rowsAdded - this._rowsRemoved;
+      return (
+        this._model.rowCount('body') + this._rowsAdded - this._rowsRemoved + 1
+      );
     }
     return 1;
   }
@@ -82,13 +85,15 @@ export class EditorModel extends MutableDataModel {
    *
    * Note: the UI components use this method to get the column count
    * so it should reflect the grid's columns.
+   * NOTE: we add 1 so that a ghost column appears.
    */
   columnCount(region: DataModel.ColumnRegion): number {
     if (region === 'body') {
       return (
         this._model.columnCount('body') +
         this._columnsAdded -
-        this._columnsRemoved
+        this._columnsRemoved +
+        1
       );
     }
     return 1;
@@ -128,7 +133,7 @@ export class EditorModel extends MutableDataModel {
     }
 
     if (region === 'corner-header') {
-      return '';
+      return;
     }
 
     // The row comes to us as an index on a particular region. We need the
@@ -144,6 +149,10 @@ export class EditorModel extends MutableDataModel {
     // Map from the cell on the grid to the cell in the model.
     row = rowMap[row];
     column = columnMap[column];
+
+    if (row === undefined || column === undefined) {
+      return '';
+    }
 
     // check if a new value has been stored at this cell.
     if (valueMap[`${row},${column}`] !== undefined) {
