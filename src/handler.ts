@@ -159,12 +159,15 @@ export class RichMouseHandler extends BasicMouseHandler {
    */
   onMouseDown(grid: DataGrid, event: MouseEvent): void {
     const model = grid.dataModel as EditorModel;
+    let update: DSVEditor.ModelChangedArgs;
     if (this._lastHoverRegion === 'ghostRow') {
-      model.addRows('body', model.rowCount('body') - 1);
+      update = model.addRows('body', model.rowCount('body') - 1);
+      model.onChangedSignal.emit(update);
       return;
     }
     if (this._lastHoverRegion === 'ghostColumn') {
-      model.addColumns('body', model.columnCount('body') - 1);
+      update = model.addColumns('body', model.columnCount('body') - 1);
+      model.onChangedSignal.emit(update);
       return;
     }
     super.onMouseDown(grid, event);
