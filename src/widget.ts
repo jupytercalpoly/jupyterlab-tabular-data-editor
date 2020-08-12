@@ -128,7 +128,7 @@ export class DSVEditor extends Widget {
       this._monitor.activityStopped.connect(this._updateGrid, this);
     });
     this._grid.editingEnabled = true;
-    this.changeModelSignal.connect(this._changeModel, this);
+    this.commandSignal.connect(this._onCommand, this);
   }
 
   /**
@@ -199,8 +199,8 @@ export class DSVEditor extends Widget {
     return this._litestore;
   }
 
-  get changeModelSignal(): Signal<this, DSVEditor.Commands> {
-    return this._changeModelSignal;
+  get commandSignal(): Signal<this, DSVEditor.Commands> {
+    return this._commandSignal;
   }
 
   get dirty(): boolean {
@@ -360,10 +360,8 @@ export class DSVEditor extends Widget {
       update.columnUpdate = columnUpdate;
 
       // set inital status of litestore
-      this._litestore.beginTransaction();
-      this.updateLitestore(update);
-      this._litestore.endTransaction();
-      dataModel.onChangedSignal.connect(this._updateModel, this);
+      this.updateModel(update);
+      dataModel.onChangedSignal.connect(this._onModelSignal, this);
       // dataModel.cancelEditingSignal.connect(this._cancelEditing, this);
     }
     // update the position of the background row and column headers
@@ -408,18 +406,12 @@ export class DSVEditor extends Widget {
    * @param emitter
    * @param args The row, column, value, record update, selection model
    */
-  private _updateModel(
+  private _onModelSignal(
     emitter: EditorModel,
     args: DSVEditor.ModelChangedArgs
   ): void {
     // if not selection was passed through, take the current selection
-    if (!args.selection) {
-      args.selection = this._grid.selectionModel.currentSelection();
-    }
-
-    this._litestore.beginTransaction();
-    this.updateLitestore(args);
-    this._litestore.endTransaction();
+    this.updateModel(args);
   }
 
   /**
@@ -445,7 +437,7 @@ export class DSVEditor extends Widget {
    * @param emitter
    * @param command
    */
-  private _changeModel(emitter: DSVEditor, command: DSVEditor.Commands): void {
+  private _onCommand(emitter: DSVEditor, command: DSVEditor.Commands): void {
     const selectionModel = this._grid.selectionModel;
     const selection = selectionModel.currentSelection();
     let r1, r2, c1, c2: number;
@@ -642,9 +634,7 @@ export class DSVEditor extends Widget {
       update.selection = selection;
       // Add the command to the grid state.
       update.gridStateUpdate.nextCommand = command;
-      this._litestore.beginTransaction();
-      this.updateLitestore(update);
-      this._litestore.endTransaction();
+      this.updateModel(update);
       this._grid.selectionModel.select(newSelection);
     }
   }
@@ -654,8 +644,11 @@ export class DSVEditor extends Widget {
    * Requires Litestore.beginTransaction() to be called before and Litestore.endTransaction to be called after
    * @param update The modelChanged args for the Datagrid (may be null)
    */
-  public updateLitestore(update?: DSVEditor.ModelChangedArgs): void {
+  public updateModel(update?: DSVEditor.ModelChangedArgs): void {
     // for every litestore change except the init, set the dirty boolean to true
+    if (!update.selection) {
+      update.selection = this._grid.selectionModel.currentSelection();
+    }
     this.dirty =
       update &&
       update.gridStateUpdate &&
@@ -663,6 +656,8 @@ export class DSVEditor extends Widget {
         ? false
         : true;
 
+    // Update the litestore.
+    this._litestore.beginTransaction();
     this._litestore.updateRecord(
       {
         schema: DSVEditor.DATAMODEL_SCHEMA,
@@ -676,6 +671,7 @@ export class DSVEditor extends Widget {
         gridState: update.gridStateUpdate || null
       }
     );
+    this._litestore.endTransaction();
   }
 
   /**
@@ -720,7 +716,7 @@ export class DSVEditor extends Widget {
     const update = this.dataModel.paste(this._region, row, column, copiedText);
     this._cancelEditing();
     this.litestore.beginTransaction();
-    this.updateLitestore(update);
+    this.updateModel(update);
     this.litestore.endTransaction();
   }
 
@@ -769,7 +765,7 @@ export class DSVEditor extends Widget {
   private _dirty = false;
 
   // Signals for basic editing functionality
-  private _changeModelSignal = new Signal<this, DSVEditor.Commands>(this);
+  private _commandSignal = new Signal<this, DSVEditor.Commands>(this);
   private _columnHeader: HTMLElement;
   private _rowHeader: HTMLElement;
 }
