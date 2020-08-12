@@ -2,6 +2,7 @@
 An account of tasks and features that are completed or planned
 
 #### [Try out our current extension via Binder](https://mybinder.org/v2/gh/jupytercalpoly/jupyterlab-tabular-data-editor/master?urlpath=lab)
+#### Read about the [new model](https://github.com/jupytercalpoly/jupyterlab-tabular-data-editor/blob/master/MODEL_CHANGES.md)
 
 ## Features To Be Added (listed in order of highest priority)
 - [x] Edit cells (text editing only)
@@ -14,16 +15,30 @@ An account of tasks and features that are completed or planned
 - [x] Command Toolbar
 - [x] Search and Replace
 - [x] Clear contents
+- [x] CSV launcher
+- [ ] Multi row/column moving
+- [ ] Ghost row/column
+- [ ] Data type detection
 ---
 **Potential Future Features**
 - [ ] Moving cells
 - [ ] Filter
 - [ ] Sort
-- [ ] Creating a new csv from launcher
 - [ ] Referencing other cells in formulas (relative positioning)
 - [ ] Kernel-backed cell outputs
 
 ## Current Progress
+
+### 08/03/20 - 08/7/20
+#### [Demo 2](https://docs.google.com/presentation/d/1ZGjFb3RkoR5Cc39DDdtU-AYAoYMNVMyUM9g80qgNzos/edit?usp=sharing)
+- Litestore refactor - Kalen
+- Selection UI/UX fixes - Kalen
+- Moving shadow/line UI/UX fixes - Kalen
+- New data model - Logan
+
+**Completed Prototypes - Ryan**
+- Ghost add
+- Freeze function
 
 ### 07/27/20 - 07/31/20
 #### Extension available to try out in a binder demo

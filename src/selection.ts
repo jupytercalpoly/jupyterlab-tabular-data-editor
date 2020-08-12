@@ -6,7 +6,7 @@ import { MimeData } from '@lumino/coreutils';
 const SHADOW = 'lm-DataGrid-select-shadow';
 const LINE = 'lm-DataGrid-select-line';
 
-function createRectange(height: number, width: number): HTMLElement {
+function createRectangle(height: number, width: number): HTMLElement {
   return VirtualDOM.realize(
     h.div({
       className: SHADOW,
@@ -45,7 +45,9 @@ export function renderSelection(
   const mouseOffsetX = x - c1;
   const mouseOffsetY = y - r1;
   const target =
-    type === 'line' ? createLine(height, width) : createRectange(height, width);
+    type === 'line'
+      ? createLine(height, width)
+      : createRectangle(height, width);
   const dragSelection = new BoundedDrag({
     mimeData: new MimeData(),
     dragImage: target,
@@ -73,7 +75,7 @@ export class BoundedDrag extends Drag {
     this.moveDragImage;
   }
   moveDragImage(clientX: number, clientY: number): void {
-    // see if we lack a drag image or if drag image is udpdate-less
+    // see if we lack a drag image or if drag image is update-less
     if (!this.dragImage) {
       return;
     }
