@@ -30,12 +30,14 @@ import { GridSearchService } from './searchservice';
 import { Litestore } from './litestore';
 import { Fields } from 'tde-datastore';
 import { ListField, MapField } from 'tde-datastore';
+import { unsaveDialog } from './dialog';
 
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
 const COLUMN_HEADER_CLASS = 'jp-column-header';
 const ROW_HEADER_CLASS = 'jp-row-header';
 const BACKGROUND_CLASS = 'jp-background';
+const DIRTY_CLASS = 'jp-mod-dirty';
 const RENDER_TIMEOUT = 1000;
 
 export class DSVEditor extends Widget {
@@ -201,6 +203,22 @@ export class DSVEditor extends Widget {
     return this._changeModelSignal;
   }
 
+  get dirty(): boolean {
+    return this._dirty;
+  }
+
+  /**
+   * Sets the dirty boolean while also toggling the DIRTY_CLASS
+   */
+  set dirty(dirty: boolean) {
+    this._dirty = dirty;
+    if (this.dirty && !this.title.className.includes(DIRTY_CLASS)) {
+      this.title.className += DIRTY_CLASS;
+    } else if (!this.dirty) {
+      this.title.className = this.title.className.replace(DIRTY_CLASS, '');
+    }
+  }
+
   /**
    * Dispose of the resources used by the widget.
    */
@@ -345,7 +363,6 @@ export class DSVEditor extends Widget {
       this._litestore.beginTransaction();
       this.updateLitestore(update);
       this._litestore.endTransaction();
-
       dataModel.onChangedSignal.connect(this._updateModel, this);
       // dataModel.cancelEditingSignal.connect(this._cancelEditing, this);
     }
@@ -406,12 +423,17 @@ export class DSVEditor extends Widget {
   }
 
   /**
-   * Saves the file
+   * Serializes and saves the file (default: asynchronous)
+   * @param [exiting] - False to save asynchronously
    */
-  private _save(): void {
+  async save(exiting = false): Promise<void> {
     const newString = this.dataModel.updateString();
     this.context.model.fromString(newString);
-    this.context.save();
+
+    exiting ? await this.context.save() : this.context.save();
+
+    // reset boolean since no new changes exist
+    this.dirty = false;
   }
 
   // private _cancelEditing(emitter: EditorModel): void {
@@ -613,7 +635,7 @@ export class DSVEditor extends Widget {
         break;
       }
       case 'save':
-        this._save();
+        this.save();
         break;
     }
     if (update) {
@@ -630,10 +652,17 @@ export class DSVEditor extends Widget {
   /**
    * Updates the current transaction with the raw data, header, and changeArgs
    * Requires Litestore.beginTransaction() to be called before and Litestore.endTransaction to be called after
-   * @param change The change args for the Datagrid (may be null)
+   * @param update The modelChanged args for the Datagrid (may be null)
    */
   public updateLitestore(update?: DSVEditor.ModelChangedArgs): void {
-    //const selection = this._grid.selectionModel.currentSelection();
+    // for every litestore change except the init, set the dirty boolean to true
+    this.dirty =
+      update &&
+      update.gridStateUpdate &&
+      update.gridStateUpdate.nextCommand === 'init'
+        ? false
+        : true;
+
     this._litestore.updateRecord(
       {
         schema: DSVEditor.DATAMODEL_SCHEMA,
@@ -737,6 +766,7 @@ export class DSVEditor extends Widget {
   private _revealed = new PromiseDelegate<void>();
   private _baseRenderer: TextRenderConfig | null = null;
   private _litestore: Litestore;
+  private _dirty = false;
 
   // Signals for basic editing functionality
   private _changeModelSignal = new Signal<this, DSVEditor.Commands>(this);
@@ -758,6 +788,7 @@ export namespace DSVEditor {
    * The types of commands that can be made to the model.
    */
   export type Commands =
+    | 'init'
     | 'insert-rows-above'
     | 'insert-rows-below'
     | 'insert-columns-right'
@@ -862,6 +893,29 @@ export class EditableCSVDocumentWidget extends DocumentWidget<DSVEditor> {
     const filterData = new FilterButton({ selected: content.delimiter });
     this.toolbar.addItem('filter-data', filterData);
     */
+  }
+
+  /**
+   * Disposes the current widget, handles save dialog
+   */
+  async dispose(): Promise<void> {
+    // if there are unsaved changes, prompt dialog
+    if (this.content.dirty && !this.isDisposed) {
+      const dialog = unsaveDialog(this.content);
+      const result = await dialog.launch();
+
+      dialog.dispose();
+      // on Cancel, remove dialog
+      if (result.button.label === 'Cancel') {
+        return;
+      }
+
+      // on Save, save the file
+      if (result.button.label === 'Save') {
+        await this.content.save(true);
+      }
+    }
+    super.dispose();
   }
 
   /**
