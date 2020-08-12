@@ -33,6 +33,7 @@ An account of tasks and features that are completed or planned
 - Litestore refactor - Kalen
 - Selection UI/UX fixes - Kalen
 - Moving shadow/line UI/UX fixes - Kalen
+- New data model - Logan
 
 **Completed Prototypes - Ryan**
 - Ghost add
