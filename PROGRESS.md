@@ -2,6 +2,7 @@
 An account of tasks and features that are completed or planned
 
 #### [Try out our current extension via Binder](https://mybinder.org/v2/gh/jupytercalpoly/jupyterlab-tabular-data-editor/master?urlpath=lab)
+#### Read about the [new model](https://github.com/jupytercalpoly/jupyterlab-tabular-data-editor/blob/master/MODEL_CHANGES.md)
 
 ## Features To Be Added (listed in order of highest priority)
 - [x] Edit cells (text editing only)
