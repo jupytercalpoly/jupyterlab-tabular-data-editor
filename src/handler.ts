@@ -391,14 +391,11 @@ export class RichMouseHandler extends BasicMouseHandler {
 
       // we can assume there is a selection as it is necessary to move rows/columns
       const { r1, r2, c1, c2 } = selectionModel.currentSelection();
-      const update: DSVEditor.ModelChangedArgs = {
-        selection: { r1, r2, c1, c2 }
-      };
-
+      let update: DSVEditor.ModelChangedArgs;
       if (this._moveData.region === 'column-header') {
         const startColumn = this._moveData.column;
         const endColumn = this._selectionIndex;
-        model.moveColumns('body', startColumn, endColumn, 1, update);
+        update = model.moveColumns('body', startColumn, endColumn, 1);
         // select the row that was just moved
         selectionModel.select({
           r1,
@@ -412,7 +409,7 @@ export class RichMouseHandler extends BasicMouseHandler {
       } else if (this._moveData.region === 'row-header') {
         const startRow = this._moveData.row;
         const endRow = this._selectionIndex;
-        model.moveRows('body', startRow, endRow, 1, update);
+        update = model.moveRows('body', startRow, endRow, 1);
 
         // select the row that was just moved
         selectionModel.select({
@@ -424,6 +421,13 @@ export class RichMouseHandler extends BasicMouseHandler {
           cursorColumn: c1,
           clear: 'all'
         });
+      }
+      if (update) {
+        // Add the selection to the update.
+        update.selection = { r1, r2, c1, c2 };
+
+        // Emit the update.
+        model.onChangedSignal.emit(update);
       }
     }
     if (
