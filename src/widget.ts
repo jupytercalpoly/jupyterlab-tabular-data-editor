@@ -39,11 +39,15 @@ const ROW_HEADER_CLASS = 'jp-row-header';
 const BACKGROUND_CLASS = 'jp-background';
 const DIRTY_CLASS = 'jp-mod-dirty';
 const CORNER_CLASS = 'jp-grid-corner';
+const GHOST_ROW_CLASS = 'jp-grid-ghost-row';
+const GHOST_COLUMN_CLASS = 'jp-grid-ghost-column';
 const RENDER_TIMEOUT = 1000;
 
 export class DSVEditor extends Widget {
   private _background: HTMLElement;
   private _hiddenCorner: HTMLElement;
+  private _ghostRowHeader: HTMLElement;
+  private _ghostColumnHeader: HTMLElement;
   /**
    * Construct a new CSV viewer.
    */
@@ -78,7 +82,7 @@ export class DSVEditor extends Widget {
     const handler = new RichMouseHandler({ grid: this._grid });
     this._grid.mouseHandler = handler;
     handler.clickSignal.connect(this._onMouseClick, this);
-    handler.resizeSignal.connect(this._moveElements, this);
+    handler.resizeSignal.connect(this._updateElements, this);
     handler.ghostHoverSignal.connect(this._onGhostHover, this);
     layout.addWidget(this._grid);
 
@@ -126,11 +130,34 @@ export class DSVEditor extends Widget {
         className: CORNER_CLASS,
         style: {
           position: 'absolute',
-          zIndex: '2'
+          zIndex: '3'
         }
       })
     );
+
+    // Add the ghost row and column header elements.
+    this._ghostRowHeader = VirtualDOM.realize(
+      h.div({
+        className: GHOST_ROW_CLASS,
+        style: {
+          position: 'absolute',
+          zIndex: '3'
+        }
+      })
+    );
+    this._ghostColumnHeader = VirtualDOM.realize(
+      h.div({
+        className: GHOST_COLUMN_CLASS,
+        style: {
+          position: 'absolute',
+          zIndex: '3'
+        }
+      })
+    );
+
     this._grid.viewport.node.appendChild(this._hiddenCorner);
+    this._grid.viewport.node.appendChild(this._ghostRowHeader);
+    this._grid.viewport.node.appendChild(this._ghostColumnHeader);
 
     void this._context.ready.then(() => {
       this._updateGrid();
@@ -401,31 +428,9 @@ export class DSVEditor extends Widget {
       dataModel.onChangedSignal.connect(this._onModelSignal, this);
       // dataModel.cancelEditingSignal.connect(this._cancelEditing, this);
     }
-    // update the position of the background row and column headers and corner
-    this._background.style.width = `${this._grid.bodyWidth}px`;
-    this._background.style.height = `${this._grid.bodyHeight}px`;
-    this._background.style.left = `${this._grid.headerWidth}px`;
-    this._background.style.top = `${this._grid.headerHeight}px`;
-    this._columnHeader.style.left = `${this._grid.headerWidth}px`;
-    this._columnHeader.style.height = `${this._grid.headerHeight}px`;
-    this._columnHeader.style.width = `${this._grid.bodyWidth}px`;
-    this._rowHeader.style.top = `${this._grid.headerHeight}px`;
-    this._rowHeader.style.width = `${this._grid.headerWidth}px`;
-    this._rowHeader.style.height = `${this._grid.bodyHeight}px`;
 
-    const lastRowOffset =
-      this._grid.headerHeight +
-      this._grid.rowOffset('body', this.dataModel.rowCount('body') - 1);
-    const lastColumnOffset =
-      this._grid.headerWidth +
-      this._grid.columnOffset('body', this.dataModel.columnCount('body') - 1);
-    this._hiddenCorner.style.top = `${lastRowOffset}px`;
-    this._hiddenCorner.style.left = `${lastColumnOffset}px`;
-
-    const gridBottom = this._grid.headerHeight + this._grid.bodyHeight;
-    const gridRightEnd = this._grid.headerWidth + this._grid.bodyWidth;
-    this._hiddenCorner.style.height = `${gridBottom - lastRowOffset + 1}px`;
-    this._hiddenCorner.style.width = `${gridRightEnd - lastColumnOffset + 1}px`;
+    // Update the div elements of the grid.
+    this._updateElements();
 
     // Apply the styles to the grid.
     this._applyStyle();
@@ -701,9 +706,16 @@ export class DSVEditor extends Widget {
    * @param update The modelChanged args for the Datagrid (may be null)
    */
   public updateModel(update?: DSVEditor.ModelChangedArgs): void {
-    // grab current selection if none exists
+    // if not selection was passed through, take the current selection
+    this._updateElements();
+    // Bail early if there is no update.
+    if (!update) {
+      return;
+    }
+    // If no selection property was passed in, record the current selection.
+    // grab current selection if none exists  
     if (!update.selection) {
-      update.selection = this._grid.selectionModel.currentSelection();
+        update.selection = this._grid.selectionModel.currentSelection();
     }
 
     // for every litestore change except the init, set the dirty boolean to true
@@ -790,7 +802,8 @@ export class DSVEditor extends Widget {
     this._column = hit.column;
   }
 
-  private _moveElements(emitter?: RichMouseHandler): void {
+  private _updateElements(emitter?: RichMouseHandler): void {
+    // Update the column header, row header, and background elements.
     this._background.style.width = `${this._grid.bodyWidth}px`;
     this._background.style.height = `${this._grid.bodyHeight}px`;
     this._background.style.left = `${this._grid.headerWidth}px`;
@@ -802,6 +815,7 @@ export class DSVEditor extends Widget {
     this._rowHeader.style.width = `${this._grid.headerWidth}px`;
     this._rowHeader.style.height = `${this._grid.bodyHeight}px`;
 
+    // update the bottom corner element.
     const lastRowOffset =
       this._grid.headerHeight +
       this._grid.rowOffset('body', this.dataModel.rowCount('body') - 1);
@@ -815,6 +829,19 @@ export class DSVEditor extends Widget {
     const gridRightEnd = this._grid.headerWidth + this._grid.bodyWidth;
     this._hiddenCorner.style.height = `${gridBottom - lastRowOffset + 1}px`;
     this._hiddenCorner.style.width = `${gridRightEnd - lastColumnOffset + 1}px`;
+
+    // Update the ghost header elements.
+    this._ghostColumnHeader.style.left = `${lastColumnOffset}px`;
+    this._ghostColumnHeader.style.top = '0px';
+    this._ghostColumnHeader.style.height = `${this._grid.headerHeight - 1}px`;
+    this._ghostColumnHeader.style.width = `${gridRightEnd -
+      lastColumnOffset -
+      1}px`;
+
+    this._ghostRowHeader.style.left = '0px';
+    this._ghostRowHeader.style.top = `${lastRowOffset}px`;
+    this._ghostRowHeader.style.height = `${gridBottom - lastRowOffset - 1}px`;
+    this._ghostRowHeader.style.width = `${this._grid.headerWidth - 1}px`;
   }
 
   /**

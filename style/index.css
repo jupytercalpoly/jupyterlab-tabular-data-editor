@@ -88,3 +88,13 @@
   background-color: white;
   border: none;
 }
+
+.jp-grid-ghost-column {
+  background-color: white;
+  border: none;
+}
+
+.jp-grid-ghost-row {
+  background-color: white;
+  border: none;
+}
