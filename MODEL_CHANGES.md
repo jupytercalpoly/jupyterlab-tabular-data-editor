@@ -74,8 +74,8 @@ if (row < 0 || column < 0) {
 ...
 ```
 
-That is essentially how the new model works. The only part that is left out of the above explaination is how it puts these changes _back into the string_. This is a complex step which is difficult to explain, but the code behind this process can be found in `serializer.ts`.
-
+That is essentially how the new model works. Here is a visual that sums it up pretty well.
+![New Model with Example](https://user-images.githubusercontent.com/52261474/89961198-ded20e00-dbf5-11ea-8966-bf444186ed06.png)
 
 
 ### TODOs:
