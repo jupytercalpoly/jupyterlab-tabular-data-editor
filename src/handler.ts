@@ -38,10 +38,10 @@ export class RichMouseHandler extends BasicMouseHandler {
    */
   computeGridBoundingRegion(
     region: DataModel.CellRegion | 'void',
-    shadowRegion: RichMouseHandler.IShadowRegion
+    shadowRegion: RichMouseHandler.IRegion
   ): IBoundingRegion {
     // Unpack the parameters of the shadow region.
-    const { r1, r2, c1, c2 } = shadowRegion;
+    const { topSide, bottomSide, leftSide, rightSide } = shadowRegion;
 
     // get the left and top offsets of the grid viewport
     const { left, top } = this._grid.viewport.node.getBoundingClientRect();
@@ -54,10 +54,10 @@ export class RichMouseHandler extends BasicMouseHandler {
 
     if (region === 'column-header') {
       // No vertical movement. Fix to the top of the grid body.
-      bottomBound = topBound = r1;
+      bottomBound = topBound = topSide;
 
       // Get the bounds for horizontal movement (measured from the left).
-      const shadowWidth = Math.abs(c1 - c2);
+      const shadowWidth = Math.abs(leftSide - rightSide);
       leftBound = left + this._grid.headerWidth;
       rightBound =
         leftBound +
@@ -65,10 +65,10 @@ export class RichMouseHandler extends BasicMouseHandler {
         shadowWidth;
     } else if (region === 'row-header') {
       // x-axis bounds are the same
-      leftBound = rightBound = c1;
+      leftBound = rightBound = leftSide;
 
       // Get the vertical bounds (measured from the top).
-      const shadowHeight = Math.abs(r1 - r2);
+      const shadowHeight = Math.abs(topSide - bottomSide);
       topBound = top + this._grid.headerHeight;
       bottomBound =
         topBound +
@@ -176,15 +176,18 @@ export class RichMouseHandler extends BasicMouseHandler {
     }
 
     // get the rectangular region of the row/column our mouse clicked on
-    const shadowRegion = this.getShadowRegion(region, row, column);
-    let { r1, r2, c1, c2 } = shadowRegion;
+    const shadowRegion = this.getRowOrColumnSection(
+      region,
+      this._selectionIndex
+    );
+    let { topSide, bottomSide, leftSide, rightSide } = shadowRegion;
 
     const boundingRegion = this.computeGridBoundingRegion(region, shadowRegion);
     renderSelection(
-      r1,
-      r2,
-      c1,
-      c2,
+      topSide,
+      bottomSide,
+      leftSide,
+      rightSide,
       this._event.clientX,
       this._event.clientY,
       boundingRegion,
@@ -194,22 +197,22 @@ export class RichMouseHandler extends BasicMouseHandler {
     // set r1, r2, c1, c2 to the bounds for the dark line
     switch (region) {
       case 'column-header': {
-        c1 = c1 - 1;
-        c2 = c1 + 2;
+        leftSide = leftSide - 1;
+        rightSide = leftSide + 2;
         break;
       }
       case 'row-header': {
-        r1 = r1 - 1;
-        r2 = r1 + 2;
+        topSide = topSide - 1;
+        bottomSide = topSide + 2;
       }
     }
 
     // initialize the dark line
     this._moveLine = renderSelection(
-      r1,
-      r2,
-      c1,
-      c2,
+      topSide,
+      bottomSide,
+      leftSide,
+      rightSide,
       this._event.clientX,
       this._event.clientY
     );
@@ -235,48 +238,47 @@ export class RichMouseHandler extends BasicMouseHandler {
     return;
   }
 
-  getShadowRegion(
+  getRowOrColumnSection(
     region: DataModel.CellRegion | 'void',
-    row: number,
-    column: number
-  ): RichMouseHandler.IShadowRegion {
-    let r1: number;
-    let r2: number;
-    let c1: number;
-    let c2: number;
+    index: number
+  ): RichMouseHandler.IRegion {
+    let topSide: number;
+    let bottomSide: number;
+    let leftSide: number;
+    let rightSide: number;
 
     // get the left and top offsets of the grid viewport
     const { left, top } = this._grid.viewport.node.getBoundingClientRect();
     if (region === 'column-header') {
-      r1 = top + this._grid.headerHeight;
-      r2 =
+      topSide = top + this._grid.headerHeight;
+      bottomSide =
         top +
         Math.min(
           this._grid.pageHeight + this._grid.headerHeight,
           this._grid.bodyHeight + this._grid.headerHeight
         );
-      c1 =
+      leftSide =
         left +
         this._grid.headerWidth +
-        this._grid.columnOffset('body', column) -
+        this._grid.columnOffset('body', index) -
         this._grid.scrollX;
-      c2 = c1 + this._grid.columnSize('body', column);
+      rightSide = leftSide + this._grid.columnSize('body', index);
     } else if (region === 'row-header') {
-      r1 =
+      topSide =
         top +
         this._grid.headerHeight +
-        this._grid.rowOffset('body', row) -
+        this._grid.rowOffset('body', index) -
         this._grid.scrollY;
-      r2 = r1 + this._grid.rowSize('body', row);
-      c1 = left + this._grid.headerWidth;
-      c2 =
+      bottomSide = topSide + this._grid.rowSize('body', index);
+      leftSide = left + this._grid.headerWidth;
+      rightSide =
         left +
         Math.min(
           this._grid.pageWidth + this._grid.headerWidth,
           this._grid.headerWidth + this._grid.bodyWidth
         );
     }
-    return { r1, r2, c1, c2 };
+    return { topSide, bottomSide, leftSide, rightSide };
   }
 
   /**
@@ -288,7 +290,7 @@ export class RichMouseHandler extends BasicMouseHandler {
   onMouseMove(grid: DataGrid, event: MouseEvent): void {
     // Fetch the press data.
     if (this._moveData) {
-      this.updateLinePos(event);
+      this.updateLinePosition(event);
     } else {
       super.onMouseMove(grid, event);
     }
@@ -300,74 +302,71 @@ export class RichMouseHandler extends BasicMouseHandler {
    * @param grid
    * @param event
    */
-  updateLinePos(event: MouseEvent): void {
+  updateLinePosition(event: MouseEvent): void {
     // find the region we originally clicked on.
     const { region } = this._moveData;
 
-    // initialize the variables for the the rectangular column/row region
-    const shadowRegion = this.getShadowRegion(
+    // Get boundaries of the previous row or column we were over.
+    const previousSection = this.getRowOrColumnSection(
       region,
-      this._selectionIndex,
       this._selectionIndex
     );
-    const { r1, r2, c1, c2 } = shadowRegion;
+    // Unpack the row and column bounds.
+    const { topSide, bottomSide, leftSide, rightSide } = previousSection;
     const {
       topBound,
       bottomBound,
       leftBound,
       rightBound
-    } = this.computeGridBoundingRegion(region, shadowRegion);
+    } = this.computeGridBoundingRegion(region, previousSection);
 
     // see if we have crossed the boundary to a neighboring row/column
     switch (region) {
       case 'column-header': {
         // bail early if we are still within the bounds or outside of the grid viewport
         if (
-          (c1 < event.clientX && event.clientX < c2) ||
-          (event.clientX < leftBound || event.clientX > rightBound)
+          (leftSide < event.clientX && event.clientX < rightSide) ||
+          (event.clientX < leftBound || rightBound < event.clientX)
         ) {
           return;
-        } else if (event.clientX < c1) {
+        } else if (event.clientX < leftSide) {
           // we are at the previous column, get the new region
           this._selectionIndex--;
-          const { r1, c1 } = this.getShadowRegion(
+          const { leftSide, topSide } = this.getRowOrColumnSection(
             region,
-            this._selectionIndex,
             this._selectionIndex
           );
-          this._moveLine.manualPositionUpdate(c1 - 1, r1);
+          this._moveLine.manualPositionUpdate(leftSide - 1, topSide);
         } else {
           // check to ensure selection index stays within the bounds of the grid's columns
-          if (this._selectionIndex < this._grid.columnCount('body') - 1) {
+          if (this._selectionIndex <= this._grid.columnCount('body') - 1) {
             this._selectionIndex++;
           }
 
           // we are at the next column, get the new region
-          const { r1, c2 } = this.getShadowRegion(
+          const { topSide, rightSide } = this.getRowOrColumnSection(
             region,
-            this._selectionIndex,
             this._selectionIndex
           );
-          this._moveLine.manualPositionUpdate(c2 - 1, r1);
+          this._moveLine.manualPositionUpdate(rightSide - 1, topSide);
         }
         break;
       }
       case 'row-header': {
         // bail early if we are still within the bounds or outside of the grid viewport
         if (
-          (r1 < event.clientY && event.clientY < r2) ||
+          (topSide < event.clientY && event.clientY < bottomSide) ||
           (event.clientY < bottomBound || event.clientY > topBound)
         ) {
           return;
-        } else if (event.clientY < r1) {
+        } else if (event.clientY < topSide) {
           // we are at the previous row, get the new region
           this._selectionIndex--;
-          const { r1, c1 } = this.getShadowRegion(
+          const { topSide, leftSide } = this.getRowOrColumnSection(
             region,
-            this._selectionIndex,
             this._selectionIndex
           );
-          this._moveLine.manualPositionUpdate(c1, r1 - 1);
+          this._moveLine.manualPositionUpdate(leftSide, topSide - 1);
         } else {
           // check to ensure selection index stays within the bounds of the grid's rows
           if (this._selectionIndex < this._grid.rowCount('body') - 1) {
@@ -375,12 +374,11 @@ export class RichMouseHandler extends BasicMouseHandler {
           }
 
           // we are at the next column, get the new region
-          const { r2, c1 } = this.getShadowRegion(
+          const { bottomSide, leftSide } = this.getRowOrColumnSection(
             region,
-            this._selectionIndex,
             this._selectionIndex
           );
-          this._moveLine.manualPositionUpdate(c1, r2 - 1);
+          this._moveLine.manualPositionUpdate(leftSide, bottomSide - 1);
         }
         break;
       }
@@ -556,11 +554,13 @@ export declare namespace RichMouseHandler {
   export interface IOptions {
     grid: DataGrid;
   }
-
-  export interface IShadowRegion {
-    r1: number;
-    r2: number;
-    c1: number;
-    c2: number;
+  /**
+   * The coordinates for a rectangular region.
+   */
+  export interface IRegion {
+    topSide: number; // Measured from the top of the screen.
+    bottomSide: number; // Measured from the top of the screen.
+    leftSide: number; // Measured from the left of the screen.
+    rightSide: number; // Measured from the left of the screen.
   }
 }
