@@ -95,17 +95,20 @@ export class BoundedDrag extends Drag {
       return [x, y];
     }
     // unpack the bounding region
-    const {
-      top: upperBound,
-      bottom: lowerBound,
-      left: leftBound,
-      right: rightBound
-    } = this._boundingRegion;
+    const { top, bottom, left, right } = this._boundingRegion;
 
-    x = Math.min(x, rightBound);
-    x = Math.max(x, leftBound);
-    y = Math.max(y, upperBound);
-    y = Math.min(y, lowerBound);
+    // We always measure horizontal distance from the left,
+    // so we need to ensure left <= x <= right.
+    // Force left <= x.
+    x = Math.max(left, x);
+    // Force x <= right.
+    x = Math.min(x, right);
+    // We always measure vertical distance from the top,
+    // so we need to ensure top <= y <= bottom.
+    // Force top <= y.
+    y = Math.max(top, y);
+    // Force y <= bottom.
+    y = Math.min(y, bottom);
     return [x, y];
   }
 
