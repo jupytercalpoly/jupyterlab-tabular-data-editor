@@ -104,8 +104,8 @@ export class BoundedDrag extends Drag {
 
     x = Math.min(x, rightBound);
     x = Math.max(x, leftBound);
-    y = Math.max(y, upperBound);
-    y = Math.min(y, lowerBound);
+    y = Math.min(y, upperBound);
+    y = Math.max(y, lowerBound);
     return [x, y];
   }
 

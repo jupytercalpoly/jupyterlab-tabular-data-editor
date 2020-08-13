@@ -54,12 +54,18 @@ export class RichMouseHandler extends BasicMouseHandler {
       lowerBound = upperBound = r1;
       leftBound = left + this._grid.headerWidth;
       rightBound =
-        left + this._grid.headerWidth + this._grid.pageWidth - (c2 - c1);
+        left +
+        this._grid.headerWidth +
+        Math.min(this._grid.pageWidth, this._grid.bodyWidth) -
+        (c2 - c1);
     } else if (region === 'row-header') {
       // x-axis bounds are the same
       lowerBound = top + this._grid.headerHeight;
       upperBound =
-        top + this._grid.headerHeight + this._grid.pageHeight - (r2 - c1);
+        top +
+        this._grid.headerHeight +
+        Math.min(this._grid.pageHeight, this._grid.bodyHeight) -
+        (r2 - c1);
       leftBound = rightBound = c1;
     }
     return {
@@ -299,8 +305,8 @@ export class RichMouseHandler extends BasicMouseHandler {
     );
     const { r1, r2, c1, c2 } = shadowRegion;
     const {
-      lowerBound,
       upperBound,
+      lowerBound,
       leftBound,
       rightBound
     } = this.computeGridBoundingRegion(region, shadowRegion);
