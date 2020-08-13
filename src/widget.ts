@@ -30,12 +30,14 @@ import { GridSearchService } from './searchservice';
 import { Litestore } from './litestore';
 import { Fields } from 'tde-datastore';
 import { ListField, MapField } from 'tde-datastore';
+import { unsaveDialog } from './dialog';
 
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
 const COLUMN_HEADER_CLASS = 'jp-column-header';
 const ROW_HEADER_CLASS = 'jp-row-header';
 const BACKGROUND_CLASS = 'jp-background';
+const DIRTY_CLASS = 'jp-mod-dirty';
 const RENDER_TIMEOUT = 1000;
 
 export class DSVEditor extends Widget {
@@ -126,7 +128,7 @@ export class DSVEditor extends Widget {
       this._monitor.activityStopped.connect(this._updateGrid, this);
     });
     this._grid.editingEnabled = true;
-    this.changeModelSignal.connect(this._changeModel, this);
+    this.commandSignal.connect(this._onCommand, this);
   }
 
   /**
@@ -186,6 +188,10 @@ export class DSVEditor extends Widget {
     return this._searchService;
   }
 
+  get grid(): DataGrid {
+    return this._grid;
+  }
+
   /**
    * The DataModel used to render the DataGrid
    */
@@ -197,8 +203,24 @@ export class DSVEditor extends Widget {
     return this._litestore;
   }
 
-  get changeModelSignal(): Signal<this, DSVEditor.Commands> {
-    return this._changeModelSignal;
+  get commandSignal(): Signal<this, DSVEditor.Commands> {
+    return this._commandSignal;
+  }
+
+  get dirty(): boolean {
+    return this._dirty;
+  }
+
+  /**
+   * Sets the dirty boolean while also toggling the DIRTY_CLASS
+   */
+  set dirty(dirty: boolean) {
+    this._dirty = dirty;
+    if (this.dirty && !this.title.className.includes(DIRTY_CLASS)) {
+      this.title.className += DIRTY_CLASS;
+    } else if (!this.dirty) {
+      this.title.className = this.title.className.replace(DIRTY_CLASS, '');
+    }
   }
 
   /**
@@ -342,11 +364,8 @@ export class DSVEditor extends Widget {
       update.columnUpdate = columnUpdate;
 
       // set inital status of litestore
-      this._litestore.beginTransaction();
-      this.updateLitestore(update);
-      this._litestore.endTransaction();
-
-      dataModel.onChangedSignal.connect(this._updateModel, this);
+      this.updateModel(update);
+      dataModel.onChangedSignal.connect(this._onModelSignal, this);
       // dataModel.cancelEditingSignal.connect(this._cancelEditing, this);
     }
     // update the position of the background row and column headers
@@ -391,27 +410,25 @@ export class DSVEditor extends Widget {
    * @param emitter
    * @param args The row, column, value, record update, selection model
    */
-  private _updateModel(
+  private _onModelSignal(
     emitter: EditorModel,
     args: DSVEditor.ModelChangedArgs
   ): void {
-    // if not selection was passed through, take the current selection
-    if (!args.selection) {
-      args.selection = this._grid.selectionModel.currentSelection();
-    }
-
-    this._litestore.beginTransaction();
-    this.updateLitestore(args);
-    this._litestore.endTransaction();
+    this.updateModel(args);
   }
 
   /**
-   * Saves the file
+   * Serializes and saves the file (default: asynchronous)
+   * @param [exiting] - False to save asynchronously
    */
-  private _save(): void {
+  async save(exiting = false): Promise<void> {
     const newString = this.dataModel.updateString();
     this.context.model.fromString(newString);
-    this.context.save();
+
+    exiting ? await this.context.save() : this.context.save();
+
+    // reset boolean since no new changes exist
+    this.dirty = false;
   }
 
   // private _cancelEditing(emitter: EditorModel): void {
@@ -423,7 +440,7 @@ export class DSVEditor extends Widget {
    * @param emitter
    * @param command
    */
-  private _changeModel(emitter: DSVEditor, command: DSVEditor.Commands): void {
+  private _onCommand(emitter: DSVEditor, command: DSVEditor.Commands): void {
     const selectionModel = this._grid.selectionModel;
     const selection = selectionModel.currentSelection();
     let r1, r2, c1, c2: number;
@@ -613,27 +630,38 @@ export class DSVEditor extends Widget {
         break;
       }
       case 'save':
-        this._save();
+        this.save();
         break;
     }
     if (update) {
       update.selection = selection;
       // Add the command to the grid state.
       update.gridStateUpdate.nextCommand = command;
-      this._litestore.beginTransaction();
-      this.updateLitestore(update);
-      this._litestore.endTransaction();
+      this.updateModel(update);
       this._grid.selectionModel.select(newSelection);
     }
   }
 
   /**
    * Updates the current transaction with the raw data, header, and changeArgs
-   * Requires Litestore.beginTransaction() to be called before and Litestore.endTransaction to be called after
-   * @param change The change args for the Datagrid (may be null)
+   * @param update The modelChanged args for the Datagrid (may be null)
    */
-  public updateLitestore(update?: DSVEditor.ModelChangedArgs): void {
-    //const selection = this._grid.selectionModel.currentSelection();
+  public updateModel(update?: DSVEditor.ModelChangedArgs): void {
+    // grab current selection if none exists
+    if (!update.selection) {
+      update.selection = this._grid.selectionModel.currentSelection();
+    }
+
+    // for every litestore change except the init, set the dirty boolean to true
+    this.dirty =
+      update &&
+      update.gridStateUpdate &&
+      update.gridStateUpdate.nextCommand === 'init'
+        ? false
+        : true;
+
+    // Update the litestore.
+    this._litestore.beginTransaction();
     this._litestore.updateRecord(
       {
         schema: DSVEditor.DATAMODEL_SCHEMA,
@@ -647,6 +675,7 @@ export class DSVEditor extends Widget {
         gridState: update.gridStateUpdate || null
       }
     );
+    this._litestore.endTransaction();
   }
 
   /**
@@ -690,9 +719,7 @@ export class DSVEditor extends Widget {
     const column = Math.min(c1, c2);
     const update = this.dataModel.paste(this._region, row, column, copiedText);
     this._cancelEditing();
-    this.litestore.beginTransaction();
-    this.updateLitestore(update);
-    this.litestore.endTransaction();
+    this.updateModel(update);
   }
 
   private _cancelEditing(): void {
@@ -737,9 +764,10 @@ export class DSVEditor extends Widget {
   private _revealed = new PromiseDelegate<void>();
   private _baseRenderer: TextRenderConfig | null = null;
   private _litestore: Litestore;
+  private _dirty = false;
 
   // Signals for basic editing functionality
-  private _changeModelSignal = new Signal<this, DSVEditor.Commands>(this);
+  private _commandSignal = new Signal<this, DSVEditor.Commands>(this);
   private _columnHeader: HTMLElement;
   private _rowHeader: HTMLElement;
 }
@@ -758,6 +786,7 @@ export namespace DSVEditor {
    * The types of commands that can be made to the model.
    */
   export type Commands =
+    | 'init'
     | 'insert-rows-above'
     | 'insert-rows-below'
     | 'insert-columns-right'
@@ -776,6 +805,7 @@ export namespace DSVEditor {
     | 'redo'
     | 'save';
   /**
+
    * The arguments emitted to the Editor when the datamodel changes
    */
   export type ModelChangedArgs = {
@@ -862,6 +892,29 @@ export class EditableCSVDocumentWidget extends DocumentWidget<DSVEditor> {
     const filterData = new FilterButton({ selected: content.delimiter });
     this.toolbar.addItem('filter-data', filterData);
     */
+  }
+
+  /**
+   * Disposes the current widget, handles save dialog
+   */
+  async dispose(): Promise<void> {
+    // if there are unsaved changes, prompt dialog
+    if (this.content.dirty && !this.isDisposed) {
+      const dialog = unsaveDialog(this.content);
+      const result = await dialog.launch();
+
+      dialog.dispose();
+      // on Cancel, remove dialog
+      if (result.button.label === 'Cancel') {
+        return;
+      }
+
+      // on Save, save the file
+      if (result.button.label === 'Save') {
+        await this.content.save(true);
+      }
+    }
+    super.dispose();
   }
 
   /**

@@ -290,7 +290,7 @@ export class EditorModel extends MutableDataModel {
     startColumn: number,
     endRow: number,
     endColumn: number
-  ) {
+  ): void {
     // Set up an udate object for the litestore.
     const update: DSVEditor.ModelChangedArgs = {};
 
@@ -606,9 +606,10 @@ export class EditorModel extends MutableDataModel {
     region: DataModel.CellRegion,
     start: number,
     end: number,
-    span: number,
-    update: DSVEditor.ModelChangedArgs
+    span: number
   ): DSVEditor.ModelChangedArgs {
+    // Set up an udate object for the litestore.
+    const update: DSVEditor.ModelChangedArgs = {};
     // Start and end come to us as an index on a particular region. We need the
     // absolute index (ie index 0 is the first row of data).
     start = this._absoluteIndex(start, region);
@@ -660,10 +661,7 @@ export class EditorModel extends MutableDataModel {
     // Emit the model change to the datagrid.
     this.emitChanged(nextChange);
 
-    // Emit the change to the Editor
-    // TODO: I think it would be better if we refactored so that we were returning
-    // an update object.
-    this._onChangeSignal.emit(update);
+    return update;
   }
 
   /**
@@ -712,9 +710,11 @@ export class EditorModel extends MutableDataModel {
     region: DataModel.CellRegion,
     start: number,
     end: number,
-    span: number,
-    update: DSVEditor.ModelChangedArgs
+    span: number
   ): DSVEditor.ModelChangedArgs {
+    // Set up an udate object for the litestore.
+    const update: DSVEditor.ModelChangedArgs = {};
+
     // bail early if we are moving no distance
     if (start === end) {
       return;
@@ -757,9 +757,7 @@ export class EditorModel extends MutableDataModel {
     // Emit the model change to the datagrid.
     this.emitChanged(nextChange);
 
-    // TODO: I think it would be better if we refactored so that we were returning
-    // an update object.
-    this._onChangeSignal.emit(update);
+    return update;
   }
 
   /**
@@ -984,8 +982,6 @@ export class EditorModel extends MutableDataModel {
    * Cut a selection of cells.
    * NOTE: this method both copies the cells to the _clipboard property and clears them
    * from the region.
-   *
-   * TODO: refactor so that cut uses the already existing method clearCells.
    */
   cut(
     region: DataModel.CellRegion,
@@ -994,32 +990,14 @@ export class EditorModel extends MutableDataModel {
     endRow: number,
     endColumn: number
   ): DSVEditor.ModelChangedArgs {
-    // Set up the update object for the litestore.
-    const update: DSVEditor.ModelChangedArgs = {};
-    // we use the value map to redefine values within the cut as ''. Need to map
-    // to the static values.
-    // copy the values
     this.copy('body', startRow, startColumn, endRow, endColumn);
-    const rowSpan = Math.abs(startRow - endRow) + 1;
-    const columnSpan = Math.abs(startColumn - endColumn) + 1;
 
-    // Fill in the new blank values.
-    const values = new Array(rowSpan)
-      .fill('')
-      .map(elem => new Array(columnSpan).fill(''));
-
-    // set the new data.
-    this.setData(
-      'body',
-      startRow,
-      startColumn,
-      values,
-      rowSpan,
-      columnSpan,
-      update
-    );
-
-    return update;
+    return this.clearCells('body', {
+      r1: startRow,
+      r2: endRow,
+      c1: startColumn,
+      c2: endColumn
+    });
   }
 
   /**
@@ -1465,10 +1443,11 @@ export class EditorModel extends MutableDataModel {
     };
 
     // Get a snapshot of the current state of the grid.
-    const gridState = {
+    const gridState: DSVEditor.GridState = {
       currentRows,
       currentColumns,
-      nextChange
+      nextChange,
+      nextCommand: 'init'
     };
 
     update.gridStateUpdate = gridState;
