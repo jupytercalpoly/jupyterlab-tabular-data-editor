@@ -644,14 +644,15 @@ export class DSVEditor extends Widget {
 
   /**
    * Updates the current transaction with the raw data, header, and changeArgs
-   * Requires Litestore.beginTransaction() to be called before and Litestore.endTransaction to be called after
    * @param update The modelChanged args for the Datagrid (may be null)
    */
   public updateModel(update?: DSVEditor.ModelChangedArgs): void {
-    // for every litestore change except the init, set the dirty boolean to true
+    // grab current selection if none exists
     if (!update.selection) {
       update.selection = this._grid.selectionModel.currentSelection();
     }
+
+    // for every litestore change except the init, set the dirty boolean to true
     this.dirty =
       update &&
       update.gridStateUpdate &&
@@ -718,9 +719,7 @@ export class DSVEditor extends Widget {
     const column = Math.min(c1, c2);
     const update = this.dataModel.paste(this._region, row, column, copiedText);
     this._cancelEditing();
-    this.litestore.beginTransaction();
     this.updateModel(update);
-    this.litestore.endTransaction();
   }
 
   private _cancelEditing(): void {
