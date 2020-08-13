@@ -159,6 +159,9 @@ export class RichMouseHandler extends BasicMouseHandler {
    */
   onMouseDown(grid: DataGrid, event: MouseEvent): void {
     const model = grid.dataModel as EditorModel;
+
+    // Hide the ghost row and ghost column from the selection.
+    model.ghostsRevealed = false;
     let update: DSVEditor.ModelChangedArgs;
     if (this._lastHoverRegion === 'ghostRow') {
       update = model.addRows('body', model.rowCount('body') - 1);
@@ -427,15 +430,18 @@ export class RichMouseHandler extends BasicMouseHandler {
    * @param event
    */
   onMouseUp(grid: DataGrid, event: MouseEvent): void {
-    // emit the current mouse position to the Editor
     this._event = event;
+
+    // Reveal the ghosts!
+    const model = grid.dataModel as EditorModel;
+    model.ghostsRevealed = true;
+
+    // emit the current mouse position to the Editor
     const hit = grid.hitTest(event.clientX, event.clientY);
     this._clickSignal.emit(hit);
     // if move data exists, handle the move first
     if (this._moveData) {
-      const model = grid.dataModel as EditorModel;
       const selectionModel = this._grid.selectionModel;
-
       // we can assume there is a selection as it is necessary to move rows/columns
       const { r1, r2, c1, c2 } = selectionModel.currentSelection();
       let update: DSVEditor.ModelChangedArgs;

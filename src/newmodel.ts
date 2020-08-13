@@ -20,6 +20,7 @@ export class EditorModel extends MutableDataModel {
   private _rowsRemoved: number;
   private _columnsRemoved: number;
   private _saving = false;
+  private _ghostsRevealed = true;
   // private _onChangeSignal: Signal<this, string> = new Signal<this, string>(
   //   this
   // );
@@ -37,6 +38,15 @@ export class EditorModel extends MutableDataModel {
     this._columnsRemoved = 0;
 
     this._litestore = null;
+  }
+  /**
+   * A boolean that determins whether the ghosts are visible to the grid.
+   */
+  get ghostsRevealed(): boolean {
+    return this._ghostsRevealed;
+  }
+  set ghostsRevealed(value: boolean) {
+    this._ghostsRevealed = value;
   }
   /**
    * The model which holds the string containing the contents of the file.
@@ -71,9 +81,13 @@ export class EditorModel extends MutableDataModel {
    *
    */
   rowCount(region: DataModel.RowRegion): number {
+    const ghostRow = this._ghostsRevealed ? 1 : 0;
     if (region === 'body') {
       return (
-        this._model.rowCount('body') + this._rowsAdded - this._rowsRemoved + 1
+        this._model.rowCount('body') +
+        this._rowsAdded -
+        this._rowsRemoved +
+        ghostRow
       );
     }
     return 1;
@@ -87,12 +101,13 @@ export class EditorModel extends MutableDataModel {
    * NOTE: we add 1 so that a ghost column appears.
    */
   columnCount(region: DataModel.ColumnRegion): number {
+    const ghostColumn = this._ghostsRevealed ? 1 : 0;
     if (region === 'body') {
       return (
         this._model.columnCount('body') +
         this._columnsAdded -
         this._columnsRemoved +
-        1
+        ghostColumn
       );
     }
     return 1;
