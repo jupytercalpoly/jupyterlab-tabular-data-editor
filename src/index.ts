@@ -349,7 +349,7 @@ function addCommands(
     icon: saveIcon,
     iconLabel: 'Save',
     className: 'jp-toolbar-save',
-    caption: 'Redo',
+    caption: 'Save',
     execute: () => {
       tracker.currentWidget &&
         tracker.currentWidget.content.commandSignal.emit('save');
