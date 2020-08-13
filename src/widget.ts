@@ -223,6 +223,24 @@ export class DSVEditor extends Widget {
     }
   }
 
+  get rowsSelected(): number {
+    const selection: SelectionModel.Selection = this._grid.selectionModel.currentSelection();
+    if (!selection) {
+      return 0;
+    }
+    const { r1, r2 } = selection;
+    return Math.abs(r2 - r1) + 1;
+  }
+
+  get columnsSelected(): number {
+    const selection: SelectionModel.Selection = this._grid.selectionModel.currentSelection();
+    if (!selection) {
+      return 0;
+    }
+    const { c1, c2 } = selection;
+    return Math.abs(c2 - c1) + 1;
+  }
+
   /**
    * Dispose of the resources used by the widget.
    */

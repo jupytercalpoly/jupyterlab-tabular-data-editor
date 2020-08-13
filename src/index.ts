@@ -189,7 +189,12 @@ function addCommands(
   });
 
   commands.addCommand(CommandIDs.insertRowsAbove, {
-    label: 'Insert Row Above',
+    label: () => {
+      const numRows = tracker.currentWidget.content.rowsSelected;
+      return numRows === 1
+        ? 'Insert Row Above'
+        : `Insert ${numRows} Rows Above`;
+    },
     execute: () => {
       // emit a signal to the EditableDSVModel
       tracker.currentWidget &&
@@ -198,7 +203,12 @@ function addCommands(
   });
 
   commands.addCommand(CommandIDs.insertRowsBelow, {
-    label: 'Insert Row Below',
+    label: () => {
+      const numRows = tracker.currentWidget.content.rowsSelected;
+      return numRows === 1
+        ? 'Insert Row Below'
+        : `Insert ${numRows} Rows Below`;
+    },
     execute: () => {
       // emit a signal to the EditableDSVModel
       tracker.currentWidget &&
@@ -207,7 +217,10 @@ function addCommands(
   });
 
   commands.addCommand(CommandIDs.removeRows, {
-    label: 'Remove Row',
+    label: () => {
+      const numRows = tracker.currentWidget.content.rowsSelected;
+      return numRows === 1 ? 'Remove Row' : `Remove ${numRows} Rows`;
+    },
     execute: () => {
       tracker.currentWidget &&
         tracker.currentWidget.content.commandSignal.emit('remove-rows');
@@ -215,7 +228,12 @@ function addCommands(
   });
 
   commands.addCommand(CommandIDs.insertColumnsLeft, {
-    label: 'Insert Column Left',
+    label: () => {
+      const numCols = tracker.currentWidget.content.columnsSelected;
+      return numCols === 1
+        ? 'Insert Column Left'
+        : `Insert ${numCols} Columns Left`;
+    },
     execute: () => {
       tracker.currentWidget &&
         tracker.currentWidget.content.commandSignal.emit('insert-columns-left');
@@ -223,7 +241,12 @@ function addCommands(
   });
 
   commands.addCommand(CommandIDs.insertColumnsRight, {
-    label: 'Insert Column Right',
+    label: () => {
+      const numCols = tracker.currentWidget.content.columnsSelected;
+      return numCols === 1
+        ? 'Insert Column Right'
+        : `Insert ${numCols} Columns Right`;
+    },
     execute: () => {
       tracker.currentWidget &&
         tracker.currentWidget.content.commandSignal.emit(
@@ -233,7 +256,10 @@ function addCommands(
   });
 
   commands.addCommand(CommandIDs.removeColumns, {
-    label: 'Remove Column',
+    label: () => {
+      const numCols = tracker.currentWidget.content.columnsSelected;
+      return numCols === 1 ? 'Remove Column' : `Remove ${numCols} Columns`;
+    },
     execute: () => {
       tracker.currentWidget &&
         tracker.currentWidget.content.commandSignal.emit('remove-columns');
