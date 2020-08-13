@@ -832,19 +832,21 @@ export class DSVEditor extends Widget {
       case 'light': {
         this._ghostColumn.style.backgroundColor =
           message === 'ghostColumn'
-            ? 'rgb(243, 243, 243)'
+            ? 'rgba(243, 243, 243, 1)'
             : 'rgba(243, 243, 243, 0.55)';
         this._ghostRow.style.backgroundColor =
           message === 'ghostRow'
-            ? 'rgb(243, 243, 243)'
+            ? 'rgba(243, 243, 243, 1)'
             : 'rgba(243, 243, 243, 0.55)';
         break;
       }
       case 'dark': {
         this._ghostColumn.style.backgroundColor =
-          message === 'ghostColumn' ? 'rgb(0, 0, 0)' : 'rgba(0, 0, 0, 0.55)';
+          message === 'ghostColumn'
+            ? 'rgba(0, 0, 0, 1)'
+            : 'rgba(0, 0, 0, 0.55)';
         this._ghostRow.style.backgroundColor =
-          message === 'ghostRow' ? 'rgb(0, 0, 0)' : 'rgba(0, 0, 0, 0.55)';
+          message === 'ghostRow' ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.55)';
         break;
       }
     }
