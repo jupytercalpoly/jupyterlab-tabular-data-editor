@@ -69,10 +69,10 @@ export class RichMouseHandler extends BasicMouseHandler {
       leftBound = rightBound = c1;
     }
     return {
-      upperBound,
-      lowerBound,
-      leftBound,
-      rightBound
+      top: upperBound,
+      bottom: lowerBound,
+      left: leftBound,
+      right: rightBound
     };
   }
 
@@ -305,10 +305,10 @@ export class RichMouseHandler extends BasicMouseHandler {
     );
     const { r1, r2, c1, c2 } = shadowRegion;
     const {
-      upperBound,
-      lowerBound,
-      leftBound,
-      rightBound
+      top: upperBound,
+      bottom: lowerBound,
+      left: leftBound,
+      right: rightBound
     } = this.computeGridBoundingRegion(region, shadowRegion);
 
     // see if we have crossed the boundary to a neighboring row/column

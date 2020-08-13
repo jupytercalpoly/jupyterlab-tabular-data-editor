@@ -96,16 +96,16 @@ export class BoundedDrag extends Drag {
     }
     // unpack the bounding region
     const {
-      upperBound,
-      lowerBound,
-      leftBound,
-      rightBound
+      top: upperBound,
+      bottom: lowerBound,
+      left: leftBound,
+      right: rightBound
     } = this._boundingRegion;
 
     x = Math.min(x, rightBound);
     x = Math.max(x, leftBound);
-    y = Math.min(y, upperBound);
-    y = Math.max(y, lowerBound);
+    y = Math.max(y, upperBound);
+    y = Math.min(y, lowerBound);
     return [x, y];
   }
 
@@ -120,12 +120,14 @@ export class BoundedDrag extends Drag {
   }
   private _boundingRegion: IBoundingRegion | null;
 }
-
+/**
+ * A region that the upper left corner of the drag object must stay within.
+ */
 export interface IBoundingRegion {
-  upperBound: number;
-  lowerBound: number;
-  leftBound: number;
-  rightBound: number;
+  top: number; // Measured from the top as in the css property top.
+  bottom: number; // Measured from the top as in the css propert top.
+  left: number; // Measured from the left as in the css property left.
+  right: number; // Measured from the right as in the css property right.
 }
 export namespace BoundedDrag {
   export interface IOptions extends Drag.IOptions {
