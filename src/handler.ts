@@ -40,39 +40,46 @@ export class RichMouseHandler extends BasicMouseHandler {
     region: DataModel.CellRegion | 'void',
     shadowRegion: RichMouseHandler.IShadowRegion
   ): IBoundingRegion {
+    // Unpack the parameters of the shadow region.
     const { r1, r2, c1, c2 } = shadowRegion;
+
     // get the left and top offsets of the grid viewport
     const { left, top } = this._grid.viewport.node.getBoundingClientRect();
 
-    // get the bounds for dragging
-    let top: number;
-    let lowerBound: number;
-    let rightBound: number;
+    // Set up bounding variables.
+    let topBound: number;
+    let bottomBound: number;
     let leftBound: number;
+    let rightBound: number;
+
     if (region === 'column-header') {
-      // y-axis bounds are the same
-      lowerBound = top = r1;
+      // No vertical movement. Fix to the top of the grid body.
+      bottomBound = topBound = r1;
+
+      // Get the bounds for horizontal movement (measured from the left).
+      const shadowWidth = Math.abs(c1 - c2);
       leftBound = left + this._grid.headerWidth;
       rightBound =
-        left +
-        this._grid.headerWidth +
+        leftBound +
         Math.min(this._grid.pageWidth, this._grid.bodyWidth) -
-        (c2 - c1);
+        shadowWidth;
     } else if (region === 'row-header') {
       // x-axis bounds are the same
-      lowerBound = top + this._grid.headerHeight;
-      top =
-        top +
-        this._grid.headerHeight +
-        Math.min(this._grid.pageHeight, this._grid.bodyHeight) -
-        (r2 - c1);
       leftBound = rightBound = c1;
+
+      // Get the vertical bounds (measured from the top).
+      const shadowHeight = Math.abs(r1 - r2);
+      topBound = top + this._grid.headerHeight;
+      bottomBound =
+        topBound +
+        Math.min(this._grid.pageHeight, this._grid.bodyHeight) -
+        shadowHeight;
     }
     return {
-      topBound: top,
-      bottomBound: lowerBound,
-      leftBound: leftBound,
-      rightBound: rightBound
+      topBound,
+      bottomBound,
+      leftBound,
+      rightBound
     };
   }
 
@@ -305,10 +312,10 @@ export class RichMouseHandler extends BasicMouseHandler {
     );
     const { r1, r2, c1, c2 } = shadowRegion;
     const {
-      topBound: upperBound,
-      bottomBound: lowerBound,
-      leftBound: leftBound,
-      rightBound: rightBound
+      topBound,
+      bottomBound,
+      leftBound,
+      rightBound
     } = this.computeGridBoundingRegion(region, shadowRegion);
 
     // see if we have crossed the boundary to a neighboring row/column
@@ -349,7 +356,7 @@ export class RichMouseHandler extends BasicMouseHandler {
         // bail early if we are still within the bounds or outside of the grid viewport
         if (
           (r1 < event.clientY && event.clientY < r2) ||
-          (event.clientY < lowerBound || event.clientY > upperBound)
+          (event.clientY < bottomBound || event.clientY > topBound)
         ) {
           return;
         } else if (event.clientY < r1) {
