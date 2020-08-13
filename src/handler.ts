@@ -323,10 +323,12 @@ export class RichMouseHandler extends BasicMouseHandler {
     // see if we have crossed the boundary to a neighboring row/column
     switch (region) {
       case 'column-header': {
+        const columnWidth = Math.abs(leftSide - rightSide);
         // bail early if we are still within the bounds or outside of the grid viewport
         if (
           (leftSide < event.clientX && event.clientX < rightSide) ||
-          (event.clientX < leftBound || rightBound < event.clientX)
+          (event.clientX < leftBound ||
+            rightBound + columnWidth < event.clientX)
         ) {
           return;
         } else if (event.clientX < leftSide) {
@@ -353,23 +355,24 @@ export class RichMouseHandler extends BasicMouseHandler {
         break;
       }
       case 'row-header': {
+        const rowHeight = Math.abs(topSide - bottomSide);
         // bail early if we are still within the bounds or outside of the grid viewport
         if (
           (topSide < event.clientY && event.clientY < bottomSide) ||
-          (event.clientY < bottomBound || event.clientY > topBound)
+          (event.clientY < topBound || bottomBound + rowHeight < event.clientY)
         ) {
           return;
         } else if (event.clientY < topSide) {
           // we are at the previous row, get the new region
           this._selectionIndex--;
-          const { topSide, leftSide } = this.getRowOrColumnSection(
+          const { leftSide, topSide } = this.getRowOrColumnSection(
             region,
             this._selectionIndex
           );
           this._moveLine.manualPositionUpdate(leftSide, topSide - 1);
         } else {
           // check to ensure selection index stays within the bounds of the grid's rows
-          if (this._selectionIndex < this._grid.rowCount('body') - 1) {
+          if (this._selectionIndex <= this._grid.rowCount('body') - 1) {
             this._selectionIndex++;
           }
 
