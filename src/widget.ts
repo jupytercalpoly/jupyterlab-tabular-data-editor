@@ -805,6 +805,7 @@ export namespace DSVEditor {
     | 'redo'
     | 'save';
   /**
+
    * The arguments emitted to the Editor when the datamodel changes
    */
   export type ModelChangedArgs = {

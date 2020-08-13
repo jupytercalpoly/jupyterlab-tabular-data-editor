@@ -610,7 +610,6 @@ export class EditorModel extends MutableDataModel {
   ): DSVEditor.ModelChangedArgs {
     // Set up an udate object for the litestore.
     const update: DSVEditor.ModelChangedArgs = {};
-
     // Start and end come to us as an index on a particular region. We need the
     // absolute index (ie index 0 is the first row of data).
     start = this._absoluteIndex(start, region);

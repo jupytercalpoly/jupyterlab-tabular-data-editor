@@ -311,6 +311,7 @@ export class RichMouseHandler extends BasicMouseHandler {
       region,
       this._selectionIndex
     );
+
     // Unpack the row and column bounds.
     const { topSide, bottomSide, leftSide, rightSide } = previousSection;
     const {
@@ -557,6 +558,7 @@ export declare namespace RichMouseHandler {
   export interface IOptions {
     grid: DataGrid;
   }
+
   /**
    * The coordinates for a rectangular region.
    */
