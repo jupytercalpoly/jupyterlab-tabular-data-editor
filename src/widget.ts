@@ -46,8 +46,8 @@ const RENDER_TIMEOUT = 1000;
 export class DSVEditor extends Widget {
   private _background: HTMLElement;
   private _hiddenCorner: HTMLElement;
-  private _ghostRowHeader: HTMLElement;
-  private _ghostColumnHeader: HTMLElement;
+  private _ghostRow: HTMLElement;
+  private _ghostColumn: HTMLElement;
   /**
    * Construct a new CSV viewer.
    */
@@ -136,7 +136,7 @@ export class DSVEditor extends Widget {
     );
 
     // Add the ghost row and column header elements.
-    this._ghostRowHeader = VirtualDOM.realize(
+    this._ghostRow = VirtualDOM.realize(
       h.div({
         className: GHOST_ROW_CLASS,
         style: {
@@ -145,7 +145,7 @@ export class DSVEditor extends Widget {
         }
       })
     );
-    this._ghostColumnHeader = VirtualDOM.realize(
+    this._ghostColumn = VirtualDOM.realize(
       h.div({
         className: GHOST_COLUMN_CLASS,
         style: {
@@ -156,8 +156,8 @@ export class DSVEditor extends Widget {
     );
 
     this._grid.viewport.node.appendChild(this._hiddenCorner);
-    this._grid.viewport.node.appendChild(this._ghostRowHeader);
-    this._grid.viewport.node.appendChild(this._ghostColumnHeader);
+    this._grid.viewport.node.appendChild(this._ghostRow);
+    this._grid.viewport.node.appendChild(this._ghostColumn);
 
     void this._context.ready.then(() => {
       this._updateGrid();
@@ -431,9 +431,6 @@ export class DSVEditor extends Widget {
 
     // Update the div elements of the grid.
     this._updateElements();
-
-    // Apply the styles to the grid.
-    this._applyStyle();
   }
 
   /**
@@ -717,7 +714,6 @@ export class DSVEditor extends Widget {
     if (!update.selection) {
         update.selection = this._grid.selectionModel.currentSelection();
     }
-
     // for every litestore change except the init, set the dirty boolean to true
     this.dirty =
       update &&
@@ -802,7 +798,7 @@ export class DSVEditor extends Widget {
     this._column = hit.column;
   }
 
-  private _updateElements(emitter?: RichMouseHandler): void {
+  private _updateElements(emitter?: RichMouseHandler, message?: string): void {
     // Update the column header, row header, and background elements.
     this._background.style.width = `${this._grid.bodyWidth}px`;
     this._background.style.height = `${this._grid.bodyHeight}px`;
@@ -831,17 +827,37 @@ export class DSVEditor extends Widget {
     this._hiddenCorner.style.width = `${gridRightEnd - lastColumnOffset + 1}px`;
 
     // Update the ghost header elements.
-    this._ghostColumnHeader.style.left = `${lastColumnOffset}px`;
-    this._ghostColumnHeader.style.top = '0px';
-    this._ghostColumnHeader.style.height = `${this._grid.headerHeight - 1}px`;
-    this._ghostColumnHeader.style.width = `${gridRightEnd -
-      lastColumnOffset -
-      1}px`;
-
-    this._ghostRowHeader.style.left = '0px';
-    this._ghostRowHeader.style.top = `${lastRowOffset}px`;
-    this._ghostRowHeader.style.height = `${gridBottom - lastRowOffset - 1}px`;
-    this._ghostRowHeader.style.width = `${this._grid.headerWidth - 1}px`;
+    const theme = this.style.voidColor === 'black' ? 'dark' : 'light';
+    switch (theme) {
+      case 'light': {
+        this._ghostColumn.style.backgroundColor =
+          message === 'ghostColumn'
+            ? 'rgb(243, 243, 243)'
+            : 'rgba(243, 243, 243, 0.55)';
+        this._ghostRow.style.backgroundColor =
+          message === 'ghostRow'
+            ? 'rgb(243, 243, 243)'
+            : 'rgba(243, 243, 243, 0.55)';
+        break;
+      }
+      case 'dark': {
+        this._ghostColumn.style.backgroundColor =
+          message === 'ghostColumn' ? 'rgb(0, 0, 0)' : 'rgba(0, 0, 0, 0.55)';
+        this._ghostRow.style.backgroundColor =
+          message === 'ghostRow' ? 'rgb(0, 0, 0)' : 'rgba(0, 0, 0, 0.55)';
+        break;
+      }
+    }
+    this._ghostColumn.style.left = `${lastColumnOffset}px`;
+    this._ghostColumn.style.top = '0px';
+    this._ghostColumn.style.height = `${this._grid.headerHeight +
+      this._grid.bodyHeight}px`;
+    this._ghostColumn.style.width = `${gridRightEnd - lastColumnOffset - 1}px`;
+    this._ghostRow.style.left = '0px';
+    this._ghostRow.style.top = `${lastRowOffset}px`;
+    this._ghostRow.style.height = `${gridBottom - lastRowOffset - 1}px`;
+    this._ghostRow.style.width = `${this._grid.headerWidth +
+      this._grid.bodyWidth}px`;
   }
 
   /**
@@ -851,74 +867,7 @@ export class DSVEditor extends Widget {
     emitter: RichMouseHandler,
     message: 'ghostRow' | 'ghostColumn' | 'other'
   ) {
-    this._applyStyle(message);
-  }
-
-  /**
-   * Handles the styling of the ghost row and ghost column
-   */
-  private _applyStyle(
-    hoverRegion: 'ghostRow' | 'ghostColumn' | 'other' = 'other'
-  ): void {
-    // See if we are in light mode or dark mode.
-    if (this.style.backgroundColor === 'white') {
-      this.style = {
-        ...DataGrid.defaultStyle,
-        voidColor: '#F3F3F3',
-        backgroundColor: 'white',
-        headerBackgroundColor: '#EEEEEE',
-        gridLineColor: 'rgba(20, 20, 20, 0.15)',
-        headerGridLineColor: 'rgba(20, 20, 20, 0.25)',
-        selectionBorderColor: 'rgb(33,150,243)',
-        cursorBorderColor: 'rgb(33,150,243)', //selected cell border color
-        headerSelectionBorderColor: 'rgb(33,150,243, 0)', //made transparent
-        columnBackgroundColor: (index: number) => {
-          // Shade on the last column
-          if (index + 1 === this.dataModel.columnCount('body')) {
-            // Then this is the ghost column.
-            if (hoverRegion !== 'ghostColumn') {
-              // Then it should be shaded.
-              return '#EEEEEE';
-            }
-          }
-        },
-        rowBackgroundColor: (index: number) => {
-          // Shade on the last row.
-          if (index + 1 === this.dataModel.rowCount('body')) {
-            // This this is the ghost row.
-            if (hoverRegion !== 'ghostRow') {
-              // Then it should be shaded.
-              return '#EEEEEE';
-            }
-          }
-        }
-      };
-    } else {
-      this.style = {
-        ...DataGrid.defaultStyle,
-        voidColor: 'black',
-        backgroundColor: '#111111',
-        headerBackgroundColor: '#424242',
-        gridLineColor: 'rgba(235, 235, 235, 0.15)',
-        headerGridLineColor: 'rgba(235, 235, 235, 0.25)',
-        headerSelectionFillColor: 'rgba(20, 20, 20, 0.25)',
-        //rowBackgroundColor: i => (i % 2 === 0 ? '#212121' : '#111111')
-        columnBackgroundColor: (index: number) => {
-          // Shade on the last column
-          if (index + 1 === this.dataModel.columnCount('body')) {
-            // Then this is the ghost column.
-            return '#424242';
-          }
-        },
-        rowBackgroundColor: (index: number) => {
-          // Shade on the last row.
-          if (index + 1 === this.dataModel.rowCount('body')) {
-            // This this is the ghost row.
-            return '#424242';
-          }
-        }
-      };
-    }
+    this._updateElements(undefined, message);
   }
 
   private _region: DataModel.CellRegion;
