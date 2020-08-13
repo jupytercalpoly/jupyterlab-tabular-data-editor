@@ -319,6 +319,7 @@ export class RichMouseHandler extends BasicMouseHandler {
    * @param event - The mouse move event of interest.
    */
   onMouseMove(grid: DataGrid, event: MouseEvent): void {
+    this._resizeSignal.emit(null);
     // Fetch the press data.
     if (this._moveData) {
       this.updateLinePosition(event);
@@ -475,13 +476,6 @@ export class RichMouseHandler extends BasicMouseHandler {
         // Emit the update.
         model.onChangedSignal.emit(update);
       }
-    }
-    if (
-      this.pressData &&
-      (this.pressData.type === 'column-resize' ||
-        this.pressData.type === 'row-resize')
-    ) {
-      this._resizeSignal.emit(null);
     }
     this.release();
     return;

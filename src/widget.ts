@@ -31,6 +31,7 @@ import { Litestore } from './litestore';
 import { Fields } from 'tde-datastore';
 import { ListField, MapField } from 'tde-datastore';
 import { unsaveDialog } from './dialog';
+import { addIcon } from '@jupyterlab/ui-components';
 
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
@@ -130,7 +131,7 @@ export class DSVEditor extends Widget {
         className: CORNER_CLASS,
         style: {
           position: 'absolute',
-          zIndex: '3'
+          zIndex: '4'
         }
       })
     );
@@ -155,9 +156,9 @@ export class DSVEditor extends Widget {
       })
     );
 
-    this._grid.viewport.node.appendChild(this._hiddenCorner);
     this._grid.viewport.node.appendChild(this._ghostRow);
     this._grid.viewport.node.appendChild(this._ghostColumn);
+    this._grid.viewport.node.appendChild(this._hiddenCorner);
 
     void this._context.ready.then(() => {
       this._updateGrid();
@@ -430,7 +431,7 @@ export class DSVEditor extends Widget {
     }
 
     // Update the div elements of the grid.
-    this._updateElements();
+    this._updateElements(undefined, 'init');
   }
 
   /**
@@ -825,28 +826,28 @@ export class DSVEditor extends Widget {
     const gridRightEnd = this._grid.headerWidth + this._grid.bodyWidth;
     this._hiddenCorner.style.height = `${gridBottom - lastRowOffset + 1}px`;
     this._hiddenCorner.style.width = `${gridRightEnd - lastColumnOffset + 1}px`;
-
-    // Update the ghost header elements.
     const theme = this.style.voidColor === 'black' ? 'dark' : 'light';
     switch (theme) {
       case 'light': {
         this._ghostColumn.style.backgroundColor =
           message === 'ghostColumn'
-            ? 'rgba(243, 243, 243, 1)'
+            ? 'rgba(243, 243, 243, 0)'
             : 'rgba(243, 243, 243, 0.55)';
         this._ghostRow.style.backgroundColor =
           message === 'ghostRow'
-            ? 'rgba(243, 243, 243, 1)'
+            ? 'rgba(243, 243, 243, 0)'
             : 'rgba(243, 243, 243, 0.55)';
+        this._hiddenCorner.style.backgroundColor = 'rgb(243, 243, 243)';
         break;
       }
       case 'dark': {
         this._ghostColumn.style.backgroundColor =
           message === 'ghostColumn'
-            ? 'rgba(0, 0, 0, 1)'
+            ? 'rgba(0, 0, 0, 0)'
             : 'rgba(0, 0, 0, 0.55)';
         this._ghostRow.style.backgroundColor =
-          message === 'ghostRow' ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.55)';
+          message === 'ghostRow' ? 'rgba(0, 0, 0, 0)' : 'rgba(0, 0, 0, 0.55)';
+        this._hiddenCorner.style.backgroundColor = 'rgb(0, 0, 0)';
         break;
       }
     }
@@ -854,12 +855,32 @@ export class DSVEditor extends Widget {
     this._ghostColumn.style.top = '0px';
     this._ghostColumn.style.height = `${this._grid.headerHeight +
       this._grid.bodyHeight}px`;
-    this._ghostColumn.style.width = `${gridRightEnd - lastColumnOffset - 1}px`;
+    this._ghostColumn.style.width = '150px';
     this._ghostRow.style.left = '0px';
     this._ghostRow.style.top = `${lastRowOffset}px`;
-    this._ghostRow.style.height = `${gridBottom - lastRowOffset - 1}px`;
+    this._ghostRow.style.height = '50px';
     this._ghostRow.style.width = `${this._grid.headerWidth +
       this._grid.bodyWidth}px`;
+
+    // Attach the icons if this is the initial setup for the elements.
+    if (message === 'init') {
+      addIcon.element({
+        container: this._ghostColumn,
+        height: '30px',
+        width: '30px',
+        marginLeft: '60px',
+        marginTop: '3px',
+        padding: '0px'
+      });
+      addIcon.element({
+        container: this._ghostRow,
+        height: '20px',
+        width: '20px',
+        marginLeft: '22px',
+        marginTop: '2px',
+        padding: '0px'
+      });
+    }
   }
 
   /**
@@ -868,7 +889,7 @@ export class DSVEditor extends Widget {
   private _onGhostHover(
     emitter: RichMouseHandler,
     message: 'ghostRow' | 'ghostColumn' | 'other'
-  ) {
+  ): void {
     this._updateElements(undefined, message);
   }
 

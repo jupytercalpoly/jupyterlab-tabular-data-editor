@@ -128,6 +128,9 @@ export class EditorModel extends MutableDataModel {
   data(region: DataModel.CellRegion, row: number, column: number): any {
     // The model is defered to if the region is a row header.
     if (region === 'row-header') {
+      if (row + 1 === this.rowCount('body')) {
+        return '';
+      }
       return this._model.data(region, row, column);
     }
 
