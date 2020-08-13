@@ -188,6 +188,10 @@ export class DSVEditor extends Widget {
     return this._searchService;
   }
 
+  get grid(): DataGrid {
+    return this._grid;
+  }
+
   /**
    * The DataModel used to render the DataGrid
    */

@@ -62,7 +62,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
     // update match variables in CSVSearchProvider
     this._matches = searchTarget.content.searchService.matches;
     this._currentMatch = searchTarget.content.searchService.currentMatch;
-    this.selectSingleCell();
+    this.moveToCell();
     return this._matches;
   }
 
@@ -101,7 +101,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
     this._currentMatch = this._target.content.searchService.highlightNext(
       false
     );
-    this.selectSingleCell();
+    this.moveToCell();
     return this._currentMatch;
   }
 
@@ -112,7 +112,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
    */
   async highlightPrevious(): Promise<ISearchMatch | undefined> {
     this._currentMatch = this._target.content.searchService.highlightNext(true);
-    this.selectSingleCell();
+    this.moveToCell();
     return this._currentMatch;
   }
 
@@ -135,7 +135,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
       1,
       update
     );
-    this.selectSingleCell();
+    this.moveToCell();
     return true;
   }
 
@@ -167,7 +167,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
       columns.push(column);
       i++;
     }
-    this.selectSingleCell();
+    this.moveToCell();
     this._target.content.dataModel.bulkSetData(
       rows,
       columns,
@@ -188,17 +188,25 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
     this.endQuery();
     this.startQuery(this._query, this._target);
     this._changed.emit(undefined);
-    this.selectSingleCell();
+    this.moveToCell();
     return true;
   }
 
   /**
-   * Selects the cell that is the current match
+   * Moves and selects the cell that is the current match
    */
-  protected selectSingleCell(): void {
-    if (this._target) {
+  protected moveToCell(): void {
+    if (this._target && this._currentMatch) {
       const { line, column } = this._currentMatch;
       this._target.content.selectSingleCell(line, column);
+
+      // calculate the offsets and then scroll to that cell
+      const rowOffset = this._target.content.grid.rowOffset('body', line);
+      const columnOffset = this._target.content.grid.columnOffset(
+        'body',
+        column
+      );
+      this._target.content.grid.scrollTo(columnOffset, rowOffset);
     }
   }
 
