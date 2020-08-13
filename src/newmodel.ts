@@ -6,6 +6,7 @@ import { DSVEditor } from './widget';
 import { Signal } from '@lumino/signaling';
 import { ListField, MapField, RegisterField } from 'tde-datastore';
 import { toArray, range } from '@lumino/algorithm';
+import { inferType } from 'vega';
 // import { SplitPanel } from '@lumino/widgets';
 
 export class EditorModel extends MutableDataModel {
@@ -136,6 +137,27 @@ export class EditorModel extends MutableDataModel {
     );
   }
 
+  metadata(
+    region: DataModel.CellRegion,
+    row: number,
+    column: number
+  ): DataModel.Metadata {
+    // data is empty
+    console.log(region);
+    if (region !== 'body' || this.data(region, row, column) === '') {
+      return { type: 'string' };
+    }
+
+    const arr = [];
+    for (let i = 0; i < this.rowCount('body'); i++) {
+      arr.push(this.data(region, i, column));
+    }
+
+    const type = inferType(arr);
+
+    return { type };
+  }
+
   /**
    * This function is called by the datagrid to fill in values. It is called many times
    * and so should be efficient.
@@ -173,7 +195,14 @@ export class EditorModel extends MutableDataModel {
 
     // check if a new value has been stored at this cell.
     if (valueMap[`${row},${column}`] !== undefined) {
-      return valueMap[`${row},${column}`];
+      const data = valueMap[`${row},${column}`];
+      if (data === 'true') {
+        return true;
+      }
+      if (data === 'false') {
+        return false;
+      }
+      return data;
     }
 
     if (row < 0 || column < 0) {
@@ -186,7 +215,15 @@ export class EditorModel extends MutableDataModel {
     row = this._regionIndex(row, region);
 
     // fetch the value from the data
-    return this._model.data(region, row, column);
+    const data = this._model.data(region, row, column);
+
+    if (data === 'true') {
+      return true;
+    }
+    if (data === 'false') {
+      return false;
+    }
+    return data;
   }
 
   /**
