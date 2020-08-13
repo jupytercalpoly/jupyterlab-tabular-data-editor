@@ -101,7 +101,6 @@ export class DSVEditor extends Widget {
         }
       })
     );
-
     this._rowHeader = VirtualDOM.realize(
       h.div({
         className: ROW_HEADER_CLASS,
@@ -851,13 +850,13 @@ export class DSVEditor extends Widget {
         break;
       }
     }
-    this._ghostColumn.style.left = `${lastColumnOffset}px`;
+    this._ghostColumn.style.left = `${lastColumnOffset - this._grid.scrollX}px`;
     this._ghostColumn.style.top = '0px';
     this._ghostColumn.style.height = `${this._grid.headerHeight +
       this._grid.bodyHeight}px`;
     this._ghostColumn.style.width = '150px';
     this._ghostRow.style.left = '0px';
-    this._ghostRow.style.top = `${lastRowOffset}px`;
+    this._ghostRow.style.top = `${lastRowOffset - this._grid.scrollY}px`;
     this._ghostRow.style.height = '50px';
     this._ghostRow.style.width = `${this._grid.headerWidth +
       this._grid.bodyWidth}px`;
