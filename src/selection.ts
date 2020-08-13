@@ -95,20 +95,25 @@ export class BoundedDrag extends Drag {
       return [x, y];
     }
     // unpack the bounding region
-    const { top, bottom, left, right } = this._boundingRegion;
+    const {
+      topBound,
+      bottomBound,
+      leftBound,
+      rightBound
+    } = this._boundingRegion;
 
     // We always measure horizontal distance from the left,
     // so we need to ensure left <= x <= right.
     // Force left <= x.
-    x = Math.max(left, x);
+    x = Math.max(leftBound, x);
     // Force x <= right.
-    x = Math.min(x, right);
+    x = Math.min(x, rightBound);
     // We always measure vertical distance from the top,
     // so we need to ensure top <= y <= bottom.
     // Force top <= y.
-    y = Math.max(top, y);
+    y = Math.max(topBound, y);
     // Force y <= bottom.
-    y = Math.min(y, bottom);
+    y = Math.min(y, bottomBound);
     return [x, y];
   }
 
@@ -127,10 +132,10 @@ export class BoundedDrag extends Drag {
  * A region that the upper left corner of the drag object must stay within.
  */
 export interface IBoundingRegion {
-  top: number; // Measured from the top as in the css property top.
-  bottom: number; // Measured from the top as in the css propert top.
-  left: number; // Measured from the left as in the css property left.
-  right: number; // Measured from the right as in the css property right.
+  topBound: number; // Measured from the top as in the css property top.
+  bottomBound: number; // Measured from the top as in the css propert top.
+  leftBound: number; // Measured from the left as in the css property left.
+  rightBound: number; // Measured from the right as in the css property right.
 }
 export namespace BoundedDrag {
   export interface IOptions extends Drag.IOptions {

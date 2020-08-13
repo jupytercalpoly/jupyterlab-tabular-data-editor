@@ -45,13 +45,13 @@ export class RichMouseHandler extends BasicMouseHandler {
     const { left, top } = this._grid.viewport.node.getBoundingClientRect();
 
     // get the bounds for dragging
+    let top: number;
     let lowerBound: number;
-    let upperBound: number;
     let rightBound: number;
     let leftBound: number;
     if (region === 'column-header') {
       // y-axis bounds are the same
-      lowerBound = upperBound = r1;
+      lowerBound = top = r1;
       leftBound = left + this._grid.headerWidth;
       rightBound =
         left +
@@ -61,7 +61,7 @@ export class RichMouseHandler extends BasicMouseHandler {
     } else if (region === 'row-header') {
       // x-axis bounds are the same
       lowerBound = top + this._grid.headerHeight;
-      upperBound =
+      top =
         top +
         this._grid.headerHeight +
         Math.min(this._grid.pageHeight, this._grid.bodyHeight) -
@@ -69,10 +69,10 @@ export class RichMouseHandler extends BasicMouseHandler {
       leftBound = rightBound = c1;
     }
     return {
-      top: upperBound,
-      bottom: lowerBound,
-      left: leftBound,
-      right: rightBound
+      topBound: top,
+      bottomBound: lowerBound,
+      leftBound: leftBound,
+      rightBound: rightBound
     };
   }
 
@@ -305,10 +305,10 @@ export class RichMouseHandler extends BasicMouseHandler {
     );
     const { r1, r2, c1, c2 } = shadowRegion;
     const {
-      top: upperBound,
-      bottom: lowerBound,
-      left: leftBound,
-      right: rightBound
+      topBound: upperBound,
+      bottomBound: lowerBound,
+      leftBound: leftBound,
+      rightBound: rightBound
     } = this.computeGridBoundingRegion(region, shadowRegion);
 
     // see if we have crossed the boundary to a neighboring row/column
