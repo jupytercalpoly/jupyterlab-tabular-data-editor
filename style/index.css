@@ -89,9 +89,7 @@
   position: absolute;
 }
 
-.jp-transparent-ghost {
-  background-color: rgba(0, 0, 0, 0)
-}
+
 
 .jp-light-mode-ghost {
   background-color: rgba(243, 243, 243, 0.55)
@@ -99,6 +97,10 @@
 
 .jp-dark-mode-ghost {
   background-color: rgba(0, 0, 0, 0.55);
+}
+
+.jp-transparent-ghost {
+  background-color: rgba(0, 0, 0, 0)
 }
 
 .jp-light-mode-corner-ghost {
