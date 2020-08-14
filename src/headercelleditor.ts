@@ -1,6 +1,34 @@
-import { TextCellEditor } from 'tde-datagrid';
+import { TextCellEditor, CellEditor, DataGrid } from 'tde-datagrid';
 
 export class HeaderCellEditor extends TextCellEditor {
+  /**
+   * Edit a cell.
+   */
+  /**
+   * Compute cell rectangle and return with other cell properties.
+   */
+  protected getCellInfo(cell: CellEditor.CellConfig): ICellInfo {
+    const { grid, row, column } = cell;
+    const data = grid.dataModel!.data('column-header', row, column);
+
+    const columnX =
+      grid.headerWidth - grid.scrollX + grid.columnOffset('body', column);
+    const rowY = grid.headerHeight - grid.scrollY + grid.rowOffset('body', row);
+    const width = grid.columnSize('body', column);
+    const height = grid.rowSize('body', row);
+
+    return {
+      grid: grid,
+      row: row,
+      column: column,
+      data: data,
+      x: columnX,
+      y: rowY,
+      width: width,
+      height: height
+    };
+  }
+
   /**
    * Reposition cell editor by moving viewport occluder and cell editor container.
    */
@@ -25,3 +53,17 @@ export class HeaderCellEditor extends TextCellEditor {
     this.editorContainer.style.position = 'absolute';
   }
 }
+
+/**
+ * A type alias for cell properties.
+ */
+export type ICellInfo = {
+  grid: DataGrid;
+  row: number;
+  column: number;
+  data: any;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
