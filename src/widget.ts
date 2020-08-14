@@ -10,7 +10,6 @@ import { PromiseDelegate } from '@lumino/coreutils';
 import { Signal } from '@lumino/signaling';
 import { TextRenderConfig } from 'tde-csvviewer';
 import {
-  BasicKeyHandler,
   BasicSelectionModel,
   DataGrid,
   TextRenderer,
@@ -20,7 +19,7 @@ import {
 import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget, ScrollBar } from '@lumino/widgets';
 import { EditorModel } from './newmodel';
-import { RichMouseHandler } from './handler';
+import { RichMouseHandler, RichKeyHandler } from './handler';
 import { numberToCharacter } from './_helper';
 import { toArray, range } from '@lumino/algorithm';
 import { CommandRegistry } from '@lumino/commands';
@@ -78,7 +77,7 @@ export class DSVEditor extends Widget {
 
     this._grid.addClass(CSV_GRID_CLASS);
     this._grid.headerVisibility = 'all';
-    this._grid.keyHandler = new BasicKeyHandler();
+    this._grid.keyHandler = new RichKeyHandler();
     this._grid.copyConfig = {
       separator: '\t',
       format: DataGrid.copyFormatGeneric,

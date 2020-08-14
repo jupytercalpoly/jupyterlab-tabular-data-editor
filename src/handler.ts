@@ -14,6 +14,16 @@ import { renderSelection, IBoundingRegion, BoundedDrag } from './selection';
 import { EditorModel } from './newmodel';
 import { DSVEditor } from './widget';
 import HeaderCellEditor from './headercelleditor';
+import { BasicKeyHandler } from 'tde-datagrid';
+
+export class RichKeyHandler extends BasicKeyHandler {
+  onKeyDown(grid: DataGrid, event: KeyboardEvent) {
+    const model = grid.dataModel as EditorModel;
+    model.ghostsRevealed = false;
+    super.onKeyDown(grid, event);
+    model.ghostsRevealed = true;
+  }
+}
 
 export class RichMouseHandler extends BasicMouseHandler {
   private _moveLine: BoundedDrag;
