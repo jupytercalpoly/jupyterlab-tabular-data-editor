@@ -541,8 +541,8 @@ namespace Private {
    */
   export const DARK_TEXT_CONFIG: TextRenderConfig = {
     textColor: '#F5F5F5',
-    matchBackgroundColor: '#F99C3D',
-    currentMatchBackgroundColor: '#F57C00',
+    matchBackgroundColor: 'rgba(0, 84, 168, 0.5)',
+    currentMatchBackgroundColor: '#0055AA',
     horizontalAlignment: 'center'
   };
 }
