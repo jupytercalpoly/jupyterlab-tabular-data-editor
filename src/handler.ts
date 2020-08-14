@@ -10,10 +10,10 @@ import {
 } from 'tde-datagrid';
 import { Drag } from '@lumino/dragdrop';
 import { Signal } from '@lumino/signaling';
-import { renderSelection, IBoundingRegion, BoundedDrag } from './selection';
+import { renderSelection, IBoundingRegion, BoundedDrag } from './drag';
 import { EditorModel } from './newmodel';
 import { DSVEditor } from './widget';
-import HeaderCellEditor from './headercelleditor';
+import { HeaderCellEditor } from './headercelleditor';
 import { BasicKeyHandler } from 'tde-datagrid';
 
 export class RichKeyHandler extends BasicKeyHandler {

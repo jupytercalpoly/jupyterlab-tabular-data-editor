@@ -1,6 +1,6 @@
 import { TextCellEditor } from 'tde-datagrid';
 
-export default class HeaderCellEditor extends TextCellEditor {
+export class HeaderCellEditor extends TextCellEditor {
   /**
    * Reposition cell editor by moving viewport occluder and cell editor container.
    */
