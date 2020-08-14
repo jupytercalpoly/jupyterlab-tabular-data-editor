@@ -50,7 +50,7 @@ export class GridSearchService {
   cellBackgroundColorRendererFunc(
     config: TextRenderConfig
   ): CellRenderer.ConfigFunc<string> {
-    return ({ value, row, column }) => {
+    return ({ value, row, column }): string => {
       if (this._query) {
         if ((value as string).match(this._query)) {
           if (

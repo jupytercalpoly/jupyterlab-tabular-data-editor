@@ -1369,7 +1369,7 @@ export class EditorModel extends MutableDataModel {
   /**
    * translate from the Grid's row IDs to our own standard
    */
-  private _absoluteIndex(row: number, region: DataModel.CellRegion) {
+  private _absoluteIndex(row: number, region: DataModel.CellRegion): number {
     return region === 'column-header' || region === 'corner-header'
       ? 0
       : row + 1;
@@ -1378,7 +1378,7 @@ export class EditorModel extends MutableDataModel {
   /**
    * translate from our unique row ID to the Grid's standard
    */
-  private _regionIndex(row: number, region: DataModel.CellRegion) {
+  private _regionIndex(row: number, region: DataModel.CellRegion): number {
     return region === 'column-header' ? 0 : row - 1;
   }
 
@@ -1408,7 +1408,7 @@ export class EditorModel extends MutableDataModel {
   /**
    * Adds new rows coming in from the asynchronous parsing of string by the DSVModel.
    */
-  private _assimilateNewRows(start: number, span: number) {
+  private _assimilateNewRows(start: number, span: number): void {
     // Set up an udate object for the litestore.
     const update: DSVEditor.ModelChangedArgs = {};
 
@@ -1554,7 +1554,7 @@ export class EditorModel extends MutableDataModel {
     const mapArray: Array<string | 0> = new Array(rowMap.length).fill(0);
     const { buffers, slices } = slicePattern;
     // initialize a callback for the map method.
-    const mapper = (elem: any, index: number) => {
+    const mapper = (elem: any, index: number): string => {
       const row = rowMap[index];
       if (row < 0) {
         return this._blankRow(columnMap);
@@ -1655,7 +1655,7 @@ export class EditorModel extends MutableDataModel {
     const dl = this.model.delimiter.length;
 
     // Create the map function.
-    const mapper = (elem: any, index: number) => {
+    const mapper = (elem: any, index: number): string => {
       let sliceStart: number;
       const startKey = keys[index];
       const endKey = keys[index + 1];
