@@ -17,23 +17,23 @@ import HeaderCellEditor from './headercelleditor';
 
 export class RichMouseHandler extends BasicMouseHandler {
   private _moveLine: BoundedDrag;
-  private _lastHoverRegion: 'ghostRow' | 'ghostColumn' | 'other';
+  private _lastHoverRegion: 'ghost-row' | 'ghost-column' | null;
   constructor(options: RichMouseHandler.IOptions) {
     super();
     this._grid = options.grid;
     this._cursor = null;
   }
 
-  get ghostHoverSignal(): Signal<this, 'ghostRow' | 'ghostColumn' | 'other'> {
+  get hoverSignal(): Signal<this, 'ghost-row' | 'ghost-column' | null> {
     return this._ghostHoverSignal;
   }
 
-  get resizeSignal(): Signal<this, null> {
+  get mouseMoveSignal(): Signal<this, null> {
     return this._resizeSignal;
   }
 
-  get clickSignal(): Signal<this, DataGrid.HitTestResult> {
-    return this._clickSignal;
+  get mouseUpSignal(): Signal<this, DataGrid.HitTestResult> {
+    return this._mouseUpSignal;
   }
 
   /**
@@ -143,16 +143,14 @@ export class RichMouseHandler extends BasicMouseHandler {
   onMouseHover(grid: DataGrid, event: MouseEvent): void {
     // See if we are on a ghost row or ghost column.
     const { row, column } = grid.hitTest(event.clientX, event.clientY);
-    let hoverRegion: 'ghostRow' | 'ghostColumn' | 'other';
+    let hoverRegion: 'ghost-row' | 'ghost-column' | null = null;
     if (row === grid.dataModel.rowCount('body') - 1) {
-      hoverRegion = 'ghostRow';
+      hoverRegion = 'ghost-row';
     } else if (column === grid.dataModel.columnCount('body') - 1) {
-      hoverRegion = 'ghostColumn';
-    } else {
-      hoverRegion = 'other';
+      hoverRegion = 'ghost-column';
     }
     if (this._lastHoverRegion !== hoverRegion) {
-      this.ghostHoverSignal.emit(hoverRegion);
+      this.hoverSignal.emit(hoverRegion);
     }
     this._lastHoverRegion = hoverRegion;
     this._event = event;
@@ -168,19 +166,20 @@ export class RichMouseHandler extends BasicMouseHandler {
   onMouseDown(grid: DataGrid, event: MouseEvent): void {
     const model = grid.dataModel as EditorModel;
 
-    // Hide the ghost row and ghost column from the selection.
-    model.ghostsRevealed = false;
     let update: DSVEditor.ModelChangedArgs;
-    if (this._lastHoverRegion === 'ghostRow') {
+    if (this._lastHoverRegion === 'ghost-row') {
       update = model.addRows('body', model.rowCount('body') - 1);
       model.onChangedSignal.emit(update);
       return;
     }
-    if (this._lastHoverRegion === 'ghostColumn') {
+    if (this._lastHoverRegion === 'ghost-column') {
       update = model.addColumns('body', model.columnCount('body') - 1);
       model.onChangedSignal.emit(update);
       return;
     }
+
+    // Hide the ghost row and ghost column from the selection.
+    model.ghostsRevealed = false;
     super.onMouseDown(grid, event);
     // Reveal the ghosts.
     model.ghostsRevealed = true;
@@ -457,7 +456,7 @@ export class RichMouseHandler extends BasicMouseHandler {
     const model = grid.dataModel as EditorModel;
     // emit the current mouse position to the Editor
     const hit = grid.hitTest(event.clientX, event.clientY);
-    this._clickSignal.emit(hit);
+    this._mouseUpSignal.emit(hit);
     // if move data exists, handle the move first
     if (this._moveData) {
       const selectionModel = this._grid.selectionModel;
@@ -514,7 +513,7 @@ export class RichMouseHandler extends BasicMouseHandler {
   onContextMenu(grid: DataGrid, event: MouseEvent): void {
     const { clientX, clientY } = event;
     const hit = grid.hitTest(clientX, clientY);
-    this._clickSignal.emit(hit);
+    this._mouseUpSignal.emit(hit);
 
     // if the right click is in the current selection, return
     if (
@@ -575,11 +574,11 @@ export class RichMouseHandler extends BasicMouseHandler {
   private _event: MouseEvent;
   private _cursor: string | null;
   private _moveData: MoveData | null;
-  private _clickSignal = new Signal<this, DataGrid.HitTestResult>(this);
+  private _mouseUpSignal = new Signal<this, DataGrid.HitTestResult>(this);
   private _resizeSignal = new Signal<this, null>(this);
   private _ghostHoverSignal = new Signal<
     this,
-    'ghostRow' | 'ghostColumn' | 'other'
+    'ghost-row' | 'ghost-column' | null
   >(this);
   private _selectionIndex: number; // The index of the row/column where the move line is present
 }
