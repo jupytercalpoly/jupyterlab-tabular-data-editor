@@ -185,12 +185,7 @@ export class RichMouseHandler extends BasicMouseHandler {
       model.onChangedSignal.emit(update);
       return;
     }
-
-    // Hide the ghost row and ghost column from the selection.
-    // model.ghostsRevealed = false;
     super.onMouseDown(grid, event);
-    // Reveal the ghosts.
-    // model.ghostsRevealed = true;
     if (this._cursor === 'grab') {
       this._cursor = 'grabbing';
       this.handleGrabbing();
