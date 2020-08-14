@@ -516,11 +516,19 @@ export class DSVEditor extends Widget {
         break;
       }
       case 'remove-rows': {
-        update = this.dataModel.removeRows(this._region, this._row);
+        update = this.dataModel.removeRows(
+          this._region,
+          Math.min(r1, r2),
+          this.rowsSelected
+        );
         break;
       }
       case 'remove-columns': {
-        update = this.dataModel.removeColumns(this._region, this._column);
+        update = this.dataModel.removeColumns(
+          this._region,
+          Math.min(c1, c2),
+          this.columnsSelected
+        );
         break;
       }
       case 'cut-cells':
