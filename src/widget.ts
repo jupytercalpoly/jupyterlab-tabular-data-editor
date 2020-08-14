@@ -10,16 +10,16 @@ import { PromiseDelegate } from '@lumino/coreutils';
 import { Signal } from '@lumino/signaling';
 import { TextRenderConfig } from 'tde-csvviewer';
 import {
-  BasicSelectionModel,
+  BasicKeyHandler,
   DataGrid,
   TextRenderer,
   SelectionModel,
   DataModel
 } from 'tde-datagrid';
 import { Message } from '@lumino/messaging';
-import { PanelLayout, Widget, ScrollBar } from '@lumino/widgets';
+import { PanelLayout, Widget, ScrollBar, LayoutItem } from '@lumino/widgets';
 import { EditorModel } from './newmodel';
-import { RichMouseHandler, RichKeyHandler } from './handler';
+import { RichMouseHandler } from './handler';
 import { numberToCharacter } from './_helper';
 import { toArray, range } from '@lumino/algorithm';
 import { CommandRegistry } from '@lumino/commands';
@@ -27,6 +27,7 @@ import { CommandIDs } from './index';
 import { VirtualDOM, h } from '@lumino/virtualdom';
 import { GridSearchService } from './searchservice';
 import { Litestore } from './litestore';
+import GhostSelectionModel from './selectionmodel';
 import { Fields } from 'tde-datastore';
 import { ListField, MapField } from 'tde-datastore';
 import { unsaveDialog } from './dialog';
@@ -38,16 +39,14 @@ const COLUMN_HEADER_CLASS = 'jp-column-header';
 const ROW_HEADER_CLASS = 'jp-row-header';
 const BACKGROUND_CLASS = 'jp-background';
 const DIRTY_CLASS = 'jp-mod-dirty';
-const CORNER_CLASS = 'jp-grid-corner';
-const GHOST_ROW_CLASS = 'jp-grid-ghost-row';
-const GHOST_COLUMN_CLASS = 'jp-grid-ghost-column';
+const TRANSPARENT_GHOST = 'jp-transparent-ghost';
 const RENDER_TIMEOUT = 1000;
 
 export class DSVEditor extends Widget {
   private _background: HTMLElement;
-  private _ghostCorner: HTMLElement;
-  private _ghostRow: HTMLElement;
-  private _ghostColumn: HTMLElement;
+  private _ghostCorner: LayoutItem;
+  private _ghostRow: LayoutItem;
+  private _ghostColumn: LayoutItem;
   /**
    * Construct a new CSV viewer.
    */
@@ -77,7 +76,7 @@ export class DSVEditor extends Widget {
 
     this._grid.addClass(CSV_GRID_CLASS);
     this._grid.headerVisibility = 'all';
-    this._grid.keyHandler = new RichKeyHandler();
+    this._grid.keyHandler = new BasicKeyHandler();
     this._grid.copyConfig = {
       separator: '\t',
       format: DataGrid.copyFormatGeneric,
@@ -88,6 +87,7 @@ export class DSVEditor extends Widget {
     this._grid.mouseHandler = handler;
     handler.mouseUpSignal.connect(this._onMouseUp, this);
     handler.mouseMoveSignal.connect(this._updateGhostElements, this);
+    handler.mouseWheelSignal.connect(this._updateGhostElements, this);
     handler.hoverSignal.connect(this._onGhostHover, this);
     layout.addWidget(this._grid);
 
@@ -129,39 +129,17 @@ export class DSVEditor extends Widget {
     this._grid.viewport.node.appendChild(this._background);
 
     // Put a block in the corner of the grid to hide the bottom corner.
-    this._ghostCorner = VirtualDOM.realize(
-      h.div({
-        className: CORNER_CLASS,
-        style: {
-          position: 'absolute',
-          zIndex: '4'
-        }
-      })
-    );
-
+    const ghostCorner = new Widget();
+    this._ghostCorner = new LayoutItem(ghostCorner);
     // Add the ghost row and column header elements.
-    this._ghostRow = VirtualDOM.realize(
-      h.div({
-        className: GHOST_ROW_CLASS,
-        style: {
-          position: 'absolute',
-          zIndex: '3'
-        }
-      })
-    );
-    this._ghostColumn = VirtualDOM.realize(
-      h.div({
-        className: GHOST_COLUMN_CLASS,
-        style: {
-          position: 'absolute',
-          zIndex: '3'
-        }
-      })
-    );
+    const ghostRow = new Widget();
+    this._ghostRow = new LayoutItem(ghostRow);
+    const ghostColumn = new Widget();
+    this._ghostColumn = new LayoutItem(ghostColumn);
 
-    this._grid.viewport.node.appendChild(this._ghostColumn);
-    this._grid.viewport.node.appendChild(this._ghostRow);
-    this._grid.viewport.node.appendChild(this._ghostCorner);
+    layout.addWidget(ghostCorner);
+    layout.addWidget(ghostRow);
+    layout.addWidget(ghostColumn);
 
     void this._context.ready.then(() => {
       this._updateGrid();
@@ -175,6 +153,27 @@ export class DSVEditor extends Widget {
     });
     this._grid.editingEnabled = true;
     this.commandSignal.connect(this._onCommand, this);
+  }
+
+  /**
+   * The ghost row of the grid.
+   */
+  get ghostRow(): LayoutItem {
+    return this._ghostRow;
+  }
+
+  /**
+   * The ghost column of the grid.
+   */
+  get ghostColumn(): LayoutItem {
+    return this._ghostColumn;
+  }
+
+  /**
+   * The ghost corner of the grid.
+   */
+  get ghostCorner(): LayoutItem {
+    return this._ghostCorner;
   }
 
   /**
@@ -397,7 +396,7 @@ export class DSVEditor extends Widget {
         data,
         delimiter
       }));
-      this._grid.selectionModel = new BasicSelectionModel({ dataModel });
+      this._grid.selectionModel = new GhostSelectionModel({ dataModel });
 
       // create litestore
       this._litestore = new Litestore({
@@ -715,9 +714,9 @@ export class DSVEditor extends Widget {
       return;
     }
     // If no selection property was passed in, record the current selection.
-    // grab current selection if none exists  
+    // grab current selection if none exists
     if (!update.selection) {
-        update.selection = this._grid.selectionModel.currentSelection();
+      update.selection = this._grid.selectionModel.currentSelection();
     }
     // for every litestore change except the init, set the dirty boolean to true
     this.dirty =
@@ -812,33 +811,32 @@ export class DSVEditor extends Widget {
     message?: string
   ): void {
     // Update the position of the ghost row, column, and corner elements.
-
+    let left, top, width, height: number;
     const lastRowOffset =
       this._grid.totalHeight - this._grid.defaultSizes.rowHeight;
     const lastColumnOffset =
       this._grid.totalWidth - this._grid.defaultSizes.columnWidth;
-    this._ghostCorner.style.top = `${lastRowOffset - this._grid.scrollY}px`;
-    this._ghostCorner.style.left = `${lastColumnOffset - this._grid.scrollX}px`;
-    this._ghostColumn.style.left = `${lastColumnOffset - this._grid.scrollX}px`;
-    this._ghostColumn.style.height = `${this._grid.headerHeight +
-      this._grid.bodyHeight}px`;
-    this._ghostRow.style.top = `${lastRowOffset - this._grid.scrollY}px`;
-    this._ghostRow.style.width = `${this._grid.headerWidth +
-      this._grid.bodyWidth}px`;
+
+    top = lastRowOffset - this._grid.scrollY;
+    left = lastColumnOffset - this._grid.scrollX;
+    width = this._grid.defaultSizes.columnWidth;
+    height = this._grid.defaultSizes.rowHeight;
+    this._ghostCorner.update(left, top, width, height);
+
+    top = 0;
+    height = this._grid.headerHeight + this._grid.bodyHeight;
+    this._ghostColumn.update(left, top, width, height);
+
+    left = 0;
+    top = lastRowOffset - this._grid.scrollY;
+    height = this._grid.defaultSizes.rowHeight;
+    width = this._grid.headerWidth + this._grid.bodyWidth;
+    this._ghostRow.update(left, top, width, height);
 
     if (message === 'init') {
-      // Set the static dimensions
-      this._ghostRow.style.height = '30px';
-      this._ghostCorner.style.height = '30px';
-      this._ghostCorner.style.width = '150px';
-      this._ghostColumn.style.width = '150px';
-
-      // Set the ghost colors
-      this._setGhostColor();
-
       // Attach the icons.
       addIcon.element({
-        container: this._ghostColumn,
+        container: this._ghostColumn.widget.node,
         height: '30px',
         width: '30px',
         marginLeft: '60px',
@@ -846,7 +844,7 @@ export class DSVEditor extends Widget {
         padding: '0px'
       });
       addIcon.element({
-        container: this._ghostRow,
+        container: this._ghostRow.widget.node,
         height: '20px',
         width: '20px',
         marginLeft: '22px',
@@ -857,25 +855,26 @@ export class DSVEditor extends Widget {
   }
 
   /**
-   * Set's the opactiy of the ghost elements depending on the theme an whether they are
+   * Toggles the opactiy of the ghost elements depending on the theme an whether they are
    * being hovered on.
    */
-  private _setGhostColor(hover: 'ghost-row' | 'ghost-column' | null = null) {
-    if (this.style.voidColor === 'black') {
-      this._ghostRow.style.backgroundColor =
-        hover === 'ghost-row' ? 'rgba(0, 0, 0, 0)' : 'rgba(0, 0, 0, 0.55)';
-      this._ghostColumn.style.backgroundColor =
-        hover === 'ghost-column' ? 'rgba(0, 0, 0, 0)' : 'rgba(0, 0, 0, 0.55)';
-      this._ghostCorner.style.backgroundColor = 'black';
-      return;
+  private _changeGhostOpacity(
+    hover: 'ghost-row' | 'ghost-column' | null = null
+  ) {
+    switch (hover) {
+      case 'ghost-row': {
+        this._ghostRow.widget.addClass(TRANSPARENT_GHOST);
+        break;
+      }
+      case 'ghost-column': {
+        this._ghostColumn.widget.addClass(TRANSPARENT_GHOST);
+        break;
+      }
+      default: {
+        this._ghostColumn.widget.removeClass(TRANSPARENT_GHOST);
+        this._ghostRow.widget.removeClass(TRANSPARENT_GHOST);
+      }
     }
-    this._ghostRow.style.backgroundColor =
-      hover === 'ghost-row' ? 'rgba(0, 0, 0, 0)' : 'rgba(243, 243, 243, 0.55)';
-    this._ghostColumn.style.backgroundColor =
-      hover === 'ghost-column'
-        ? 'rgba(0, 0, 0, 0)'
-        : 'rgba(243, 243, 243, 0.55)';
-    this._ghostCorner.style.backgroundColor = 'rgb(243, 243, 243)';
   }
 
   /**
@@ -901,7 +900,7 @@ export class DSVEditor extends Widget {
     emitter: RichMouseHandler,
     message: 'ghost-row' | 'ghost-column' | null
   ): void {
-    this._setGhostColor(message);
+    this._changeGhostOpacity(message);
   }
 
   private _onScroll(emitter: ScrollBar, message: number | string) {

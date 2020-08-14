@@ -1,5 +1,6 @@
 import { IDisposable } from '@lumino/disposable';
 import {
+  BasicKeyHandler,
   BasicMouseHandler,
   DataGrid,
   DataModel,
@@ -14,15 +15,22 @@ import { renderSelection, IBoundingRegion, BoundedDrag } from './drag';
 import { EditorModel } from './newmodel';
 import { DSVEditor } from './widget';
 import { HeaderCellEditor } from './headercelleditor';
-import { BasicKeyHandler } from 'tde-datagrid';
+// import { BasicKeyHandler } from 'tde-datagrid';
 
 export class RichKeyHandler extends BasicKeyHandler {
-  onKeyDown(grid: DataGrid, event: KeyboardEvent) {
-    const model = grid.dataModel as EditorModel;
-    model.ghostsRevealed = false;
-    super.onKeyDown(grid, event);
-    model.ghostsRevealed = true;
+  /**
+   * A signal that emits on a keydown event
+   */
+  get keyDownSignal(): Signal<this, null> {
+    return this._keyDownSignal;
   }
+
+  onKeyDown(grid: DataGrid, event: KeyboardEvent) {
+    this._keyDownSignal.emit(null);
+    super.onKeyDown(grid, event);
+  }
+
+  private _keyDownSignal = new Signal<this, null>(this);
 }
 
 export class RichMouseHandler extends BasicMouseHandler {
@@ -33,7 +41,9 @@ export class RichMouseHandler extends BasicMouseHandler {
     this._grid = options.grid;
     this._cursor = null;
   }
-
+  get mouseWheelSignal(): Signal<this, null> {
+    return this._mouseWheelSignal;
+  }
   get hoverSignal(): Signal<this, 'ghost-row' | 'ghost-column' | null> {
     return this._ghostHoverSignal;
   }
@@ -145,6 +155,11 @@ export class RichMouseHandler extends BasicMouseHandler {
     }
   }
 
+  onWheel(grid: DataGrid, event: WheelEvent) {
+    this._mouseWheelSignal.emit(null);
+    super.onWheel(grid, event);
+  }
+
   /**
    * @override
    * @param grid
@@ -189,10 +204,10 @@ export class RichMouseHandler extends BasicMouseHandler {
     }
 
     // Hide the ghost row and ghost column from the selection.
-    model.ghostsRevealed = false;
+    // model.ghostsRevealed = false;
     super.onMouseDown(grid, event);
     // Reveal the ghosts.
-    model.ghostsRevealed = true;
+    // model.ghostsRevealed = true;
     if (this._cursor === 'grab') {
       this._cursor = 'grabbing';
       this.handleGrabbing();
@@ -350,16 +365,16 @@ export class RichMouseHandler extends BasicMouseHandler {
    * @param event - The mouse move event of interest.
    */
   onMouseMove(grid: DataGrid, event: MouseEvent): void {
-    const model = grid.dataModel as EditorModel;
-    model.ghostsRevealed = true;
+    // const model = grid.dataModel as EditorModel;
+    // model.ghostsRevealed = true;
     this._resizeSignal.emit(null);
     // Fetch the press data.
     if (this._moveData) {
       this.updateLinePosition(event);
     } else {
-      model.ghostsRevealed = false;
+      // model.ghostsRevealed = false;
       super.onMouseMove(grid, event);
-      model.ghostsRevealed = true;
+      // model.ghostsRevealed = true;
     }
     return;
   }
@@ -586,6 +601,7 @@ export class RichMouseHandler extends BasicMouseHandler {
   private _moveData: MoveData | null;
   private _mouseUpSignal = new Signal<this, DataGrid.HitTestResult>(this);
   private _resizeSignal = new Signal<this, null>(this);
+  private _mouseWheelSignal = new Signal<this, null>(this);
   private _ghostHoverSignal = new Signal<
     this,
     'ghost-row' | 'ghost-column' | null

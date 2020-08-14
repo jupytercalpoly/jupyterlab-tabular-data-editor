@@ -85,17 +85,22 @@
   min-width: 12px;
 }
 
-.jp-grid-corner {
-  background-color: white;
-  border: none;
+.jp-transparent-ghost {
+  background-color: rgba(0, 0, 0, 0)
 }
 
-.jp-grid-ghost-column {
-  background-color: white;
-  border: none;
+.jp-light-mode-ghost {
+  background-color: rgba(243, 243, 243, 0.55)
 }
 
-.jp-grid-ghost-row {
-  background-color: white;
-  border: none;
+.jp-dark-mode-ghost {
+  background-color: rgba(0, 0, 0, 0.55);
+}
+
+.jp-light-mode-corner-ghost {
+  background-color: rgb(243, 243, 243);
+}
+
+.jp-dark-mode-corner-ghost {
+  background-color: rgb(0, 0, 0);
 }
