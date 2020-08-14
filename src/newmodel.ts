@@ -97,7 +97,7 @@ export class EditorModel extends MutableDataModel {
   /**
    * The grid's current number of rows. TOTAL, NOT BY REGION.
    */
-  totalRows(): number {
+  get totalRows(): number {
     return (
       this._model.rowCount('body') + this._rowsAdded - this._rowsRemoved + 1
     );
@@ -109,7 +109,7 @@ export class EditorModel extends MutableDataModel {
    * Notes: This is equivalent to columnCount('body')
    */
 
-  totalColumns(): number {
+  get totalColumns(): number {
     return (
       this._model.columnCount('body') +
       this._columnsAdded -
