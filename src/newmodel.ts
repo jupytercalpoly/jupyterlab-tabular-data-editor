@@ -366,7 +366,7 @@ export class EditorModel extends MutableDataModel {
     const values = [];
     let i = 0;
     while (i < span) {
-      values.push(-(this.totalRows() + this._rowsRemoved));
+      values.push(-(this.totalRows + this._rowsRemoved));
       i++;
       this._rowsAdded++;
     }
@@ -432,7 +432,7 @@ export class EditorModel extends MutableDataModel {
     let i = 0;
     let nextKey: number;
     while (i < span) {
-      nextKey = -(this.totalColumns() + this._columnsRemoved);
+      nextKey = -(this.totalColumns + this._columnsRemoved);
       values.push(nextKey);
       columnHeaders[`0,${nextKey}`] = `Column ${start + i + 1}`;
       i++;
@@ -855,7 +855,7 @@ export class EditorModel extends MutableDataModel {
     const values = [];
     let i = 0;
     while (i < span) {
-      values.push(-(this.totalRows() + this._rowsRemoved));
+      values.push(-(this.totalRows + this._rowsRemoved));
       i++;
       this._rowsAdded++;
     }
@@ -930,7 +930,7 @@ export class EditorModel extends MutableDataModel {
     const values = [];
     let i = 0;
     while (i < span) {
-      values.push(-(this.totalColumns() + this._columnsAdded));
+      values.push(-(this.totalColumns + this._columnsAdded));
       i++;
       this._columnsAdded++;
     }
@@ -1050,8 +1050,8 @@ export class EditorModel extends MutableDataModel {
     row = this._absoluteIndex(row, region);
 
     // see how much space we have
-    const rowsBelow = this.totalRows() - row;
-    const columnsRight = this.totalColumns() - column;
+    const rowsBelow = this.totalRows - row;
+    const columnsRight = this.totalColumns - column;
 
     // clamp the values we are adding at the bounds of the grid
     const rowSpan = Math.min(rowsBelow, this._clipboard.length);
