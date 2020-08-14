@@ -369,12 +369,12 @@ export class DSVEditor extends Widget {
       const rowUpdate = {
         index: 0,
         remove: 0,
-        values: toArray(range(0, this.dataModel.totalRows()))
+        values: toArray(range(0, this.dataModel.totalRows))
       };
       const columnUpdate = {
         index: 0,
         remove: 0,
-        values: toArray(range(0, this.dataModel.totalColumns()))
+        values: toArray(range(0, this.dataModel.totalColumns))
       };
 
       // Add the map updates to the update object.

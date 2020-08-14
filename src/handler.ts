@@ -480,7 +480,7 @@ export class RichMouseHandler extends BasicMouseHandler {
   /**
    * Handles a double click event
    */
-  onMouseDoubleClick(grid: DataGrid, event: MouseEvent) {
+  onMouseDoubleClick(grid: DataGrid, event: MouseEvent): void {
     const { region, row, column } = grid.hitTest(event.clientX, event.clientY);
     if (region === 'column-header') {
       if (grid.editable) {
@@ -515,7 +515,7 @@ export class RichMouseHandler extends BasicMouseHandler {
         const editor = new HeaderCellEditor();
 
         // Begin editing the cell.
-        grid.editorController!.edit(cell, { editor, onCommit });
+        grid.editorController.edit(cell, { editor, onCommit });
       }
     }
     super.onMouseDoubleClick(grid, event);

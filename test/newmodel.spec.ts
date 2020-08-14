@@ -43,12 +43,12 @@ beforeEach(() => {
   const rowUpdate = {
     index: 0,
     remove: 0,
-    values: toArray(range(0, model.totalRows()))
+    values: toArray(range(0, model.totalRows))
   };
   const columnUpdate = {
     index: 0,
     remove: 0,
-    values: toArray(range(0, model.totalColumns()))
+    values: toArray(range(0, model.totalColumns))
   };
 
   // Add the map updates to the update object.
