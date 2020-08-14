@@ -223,6 +223,24 @@ export class DSVEditor extends Widget {
     }
   }
 
+  get rowsSelected(): number {
+    const selection: SelectionModel.Selection = this._grid.selectionModel.currentSelection();
+    if (!selection) {
+      return 0;
+    }
+    const { r1, r2 } = selection;
+    return Math.abs(r2 - r1) + 1;
+  }
+
+  get columnsSelected(): number {
+    const selection: SelectionModel.Selection = this._grid.selectionModel.currentSelection();
+    if (!selection) {
+      return 0;
+    }
+    const { c1, c2 } = selection;
+    return Math.abs(c2 - c1) + 1;
+  }
+
   /**
    * Dispose of the resources used by the widget.
    */
@@ -443,10 +461,13 @@ export class DSVEditor extends Widget {
   private _onCommand(emitter: DSVEditor, command: DSVEditor.Commands): void {
     const selectionModel = this._grid.selectionModel;
     const selection = selectionModel.currentSelection();
+    const rowSpan = this.rowsSelected;
+    const colSpan = this.columnsSelected;
     let r1, r2, c1, c2: number;
 
     // grab selection if it exists
     if (selection) {
+      // r1 and c1 are always first row/column
       r1 = Math.min(selection.r1, selection.r2);
       r2 = Math.max(selection.r1, selection.r2);
       c1 = Math.min(selection.c1, selection.c2);
@@ -467,41 +488,42 @@ export class DSVEditor extends Widget {
 
     switch (command) {
       case 'insert-rows-above': {
-        update = this.dataModel.addRows(this._region, this._row);
+        update = this.dataModel.addRows(this._region, r1, rowSpan);
 
         // Add the type property so we can differentiate an insert above from an insert below.
         update.type = command;
         break;
       }
       case 'insert-rows-below': {
-        update = this.dataModel.addRows(this._region, this._row + 1);
+        update = this.dataModel.addRows(this._region, r2 + 1, rowSpan);
 
         // Add the command to the grid state.
         update.gridStateUpdate.nextCommand = command;
 
         // move the selection down a row to account for the new row being inserted
-        newSelection.r1 += 1;
-        newSelection.r2 += 1;
+        newSelection.r1 += rowSpan;
+        newSelection.r2 += rowSpan;
         break;
       }
       case 'insert-columns-left': {
-        update = this.dataModel.addColumns(this._region, this._column);
+        update = this.dataModel.addColumns(this._region, c1, colSpan);
         break;
       }
       case 'insert-columns-right': {
-        update = this.dataModel.addColumns(this._region, this._column + 1);
+        update = this.dataModel.addColumns(this._region, c2 + 1, colSpan);
+        update.type = command;
 
         // move the selection right a column to account for the new column being inserted
-        newSelection.c1 += 1;
-        newSelection.c2 += 1;
+        newSelection.c1 += colSpan;
+        newSelection.c2 += colSpan;
         break;
       }
       case 'remove-rows': {
-        update = this.dataModel.removeRows(this._region, this._row);
+        update = this.dataModel.removeRows(this._region, r1, rowSpan);
         break;
       }
       case 'remove-columns': {
-        update = this.dataModel.removeColumns(this._region, this._column);
+        update = this.dataModel.removeColumns(this._region, c1, colSpan);
         break;
       }
       case 'cut-cells':
@@ -602,11 +624,11 @@ export class DSVEditor extends Widget {
         let move: DataModel.ChangedArgs;
         // handle special cases for selection
         if (command === 'insert-rows-below') {
-          r1 += 1;
-          r2 += 1;
+          r1 += rowSpan;
+          r2 += rowSpan;
         } else if (command === 'insert-columns-right') {
-          c1 += 1;
-          c2 += 1;
+          c1 += colSpan;
+          c2 += colSpan;
         } else if (command === 'move-rows') {
           move = gridChange as DataModel.RowsMovedArgs;
           r1 = move.destination;
