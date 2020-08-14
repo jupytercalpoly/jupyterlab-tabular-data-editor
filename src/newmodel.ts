@@ -1639,6 +1639,11 @@ export class EditorModel extends MutableDataModel {
       return elem[0] < rowMap.length && elem[1] < columnMap.length;
     });
 
+    // Bail early if the keys are empty. This can happen if you insert and remove the same column
+    if (keys.length === 0) {
+      return this._model.rawData;
+    }
+
     // Now revert the keys to their corresponding map keys.
     const valueKeys = keys.map(key => `${rowMap[key[0]]},${columnMap[key[1]]}`);
 
