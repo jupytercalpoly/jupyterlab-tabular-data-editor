@@ -1505,6 +1505,12 @@ export class EditorModel extends MutableDataModel {
     );
   }
 
+  /**
+   * Builds the slicing pattern that needs to be applied to every row in the model
+   * @param columnMap
+   * @param model
+   * @returns The SlicePattern containing a list of buffers (arrays of delimiters) and slices (indexes to slice the original string on)
+   */
   private _columnSlicePattern(
     columnMap: ListField.Value<number>,
     model: DSVModel
@@ -1515,12 +1521,21 @@ export class EditorModel extends MutableDataModel {
     let nextSlice: number[] = [];
     let delimiterReps = 0;
     while (i < columnMap.length) {
+      // add another delimeter and move to the next index if the value is negative (new column)
       while (columnMap[i] < 0) {
         i++;
         delimiterReps++;
       }
+
+      // remove a delimiter of the last column is involved
+      if (i === columnMap.length) {
+        delimiterReps--;
+      }
+
       buffers.push(model.delimiter.repeat(delimiterReps));
       delimiterReps = 0;
+
+      // break if we reached the end of the column map
       if (i >= columnMap.length) {
         break;
       }
