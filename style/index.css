@@ -85,6 +85,10 @@
   min-width: 12px;
 }
 
+.jp-ghost {
+  position: absolute;
+}
+
 .jp-transparent-ghost {
   background-color: rgba(0, 0, 0, 0)
 }

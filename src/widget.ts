@@ -39,6 +39,7 @@ const COLUMN_HEADER_CLASS = 'jp-column-header';
 const ROW_HEADER_CLASS = 'jp-row-header';
 const BACKGROUND_CLASS = 'jp-background';
 const DIRTY_CLASS = 'jp-mod-dirty';
+const GHOST = 'jp-ghost';
 const TRANSPARENT_GHOST = 'jp-transparent-ghost';
 const RENDER_TIMEOUT = 1000;
 
@@ -58,7 +59,7 @@ export class DSVEditor extends Widget {
 
     this.addClass(CSV_CLASS);
 
-    //Datagrid Size
+    // Initialize the data grid.
     this._grid = new DataGrid({
       defaultSizes: {
         rowHeight: 24,
@@ -69,6 +70,7 @@ export class DSVEditor extends Widget {
       headerVisibility: 'all'
     });
 
+    // Connect to the data grid scroll bar signals.
     this._grid.vScrollBar.thumbMoved.connect(this._onScroll, this);
     this._grid.vScrollBar.stepRequested.connect(this._onScroll, this);
     this._grid.hScrollBar.thumbMoved.connect(this._onScroll, this);
@@ -76,20 +78,26 @@ export class DSVEditor extends Widget {
 
     this._grid.addClass(CSV_GRID_CLASS);
     this._grid.headerVisibility = 'all';
-    this._grid.keyHandler = new BasicKeyHandler();
+    const keyHandler = new BasicKeyHandler();
+    this._grid.keyHandler = keyHandler;
+
     this._grid.copyConfig = {
       separator: '\t',
       format: DataGrid.copyFormatGeneric,
       headers: 'none',
       warningThreshold: 1e6
     };
+    layout.addWidget(this._grid);
+
+    // Add the mouse handler to the grid.
     const handler = new RichMouseHandler({ grid: this._grid });
     this._grid.mouseHandler = handler;
+
+    // Connect to the mouse handler signals.
     handler.mouseUpSignal.connect(this._onMouseUp, this);
-    handler.mouseMoveSignal.connect(this._updateGhostElements, this);
-    handler.mouseWheelSignal.connect(this._updateGhostElements, this);
-    handler.hoverSignal.connect(this._onGhostHover, this);
-    layout.addWidget(this._grid);
+    handler.mouseMoveSignal.connect(this._onMouseMove, this);
+    handler.mouseWheelSignal.connect(this._onMouseWheel, this);
+    handler.hoverSignal.connect(this._onHover, this);
 
     // init search service to search for matches with the data grid
     this._searchService = new GridSearchService(this._grid);
@@ -123,23 +131,31 @@ export class DSVEditor extends Widget {
         }
       })
     );
+
     // append the column and row headers to the viewport
     this._grid.viewport.node.appendChild(this._rowHeader);
     this._grid.viewport.node.appendChild(this._columnHeader);
     this._grid.viewport.node.appendChild(this._background);
 
-    // Put a block in the corner of the grid to hide the bottom corner.
+    // Create new widgets for the ghost elements.
     const ghostCorner = new Widget();
-    this._ghostCorner = new LayoutItem(ghostCorner);
-    // Add the ghost row and column header elements.
     const ghostRow = new Widget();
-    this._ghostRow = new LayoutItem(ghostRow);
     const ghostColumn = new Widget();
+
+    // Add the ghost class to the ghost widgets.
+    ghostRow.addClass(GHOST);
+    ghostColumn.addClass(GHOST);
+    ghostCorner.addClass(GHOST);
+
+    // Add the layout items for the ghost widgets.
+    this._ghostCorner = new LayoutItem(ghostCorner);
+    this._ghostRow = new LayoutItem(ghostRow);
     this._ghostColumn = new LayoutItem(ghostColumn);
 
-    layout.addWidget(ghostCorner);
-    layout.addWidget(ghostRow);
-    layout.addWidget(ghostColumn);
+    // Append the widgets to the DataGrid viewport.
+    this._grid.viewport.node.appendChild(ghostCorner.node);
+    this._grid.viewport.node.appendChild(ghostRow.node);
+    this._grid.viewport.node.appendChild(ghostColumn.node);
 
     void this._context.ready.then(() => {
       this._updateGrid();
@@ -396,7 +412,9 @@ export class DSVEditor extends Widget {
         data,
         delimiter
       }));
-      this._grid.selectionModel = new GhostSelectionModel({ dataModel });
+      const selectionModel = new GhostSelectionModel({ dataModel });
+      selectionModel.changed.connect(this._onSelection, this);
+      this._grid.selectionModel = selectionModel;
 
       // create litestore
       this._litestore = new Litestore({
@@ -791,21 +809,9 @@ export class DSVEditor extends Widget {
     this._grid.editorController.cancel();
   }
 
-  private _onMouseUp(
-    emitter: RichMouseHandler,
-    hit: DataGrid.HitTestResult
-  ): void {
-    // Update the context menu elements as they may have moved.
-    this._updateContextElements();
-
-    // Record where the hit took place.
-    if (hit.region !== 'void') {
-      this._region = hit.region;
-    }
-    this._row = hit.row;
-    this._column = hit.column;
-  }
-
+  /**
+   * Updates the ghost elements.
+   */
   private _updateGhostElements(
     emitter?: RichMouseHandler,
     message?: string
@@ -893,10 +899,39 @@ export class DSVEditor extends Widget {
     this._rowHeader.style.width = `${this._grid.headerWidth}px`;
     this._rowHeader.style.height = `${this._grid.bodyHeight}px`;
   }
+
+  /**
+   * Handles a mouse up signal.
+   */
+  private _onMouseUp(
+    emitter: RichMouseHandler,
+    hit: DataGrid.HitTestResult
+  ): void {
+    // Update the context menu elements as they may have moved.
+    this._updateContextElements();
+
+    // Record where the hit took place.
+    if (hit.region !== 'void') {
+      this._region = hit.region;
+    }
+    this._row = hit.row;
+    this._column = hit.column;
+  }
+
+  /**
+   * Handles a mouse wheel event.
+   */
+  private _onMouseWheel(emitter: RichMouseHandler) {
+    this._updateGhostElements();
+  }
+
+  private _onMouseMove(emitter: RichMouseHandler) {
+    this._updateGhostElements();
+  }
   /**
    * Handles a ghost hover
    */
-  private _onGhostHover(
+  private _onHover(
     emitter: RichMouseHandler,
     message: 'ghost-row' | 'ghost-column' | null
   ): void {
@@ -905,6 +940,10 @@ export class DSVEditor extends Widget {
 
   private _onScroll(emitter: ScrollBar, message: number | string) {
     // Update the positions of the ghosts and the corner hider
+    this._updateGhostElements();
+  }
+
+  private _onSelection(emitter: GhostSelectionModel): void {
     this._updateGhostElements();
   }
 

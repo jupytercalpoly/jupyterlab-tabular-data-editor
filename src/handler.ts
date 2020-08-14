@@ -1,6 +1,5 @@
 import { IDisposable } from '@lumino/disposable';
 import {
-  BasicKeyHandler,
   BasicMouseHandler,
   DataGrid,
   DataModel,
@@ -16,22 +15,6 @@ import { EditorModel } from './newmodel';
 import { DSVEditor } from './widget';
 import { HeaderCellEditor } from './headercelleditor';
 // import { BasicKeyHandler } from 'tde-datagrid';
-
-export class RichKeyHandler extends BasicKeyHandler {
-  /**
-   * A signal that emits on a keydown event
-   */
-  get keyDownSignal(): Signal<this, null> {
-    return this._keyDownSignal;
-  }
-
-  onKeyDown(grid: DataGrid, event: KeyboardEvent) {
-    this._keyDownSignal.emit(null);
-    super.onKeyDown(grid, event);
-  }
-
-  private _keyDownSignal = new Signal<this, null>(this);
-}
 
 export class RichMouseHandler extends BasicMouseHandler {
   private _moveLine: BoundedDrag;
