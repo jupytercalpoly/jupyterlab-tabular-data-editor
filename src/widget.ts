@@ -11,14 +11,13 @@ import { Signal } from '@lumino/signaling';
 import { TextRenderConfig } from 'tde-csvviewer';
 import {
   BasicKeyHandler,
-  BasicSelectionModel,
   DataGrid,
   TextRenderer,
   SelectionModel,
   DataModel
 } from 'tde-datagrid';
 import { Message } from '@lumino/messaging';
-import { PanelLayout, Widget } from '@lumino/widgets';
+import { PanelLayout, Widget, ScrollBar, LayoutItem } from '@lumino/widgets';
 import { EditorModel } from './newmodel';
 import { RichMouseHandler } from './handler';
 import { numberToCharacter } from './_helper';
@@ -28,9 +27,11 @@ import { CommandIDs } from './index';
 import { VirtualDOM, h } from '@lumino/virtualdom';
 import { GridSearchService } from './searchservice';
 import { Litestore } from './litestore';
+import GhostSelectionModel from './selectionmodel';
 import { Fields } from 'tde-datastore';
 import { ListField, MapField } from 'tde-datastore';
 import { unsaveDialog } from './dialog';
+import { addIcon } from '@jupyterlab/ui-components';
 
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
@@ -38,10 +39,15 @@ const COLUMN_HEADER_CLASS = 'jp-column-header';
 const ROW_HEADER_CLASS = 'jp-row-header';
 const BACKGROUND_CLASS = 'jp-background';
 const DIRTY_CLASS = 'jp-mod-dirty';
+const GHOST = 'jp-ghost';
+const TRANSPARENT_GHOST = 'jp-transparent-ghost';
 const RENDER_TIMEOUT = 1000;
 
 export class DSVEditor extends Widget {
   private _background: HTMLElement;
+  private _ghostCorner: LayoutItem;
+  private _ghostRow: LayoutItem;
+  private _ghostColumn: LayoutItem;
   /**
    * Construct a new CSV viewer.
    */
@@ -53,7 +59,7 @@ export class DSVEditor extends Widget {
 
     this.addClass(CSV_CLASS);
 
-    //Datagrid Size
+    // Initialize the data grid.
     this._grid = new DataGrid({
       defaultSizes: {
         rowHeight: 24,
@@ -64,20 +70,34 @@ export class DSVEditor extends Widget {
       headerVisibility: 'all'
     });
 
+    // Connect to the data grid scroll bar signals.
+    this._grid.vScrollBar.thumbMoved.connect(this._onScroll, this);
+    this._grid.vScrollBar.stepRequested.connect(this._onScroll, this);
+    this._grid.hScrollBar.thumbMoved.connect(this._onScroll, this);
+    this._grid.hScrollBar.stepRequested.connect(this._onScroll, this);
+
     this._grid.addClass(CSV_GRID_CLASS);
     this._grid.headerVisibility = 'all';
-    this._grid.keyHandler = new BasicKeyHandler();
+    const keyHandler = new BasicKeyHandler();
+    this._grid.keyHandler = keyHandler;
+
     this._grid.copyConfig = {
       separator: '\t',
       format: DataGrid.copyFormatGeneric,
       headers: 'none',
       warningThreshold: 1e6
     };
+    layout.addWidget(this._grid);
+
+    // Add the mouse handler to the grid.
     const handler = new RichMouseHandler({ grid: this._grid });
     this._grid.mouseHandler = handler;
-    handler.clickSignal.connect(this._onMouseClick, this);
-    handler.resizeSignal.connect(this._onResize, this);
-    layout.addWidget(this._grid);
+
+    // Connect to the mouse handler signals.
+    handler.mouseUpSignal.connect(this._onMouseUp, this);
+    handler.mouseMoveSignal.connect(this._onMouseMove, this);
+    handler.mouseWheelSignal.connect(this._onMouseWheel, this);
+    handler.hoverSignal.connect(this._onHover, this);
 
     // init search service to search for matches with the data grid
     this._searchService = new GridSearchService(this._grid);
@@ -93,7 +113,6 @@ export class DSVEditor extends Widget {
         }
       })
     );
-
     this._rowHeader = VirtualDOM.realize(
       h.div({
         className: ROW_HEADER_CLASS,
@@ -112,10 +131,31 @@ export class DSVEditor extends Widget {
         }
       })
     );
+
     // append the column and row headers to the viewport
     this._grid.viewport.node.appendChild(this._rowHeader);
     this._grid.viewport.node.appendChild(this._columnHeader);
     this._grid.viewport.node.appendChild(this._background);
+
+    // Create new widgets for the ghost elements.
+    const ghostCorner = new Widget();
+    const ghostRow = new Widget();
+    const ghostColumn = new Widget();
+
+    // Add the ghost class to the ghost widgets.
+    ghostRow.addClass(GHOST);
+    ghostColumn.addClass(GHOST);
+    ghostCorner.addClass(GHOST);
+
+    // Add the layout items for the ghost widgets.
+    this._ghostCorner = new LayoutItem(ghostCorner);
+    this._ghostRow = new LayoutItem(ghostRow);
+    this._ghostColumn = new LayoutItem(ghostColumn);
+
+    // Append the widgets to the DataGrid viewport.
+    this._grid.viewport.node.appendChild(ghostCorner.node);
+    this._grid.viewport.node.appendChild(ghostRow.node);
+    this._grid.viewport.node.appendChild(ghostColumn.node);
 
     void this._context.ready.then(() => {
       this._updateGrid();
@@ -129,6 +169,27 @@ export class DSVEditor extends Widget {
     });
     this._grid.editingEnabled = true;
     this.commandSignal.connect(this._onCommand, this);
+  }
+
+  /**
+   * The ghost row of the grid.
+   */
+  get ghostRow(): LayoutItem {
+    return this._ghostRow;
+  }
+
+  /**
+   * The ghost column of the grid.
+   */
+  get ghostColumn(): LayoutItem {
+    return this._ghostColumn;
+  }
+
+  /**
+   * The ghost corner of the grid.
+   */
+  get ghostCorner(): LayoutItem {
+    return this._ghostCorner;
   }
 
   /**
@@ -351,7 +412,9 @@ export class DSVEditor extends Widget {
         data,
         delimiter
       }));
-      this._grid.selectionModel = new BasicSelectionModel({ dataModel });
+      const selectionModel = new GhostSelectionModel({ dataModel });
+      selectionModel.changed.connect(this._onSelection, this);
+      this._grid.selectionModel = selectionModel;
 
       // create litestore
       this._litestore = new Litestore({
@@ -386,17 +449,10 @@ export class DSVEditor extends Widget {
       dataModel.onChangedSignal.connect(this._onModelSignal, this);
       // dataModel.cancelEditingSignal.connect(this._cancelEditing, this);
     }
-    // update the position of the background row and column headers
-    this._background.style.width = `${this._grid.bodyWidth}px`;
-    this._background.style.height = `${this._grid.bodyHeight}px`;
-    this._background.style.left = `${this._grid.headerWidth}px`;
-    this._background.style.top = `${this._grid.headerHeight}px`;
-    this._columnHeader.style.left = `${this._grid.headerWidth}px`;
-    this._columnHeader.style.height = `${this._grid.headerHeight}px`;
-    this._columnHeader.style.width = `${this._grid.bodyWidth}px`;
-    this._rowHeader.style.top = `${this._grid.headerHeight}px`;
-    this._rowHeader.style.width = `${this._grid.headerWidth}px`;
-    this._rowHeader.style.height = `${this._grid.bodyHeight}px`;
+
+    // Update the div elements of the grid.
+    this._updateContextElements();
+    this._updateGhostElements(null, 'init');
   }
 
   /**
@@ -430,7 +486,7 @@ export class DSVEditor extends Widget {
    */
   private _onModelSignal(
     emitter: EditorModel,
-    args: DSVEditor.ModelChangedArgs
+    args: DSVEditor.ModelChangedArgs | null
   ): void {
     this.updateModel(args);
   }
@@ -669,11 +725,17 @@ export class DSVEditor extends Widget {
    * @param update The modelChanged args for the Datagrid (may be null)
    */
   public updateModel(update?: DSVEditor.ModelChangedArgs): void {
+    // if not selection was passed through, take the current selection
+    this._updateGhostElements();
+    // Bail early if there is no update.
+    if (!update) {
+      return;
+    }
+    // If no selection property was passed in, record the current selection.
     // grab current selection if none exists
     if (!update.selection) {
       update.selection = this._grid.selectionModel.currentSelection();
     }
-
     // for every litestore change except the init, set the dirty boolean to true
     this.dirty =
       update &&
@@ -681,7 +743,6 @@ export class DSVEditor extends Widget {
       update.gridStateUpdate.nextCommand === 'init'
         ? false
         : true;
-
     // Update the litestore.
     this._litestore.beginTransaction();
     this._litestore.updateRecord(
@@ -748,18 +809,85 @@ export class DSVEditor extends Widget {
     this._grid.editorController.cancel();
   }
 
-  private _onMouseClick(
-    emitter: RichMouseHandler,
-    hit: DataGrid.HitTestResult
+  /**
+   * Updates the ghost elements.
+   */
+  private _updateGhostElements(
+    emitter?: RichMouseHandler,
+    message?: string
   ): void {
-    if (hit.region !== 'void') {
-      this._region = hit.region;
+    // Update the position of the ghost row, column, and corner elements.
+    let left, top, width, height: number;
+    const lastRowOffset =
+      this._grid.totalHeight - this._grid.defaultSizes.rowHeight;
+    const lastColumnOffset =
+      this._grid.totalWidth - this._grid.defaultSizes.columnWidth;
+
+    top = lastRowOffset - this._grid.scrollY;
+    left = lastColumnOffset - this._grid.scrollX;
+    width = this._grid.defaultSizes.columnWidth;
+    height = this._grid.defaultSizes.rowHeight;
+    this._ghostCorner.update(left, top, width, height);
+
+    top = 0;
+    height = this._grid.headerHeight + this._grid.bodyHeight;
+    this._ghostColumn.update(left, top, width, height);
+
+    left = 0;
+    top = lastRowOffset - this._grid.scrollY;
+    height = this._grid.defaultSizes.rowHeight;
+    width = this._grid.headerWidth + this._grid.bodyWidth;
+    this._ghostRow.update(left, top, width, height);
+
+    if (message === 'init') {
+      // Attach the icons.
+      addIcon.element({
+        container: this._ghostColumn.widget.node,
+        height: '30px',
+        width: '30px',
+        marginLeft: '60px',
+        marginTop: '3px',
+        padding: '0px'
+      });
+      addIcon.element({
+        container: this._ghostRow.widget.node,
+        height: '20px',
+        width: '20px',
+        marginLeft: '22px',
+        marginTop: '2px',
+        padding: '0px'
+      });
     }
-    this._row = hit.row;
-    this._column = hit.column;
   }
 
-  private _onResize(emitter: RichMouseHandler): void {
+  /**
+   * Toggles the opactiy of the ghost elements depending on the theme an whether they are
+   * being hovered on.
+   */
+  private _changeGhostOpacity(
+    hover: 'ghost-row' | 'ghost-column' | null = null
+  ) {
+    switch (hover) {
+      case 'ghost-row': {
+        this._ghostRow.widget.addClass(TRANSPARENT_GHOST);
+        break;
+      }
+      case 'ghost-column': {
+        this._ghostColumn.widget.addClass(TRANSPARENT_GHOST);
+        break;
+      }
+      default: {
+        this._ghostColumn.widget.removeClass(TRANSPARENT_GHOST);
+        this._ghostRow.widget.removeClass(TRANSPARENT_GHOST);
+      }
+    }
+  }
+
+  /**
+   * Updates the context menu elements.
+   */
+  private _updateContextElements() {
+    // Update the column header, row header, and background elements.
     this._background.style.width = `${this._grid.bodyWidth}px`;
     this._background.style.height = `${this._grid.bodyHeight}px`;
     this._background.style.left = `${this._grid.headerWidth}px`;
@@ -770,6 +898,53 @@ export class DSVEditor extends Widget {
     this._rowHeader.style.top = `${this._grid.headerHeight}px`;
     this._rowHeader.style.width = `${this._grid.headerWidth}px`;
     this._rowHeader.style.height = `${this._grid.bodyHeight}px`;
+  }
+
+  /**
+   * Handles a mouse up signal.
+   */
+  private _onMouseUp(
+    emitter: RichMouseHandler,
+    hit: DataGrid.HitTestResult
+  ): void {
+    // Update the context menu elements as they may have moved.
+    this._updateContextElements();
+
+    // Record where the hit took place.
+    if (hit.region !== 'void') {
+      this._region = hit.region;
+    }
+    this._row = hit.row;
+    this._column = hit.column;
+  }
+
+  /**
+   * Handles a mouse wheel event.
+   */
+  private _onMouseWheel(emitter: RichMouseHandler) {
+    this._updateGhostElements();
+  }
+
+  private _onMouseMove(emitter: RichMouseHandler) {
+    this._updateGhostElements();
+  }
+  /**
+   * Handles a ghost hover
+   */
+  private _onHover(
+    emitter: RichMouseHandler,
+    message: 'ghost-row' | 'ghost-column' | null
+  ): void {
+    this._changeGhostOpacity(message);
+  }
+
+  private _onScroll(emitter: ScrollBar, message: number | string) {
+    // Update the positions of the ghosts and the corner hider
+    this._updateGhostElements();
+  }
+
+  private _onSelection(emitter: GhostSelectionModel): void {
+    this._updateGhostElements();
   }
 
   private _region: DataModel.CellRegion;

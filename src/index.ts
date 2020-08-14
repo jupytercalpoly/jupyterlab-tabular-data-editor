@@ -37,7 +37,10 @@ import { CSVSearchProvider } from './searchprovider';
  */
 const FACTORY_CSV = 'Tabular Data Editor';
 // const FACTORY_TSV = 'TSVTable';
-
+const DARK_MODE_GHOST = 'jp-dark-mode-ghost';
+const LIGHT_MODE_GHOST = 'jp-light-mode-ghost';
+const LIGHT_MODE_CORNER = 'jp-light-mode-corner-ghost';
+const DARK_MODE_CORNER = 'jp-dark-mode-corner-ghost';
 /**
  * Initialization data for the jupyterlab-tabular-data-editor extension.
  */
@@ -107,6 +110,10 @@ function activateCsv(
     }
     // Set the theme for the new widget.
     widget.content.style = style;
+    widget.content.ghostRow.widget.addClass(LIGHT_MODE_GHOST);
+    widget.content.ghostColumn.widget.addClass(LIGHT_MODE_GHOST);
+    widget.content.ghostCorner.widget.addClass(LIGHT_MODE_CORNER);
+
     widget.content.rendererConfig = rendererConfig;
   });
 
@@ -123,6 +130,15 @@ function activateCsv(
     tracker.forEach(grid => {
       grid.content.style = style;
       grid.content.rendererConfig = rendererConfig;
+      const ghostColumn = grid.content.ghostColumn.widget;
+      const ghostRow = grid.content.ghostRow.widget;
+      const ghostCorner = grid.content.ghostCorner.widget;
+      ghostColumn.addClass(isLight ? LIGHT_MODE_GHOST : DARK_MODE_GHOST);
+      ghostColumn.removeClass(isLight ? DARK_MODE_GHOST : LIGHT_MODE_GHOST);
+      ghostRow.addClass(isLight ? LIGHT_MODE_GHOST : DARK_MODE_GHOST);
+      ghostRow.removeClass(isLight ? DARK_MODE_GHOST : LIGHT_MODE_GHOST);
+      ghostCorner.addClass(isLight ? LIGHT_MODE_CORNER : DARK_MODE_CORNER);
+      ghostCorner.removeClass(isLight ? DARK_MODE_CORNER : LIGHT_MODE_CORNER);
     });
   };
   if (themeManager) {

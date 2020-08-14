@@ -14,13 +14,13 @@ export class EditorModel extends MutableDataModel {
   private _model: DSVModel;
   private _rowsAdded: number;
   private _columnsAdded: number;
-  private _onChangeSignal: Signal<
-    this,
-    DSVEditor.ModelChangedArgs
-  > = new Signal<this, DSVEditor.ModelChangedArgs>(this);
+  private _onChangeSignal = new Signal<this, DSVEditor.ModelChangedArgs | null>(
+    this
+  );
   private _rowsRemoved: number;
   private _columnsRemoved: number;
   private _saving = false;
+  private _ghostsRevealed = true;
   // private _onChangeSignal: Signal<this, string> = new Signal<this, string>(
   //   this
   // );
@@ -38,6 +38,15 @@ export class EditorModel extends MutableDataModel {
     this._columnsRemoved = 0;
 
     this._litestore = null;
+  }
+  /**
+   * A boolean that determins whether the ghosts are visible to the grid.
+   */
+  get ghostsRevealed(): boolean {
+    return this._ghostsRevealed;
+  }
+  set ghostsRevealed(value: boolean) {
+    this._ghostsRevealed = value;
   }
   /**
    * The model which holds the string containing the contents of the file.
@@ -68,11 +77,18 @@ export class EditorModel extends MutableDataModel {
 
   /**
    * The grid's current number of rows by region.
+   * NOTE: we add one so that a ghost row appears.
    *
    */
   rowCount(region: DataModel.RowRegion): number {
+    const ghostRow = this._ghostsRevealed ? 1 : 0;
     if (region === 'body') {
-      return this._model.rowCount('body') + this._rowsAdded - this._rowsRemoved;
+      return (
+        this._model.rowCount('body') +
+        this._rowsAdded -
+        this._rowsRemoved +
+        ghostRow
+      );
     }
     return 1;
   }
@@ -82,13 +98,16 @@ export class EditorModel extends MutableDataModel {
    *
    * Note: the UI components use this method to get the column count
    * so it should reflect the grid's columns.
+   * NOTE: we add 1 so that a ghost column appears.
    */
   columnCount(region: DataModel.ColumnRegion): number {
+    const ghostColumn = this._ghostsRevealed ? 1 : 0;
     if (region === 'body') {
       return (
         this._model.columnCount('body') +
         this._columnsAdded -
-        this._columnsRemoved
+        this._columnsRemoved +
+        ghostColumn
       );
     }
     return 1;
@@ -124,11 +143,14 @@ export class EditorModel extends MutableDataModel {
   data(region: DataModel.CellRegion, row: number, column: number): any {
     // The model is defered to if the region is a row header.
     if (region === 'row-header') {
+      if (row + 1 === this.rowCount('body')) {
+        return '';
+      }
       return this._model.data(region, row, column);
     }
 
     if (region === 'corner-header') {
-      return '';
+      return;
     }
 
     // The row comes to us as an index on a particular region. We need the
@@ -144,6 +166,10 @@ export class EditorModel extends MutableDataModel {
     // Map from the cell on the grid to the cell in the model.
     row = rowMap[row];
     column = columnMap[column];
+
+    if (row === undefined || column === undefined) {
+      return '';
+    }
 
     // check if a new value has been stored at this cell.
     if (valueMap[`${row},${column}`] !== undefined) {
@@ -1157,6 +1183,8 @@ export class EditorModel extends MutableDataModel {
         break;
     }
     this.emitChanged(gridUpdate);
+
+    this.onChangedSignal.emit(null);
   }
 
   /**
@@ -1181,6 +1209,8 @@ export class EditorModel extends MutableDataModel {
       }
     }
     this.emitChanged(change);
+
+    this.onChangedSignal.emit(null);
   }
 
   /**
