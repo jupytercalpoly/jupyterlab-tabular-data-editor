@@ -31,6 +31,7 @@ import GhostSelectionModel from './selectionmodel';
 import { Fields } from 'tde-datastore';
 import { ListField, MapField } from 'tde-datastore';
 import { unsaveDialog } from './dialog';
+import PaintedGrid from './datagrid';
 
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
@@ -57,7 +58,7 @@ export class DSVEditor extends Widget {
     this.addClass(CSV_CLASS);
 
     // Initialize the data grid.
-    this._grid = new DataGrid({
+    this._grid = new PaintedGrid({
       defaultSizes: {
         rowHeight: 24,
         columnWidth: 144,
