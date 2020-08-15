@@ -53,8 +53,15 @@ export class PaintedGrid extends DataGrid {
    * the base data grid graphics.
    */
   private _paintAddons(rx: number, ry: number, rw: number, rh: number): void {
-    // Draw the ghost column and row if they are in view.
+    // Draw the ghost row.
     this._drawGhostRow(rx, ry, rw, rh);
+
+    // Draw the ghost column.
+    this._drawGhostColumn(rx, ry, rw, rh);
+
+    // this._drawGhostRowHeader(rx, ry, rw, rh);
+
+    // this._drawGhostColumnHeader(rx, ry, rw, rh);
   }
 
   /**
@@ -157,6 +164,53 @@ export class PaintedGrid extends DataGrid {
     // };
   }
 
+  /**
+   * Draw the ghost column.
+   */
+  private _drawGhostColumn(
+    rx: number,
+    ry: number,
+    rw: number,
+    rh: number
+  ): void {
+    // Get the visible content dimensions.
+    const contentW = this.defaultSizes.columnWidth;
+    const contentH = this.bodyHeight - this.scrollY;
+
+    // Bail if there is no content to draw.
+    if (contentW <= 0 || contentH <= 0) {
+      return;
+    }
+
+    // Get the visible content origin.
+    const contentX = this.headerWidth + this.bodyWidth - contentW - scrollX;
+    const contentY = this.headerHeight;
+
+    // Bail if the dirty rect does not intersect the content area.
+    if (rx + rw <= contentX) {
+      return;
+    }
+    if (ry + rh <= contentY) {
+      return;
+    }
+    if (rx >= contentX + contentW) {
+      return;
+    }
+    if (ry >= contentY + contentH) {
+      return;
+    }
+
+    // Get the upper and lower bounds of the dirty content area.
+    const x1 = Math.max(rx, contentX);
+    const y1 = Math.max(ry, contentY);
+    const x2 = Math.min(rx + rw - 1, contentX + contentW - 1);
+    const y2 = Math.min(ry + rh - 1, contentY + contentH - 1);
+
+    // Fill the region with the specified color.
+    this.canvasGC.fillStyle = this._extraStyle.ghostColumnColor;
+    this.canvasGC.fillRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
+  }
+
   private _extraStyle: PaintedGrid.ExtraStyle;
 }
 
@@ -192,8 +246,8 @@ export namespace PaintedGrid {
   };
 
   export const defaultExtraStyle = {
-    ghostRowColor: 'rgba(243, 243, 243, 0.55)',
-    ghostColumnColor: 'rgba(243, 243, 243, 0.55)'
+    ghostRowColor: 'rgba(243, 243, 243, 0.65)',
+    ghostColumnColor: 'rgba(243, 243, 243, 0.65)'
   };
 }
 

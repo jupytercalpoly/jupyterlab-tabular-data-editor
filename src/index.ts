@@ -531,13 +531,13 @@ namespace Private {
   };
 
   export const LIGHT_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
-    ghostRowColor: 'rgba(243, 243, 243, 0.55)',
-    ghostColumnColor: 'rgba(243, 243, 243, 0.55)'
+    ghostRowColor: 'rgba(243, 243, 243, 0.65)',
+    ghostColumnColor: 'rgba(243, 243, 243, 0.65)'
   };
 
   export const DARK_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
-    ghostRowColor: 'rgba(0, 0, 0, 0.55)',
-    ghostColumnColor: 'rgba(0, 0, 0, 0,55)'
+    ghostRowColor: 'rgba(0, 0, 0, 0.65)',
+    ghostColumnColor: 'rgba(0, 0, 0, 0.65)'
   };
 
   /**
