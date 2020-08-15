@@ -1,4 +1,5 @@
 import { DataGrid } from 'tde-datagrid';
+import { addIcon } from '@jupyterlab/ui-components';
 
 export class PaintedGrid extends DataGrid {
   constructor(options: PaintedGrid.IOptions) {
@@ -59,9 +60,9 @@ export class PaintedGrid extends DataGrid {
     // Draw the ghost column.
     this._drawGhostColumn(rx, ry, rw, rh);
 
-    // this._drawGhostRowHeader(rx, ry, rw, rh);
+    this._drawGhostRowHeader(rx, ry, rw, rh);
 
-    // this._drawGhostColumnHeader(rx, ry, rw, rh);
+    this._drawGhostColumnHeader(rx, ry, rw, rh);
   }
 
   /**
@@ -185,6 +186,104 @@ export class PaintedGrid extends DataGrid {
     // Get the visible content origin.
     const contentX = this.headerWidth + this.bodyWidth - contentW - scrollX;
     const contentY = this.headerHeight;
+
+    // Bail if the dirty rect does not intersect the content area.
+    if (rx + rw <= contentX) {
+      return;
+    }
+    if (ry + rh <= contentY) {
+      return;
+    }
+    if (rx >= contentX + contentW) {
+      return;
+    }
+    if (ry >= contentY + contentH) {
+      return;
+    }
+
+    // Get the upper and lower bounds of the dirty content area.
+    const x1 = Math.max(rx, contentX);
+    const y1 = Math.max(ry, contentY);
+    const x2 = Math.min(rx + rw - 1, contentX + contentW - 1);
+    const y2 = Math.min(ry + rh - 1, contentY + contentH - 1);
+
+    // Fill the region with the specified color.
+    this.canvasGC.fillStyle = this._extraStyle.ghostColumnColor;
+    this.canvasGC.fillRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
+  }
+
+  private _drawGhostRowHeader(
+    rx: number,
+    ry: number,
+    rw: number,
+    rh: number
+  ): void {
+    // Get the visible content dimensions.
+    const contentW = this.headerWidth;
+    const contentH = this.defaultSizes.rowHeight;
+
+    // Bail if there is no content to draw.
+    if (contentW <= 0 || contentH <= 0) {
+      return;
+    }
+
+    // Get the visible content origin.
+    const contentX = 0;
+    const contentY = this.headerHeight + this.bodyHeight - contentH - scrollY;
+
+    // Bail if the dirty rect does not intersect the content area.
+    if (rx + rw <= contentX) {
+      return;
+    }
+    if (ry + rh <= contentY) {
+      return;
+    }
+    if (rx >= contentX + contentW) {
+      return;
+    }
+    if (ry >= contentY + contentH) {
+      return;
+    }
+
+    // Get the upper and lower bounds of the dirty content area.
+    const x1 = Math.max(rx, contentX);
+    const y1 = Math.max(ry, contentY);
+    const x2 = Math.min(rx + rw - 1, contentX + contentW - 1);
+    const y2 = Math.min(ry + rh - 1, contentY + contentH - 1);
+
+    // Fill the region with the specified color.
+    this.canvasGC.fillStyle = this._extraStyle.ghostColumnColor;
+    this.canvasGC.fillRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
+
+    // Create the Icon elements.
+    const add = new Image();
+    addIcon.element({
+      container: add,
+      height: '5px',
+      width: '5px',
+      marginLeft: '2px'
+    });
+    this.canvasGC.drawImage(add, x1, y1);
+  }
+
+  private _drawGhostColumnHeader(
+    rx: number,
+    ry: number,
+    rw: number,
+    rh: number
+  ): void {
+    // Get the visible content dimensions.
+    const contentW = this.headerWidth;
+    const contentH = this.defaultSizes.rowHeight;
+
+    // Bail if there is no content to draw.
+    if (contentW <= 0 || contentH <= 0) {
+      return;
+    }
+
+    // Get the visible content origin.
+    const contentX = this.headerWidth + this.bodyWidth - contentW - scrollX;
+    const contentY = 0;
 
     // Bail if the dirty rect does not intersect the content area.
     if (rx + rw <= contentX) {
