@@ -71,7 +71,7 @@ export class PaintedGrid extends DataGrid {
     }
 
     // Get the visible content origin.
-    const contentX = 0;
+    const contentX = this.headerWidth;
     const contentY = this.headerHeight + this.bodyHeight - contentH;
 
     // Bail if the dirty rect does not intersect the content area.
@@ -95,7 +95,7 @@ export class PaintedGrid extends DataGrid {
 
     // Get the upper and lower bounds of the dirty content area.
     const x1 = Math.max(rx, contentX);
-    const y1 = ry;
+    const y1 = Math.max(ry, contentY);
     const x2 = Math.min(rx + rw - 1, contentX + contentW - 1);
     const y2 = Math.min(ry + rh - 1, contentY + contentH - 1);
 
