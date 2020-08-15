@@ -58,5 +58,15 @@ export default class PaintedGrid extends DataGrid {
     if (ry >= contentY + contentH) {
       return;
     }
+
+    // Fetch the geometry.
+    const bw = this.bodyWidth;
+    const pw = this.pageWidth;
+
+    // Get the upper and lower bounds of the dirty content area.
+    const x1 = Math.max(rx, contentX);
+    const y1 = ry;
+    const x2 = Math.min(rx + rw - 1, contentX + contentW - 1);
+    const y2 = Math.min(ry + rh - 1, contentY + contentH - 1);
   }
 }
