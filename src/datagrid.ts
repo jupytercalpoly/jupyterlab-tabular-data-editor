@@ -14,5 +14,16 @@ export default class PaintedGrid extends DataGrid {
   protected paintContent(rx: number, ry: number, rw: number, rh: number): void {
     // Paint in the background, rows, columns, and cells first.
     super.paintContent(rx, ry, rw, rh);
+
+    // Paint addons.
+    this._paintAddons(rx, ry, rw, rh);
+  }
+
+  /**
+   * Primary entry point for painting addition graphics on top of
+   * the base data grid graphics.
+   */
+  private _paintAddons(rx: number, ry: number, rw: number, rh: number): void {
+      
   }
 }
