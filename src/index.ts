@@ -31,7 +31,7 @@ import {
 import { DataGrid } from '@lumino/datagrid';
 import { DSVEditor, EditableCSVViewerFactory } from './widget';
 import { CSVSearchProvider } from './searchprovider';
-import { PaintedGrid } from './datagrid';
+import { PaintedGrid } from './grid';
 
 /**
  * The name of the factories that creates widgets.

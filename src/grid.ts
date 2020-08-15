@@ -1,6 +1,10 @@
 import { DataGrid } from 'tde-datagrid';
 
 export class PaintedGrid extends DataGrid {
+  constructor(options: PaintedGrid.IOptions) {
+    super(options);
+    this._extraStyle = options.extraStyle || PaintedGrid.defaultExtraStyle;
+  }
   /**
    * Get the extra styles of the PaintedGrid.
    */
@@ -152,13 +156,23 @@ export class PaintedGrid extends DataGrid {
     // };
   }
 
-  private _extraStyle: PaintedGrid.ExtraStyle | null;
+  private _extraStyle: PaintedGrid.ExtraStyle;
 }
 
 /**
  * Namespace for class statics.
  */
 export namespace PaintedGrid {
+  /**
+   * The options for creating a new PaintedGrid.
+   */
+  export interface IOptions extends DataGrid.IOptions {
+    extraStyle?: ExtraStyle;
+  }
+
+  /**
+   * The extra styling options for a painted grid.
+   */
   export type ExtraStyle = {
     /**
      * The color of the ghost row.
@@ -174,6 +188,11 @@ export namespace PaintedGrid {
      * in most cases an opaque color is chosen.
      */
     ghostColumnColor?: string;
+  };
+
+  export const defaultExtraStyle = {
+    ghostRowColor: 'rgba(243, 243, 243, 0.55)',
+    ghostColumnColor: 'rgba(243, 243, 243, 0.55)'
   };
 }
 

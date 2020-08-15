@@ -31,7 +31,7 @@ import GhostSelectionModel from './selectionmodel';
 import { Fields } from 'tde-datastore';
 import { ListField, MapField } from 'tde-datastore';
 import { unsaveDialog } from './dialog';
-import { PaintedGrid } from './datagrid';
+import { PaintedGrid } from './grid';
 
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
