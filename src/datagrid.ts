@@ -69,41 +69,59 @@ export default class PaintedGrid extends DataGrid {
     const x2 = Math.min(rx + rw - 1, contentX + contentW - 1);
     const y2 = Math.min(ry + rh - 1, contentY + contentH - 1);
 
-    // Convert the dirty content bounds into cell bounds.
-    const r1 = this.dataModel.rowCount('body');
-    const c1 = this.columnSections.indexOf(x1 - contentX + this.scrollX);
-    let r2 = r1;
-    let c2 = this.columnSections.indexOf(x2 - contentX + this.scrollX);
+    // TODO: this commented pattern appears in the related functions
+    // in DataGrid. We need to see how they are used and if we need them.
 
-    // Fetch the max row and column.
-    const maxRow = this.rowSections.count - 1;
-    const maxColumn = this.columnSections.count - 1;
+    // Fill the region with the specified color.
+    this.canvasGC.fillStyle = color;
+    this.canvasGC.fillRect(xMin, yMin, xMax - xMin + 1, yMax - yMin + 1);
+    // // Convert the dirty content bounds into cell bounds.
+    // const r1 = this.dataModel.rowCount('body');
+    // const c1 = this.columnSections.indexOf(x1 - contentX + this.scrollX);
+    // let r2 = r1;
+    // let c2 = this.columnSections.indexOf(x2 - contentX + this.scrollX);
 
-    // Handle a dirty content area larger than the cell count.
-    if (r2 < 0) {
-      r2 = maxRow;
-    }
-    if (c2 < 0) {
-      c2 = maxColumn;
-    }
+    // // Fetch the max row and column.
+    // const maxRow = this.rowSections.count - 1;
+    // const maxColumn = this.columnSections.count - 1;
 
-    // Convert the cell bounds back to visible coordinates.
-    const x = this.columnSections.offsetOf(c1) + contentX - this.scrollX;
-    const y = this.rowSections.offsetOf(r1);
+    // // Handle a dirty content area larger than the cell count.
+    // if (r2 < 0) {
+    //   r2 = maxRow;
+    // }
+    // if (c2 < 0) {
+    //   c2 = maxColumn;
+    // }
 
-    // Set up the paint region size variables.
-    let width = 0;
-    const height = 0;
+    // // Convert the cell bounds back to visible coordinates.
+    // const x = this.columnSections.offsetOf(c1) + contentX - this.scrollX;
+    // const y = this.rowSections.offsetOf(r1);
 
-    // Allocate the section sizes arrays.
-    const rowSizes = [this.rowSections.sizeOf(r1)];
-    const columnSizes = new Array<number>(c2 - c1 + 1).fill(0);
+    // // Set up the paint region size variables.
+    // let width = 0;
+    // const height = 0;
 
-    // Get the column sizes for the region.
-    for (let i = c1; i <= c2; ++i) {
-      const size = this.columnSections.sizeOf(i);
-      columnSizes[i - c1] = size;
-      width += size;
-    }
+    // // Allocate the section sizes arrays.
+    // const rowSizes = [this.rowSections.sizeOf(r1)];
+    // const columnSizes = new Array<number>(c2 - c1 + 1).fill(0);
+
+    // // Get the column sizes for the region.
+    // for (let i = c1; i <= c2; ++i) {
+    //   const size = this.columnSections.sizeOf(i);
+    //   columnSizes[i - c1] = size;
+    //   width += size;
+    // }
+
+    // // Here we assume that ghost row and column will not be stretched.
+    // // Need to make sure this is a correct assumption.
+    //     // Create the paint region object.
+    // let rgn: DataGrid.PaintRegion = {
+    //     region: 'body',
+    //     xMin: x1, yMin: y1,
+    //     xMax: x2, yMax: y2,
+    //     x, y, width, height,
+    //     row: r1, column: c1,
+    //     rowSizes, columnSizes
+    // };
   }
 }
