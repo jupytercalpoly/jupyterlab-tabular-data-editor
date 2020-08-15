@@ -31,7 +31,7 @@ import GhostSelectionModel from './selectionmodel';
 import { Fields } from 'tde-datastore';
 import { ListField, MapField } from 'tde-datastore';
 import { unsaveDialog } from './dialog';
-import PaintedGrid from './datagrid';
+import { PaintedGrid } from './datagrid';
 
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
@@ -197,6 +197,16 @@ export class DSVEditor extends Widget {
   }
   set style(value: DataGrid.Style) {
     this._grid.style = value;
+  }
+
+  /**
+   * The style used by the data grid.
+   */
+  get extraStyle(): PaintedGrid.ExtraStyle {
+    return this._grid.extraStyle;
+  }
+  set extraStyle(value: PaintedGrid.ExtraStyle) {
+    this._grid.extraStyle = value;
   }
 
   get coords(): Array<number | null> {
@@ -814,7 +824,7 @@ export class DSVEditor extends Widget {
   private _row: number;
   private _column: number;
   private _context: DocumentRegistry.Context;
-  private _grid: DataGrid;
+  private _grid: PaintedGrid;
   private _searchService: GridSearchService;
   private _monitor: ActivityMonitor<
     DocumentRegistry.IModel,

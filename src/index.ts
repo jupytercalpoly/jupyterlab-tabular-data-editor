@@ -31,16 +31,13 @@ import {
 import { DataGrid } from '@lumino/datagrid';
 import { DSVEditor, EditableCSVViewerFactory } from './widget';
 import { CSVSearchProvider } from './searchprovider';
+import { PaintedGrid } from './datagrid';
 
 /**
  * The name of the factories that creates widgets.
  */
 const FACTORY_CSV = 'Tabular Data Editor';
 // const FACTORY_TSV = 'TSVTable';
-const DARK_MODE_GHOST = 'jp-dark-mode-ghost';
-const LIGHT_MODE_GHOST = 'jp-light-mode-ghost';
-const LIGHT_MODE_CORNER = 'jp-light-mode-corner-ghost';
-const DARK_MODE_CORNER = 'jp-dark-mode-corner-ghost';
 /**
  * Initialization data for the jupyterlab-tabular-data-editor extension.
  */
@@ -110,9 +107,6 @@ function activateCsv(
     }
     // Set the theme for the new widget.
     widget.content.style = style;
-    widget.content.ghostRow.widget.addClass(LIGHT_MODE_GHOST);
-    widget.content.ghostColumn.widget.addClass(LIGHT_MODE_GHOST);
-    widget.content.ghostCorner.widget.addClass(LIGHT_MODE_CORNER);
 
     widget.content.rendererConfig = rendererConfig;
   });
@@ -124,21 +118,15 @@ function activateCsv(
         ? themeManager.isLight(themeManager.theme)
         : true;
     style = isLight ? Private.LIGHT_STYLE : Private.DARK_STYLE;
+    const extraStyle = isLight
+      ? Private.LIGHT_EXTRA_STYLE
+      : Private.DARK_EXTRA_STYLE;
     rendererConfig = isLight
       ? Private.LIGHT_TEXT_CONFIG
       : Private.DARK_TEXT_CONFIG;
     tracker.forEach(grid => {
       grid.content.style = style;
-      grid.content.rendererConfig = rendererConfig;
-      const ghostColumn = grid.content.ghostColumn.widget;
-      const ghostRow = grid.content.ghostRow.widget;
-      const ghostCorner = grid.content.ghostCorner.widget;
-      ghostColumn.addClass(isLight ? LIGHT_MODE_GHOST : DARK_MODE_GHOST);
-      ghostColumn.removeClass(isLight ? DARK_MODE_GHOST : LIGHT_MODE_GHOST);
-      ghostRow.addClass(isLight ? LIGHT_MODE_GHOST : DARK_MODE_GHOST);
-      ghostRow.removeClass(isLight ? DARK_MODE_GHOST : LIGHT_MODE_GHOST);
-      ghostCorner.addClass(isLight ? LIGHT_MODE_CORNER : DARK_MODE_CORNER);
-      ghostCorner.removeClass(isLight ? DARK_MODE_CORNER : LIGHT_MODE_CORNER);
+      grid.content.extraStyle = grid.content.rendererConfig = rendererConfig;
     });
   };
   if (themeManager) {
@@ -540,6 +528,16 @@ namespace Private {
     headerGridLineColor: 'rgba(235, 235, 235, 0.25)',
     headerSelectionFillColor: 'rgba(20, 20, 20, 0.25)'
     //rowBackgroundColor: i => (i % 2 === 0 ? '#212121' : '#111111')
+  };
+
+  export const LIGHT_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
+    ghostRowColor: 'rgba(243, 243, 243, 0.55)',
+    ghostColumnColor: 'rgba(243, 243, 243, 0.55)'
+  };
+
+  export const DARK_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
+    ghostRowColor: 'rgba(0, 0, 0, 0.55)',
+    ghostColumnColor: 'rgba(0, 0, 0, 0,55)'
   };
 
   /**

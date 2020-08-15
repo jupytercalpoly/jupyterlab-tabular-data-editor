@@ -1,6 +1,6 @@
 import { DataGrid } from 'tde-datagrid';
 
-export default class PaintedGrid extends DataGrid {
+export class PaintedGrid extends DataGrid {
   /**
    * Get the extra styles of the PaintedGrid.
    */
