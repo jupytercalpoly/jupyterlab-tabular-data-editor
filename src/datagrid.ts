@@ -29,7 +29,7 @@ export default class PaintedGrid extends DataGrid {
   }
 
   /**
-   * Draw the ghost column and row if they are in view.
+   * Draw the ghost row.
    */
   private _drawGhostRow(rx: number, ry: number, rw: number, rh: number): void {
     // Get the visible content dimensions.
@@ -85,6 +85,32 @@ export default class PaintedGrid extends DataGrid {
     }
     if (c2 < 0) {
       c2 = maxColumn;
+    }
+
+    // Convert the cell bounds back to visible coordinates.
+    const x = this.columnSections.offsetOf(c1) + contentX - this.scrollX;
+    const y = this.rowSections.offsetOf(r1);
+
+    // Set up the paint region size variables.
+    let width = 0;
+    let height = 0;
+
+    // Allocate the section sizes arrays.
+    const rowSizes = new Array<number>(r2 - r1 + 1).fill(0);
+    const columnSizes = new Array<number>(c2 - c1 + 1).fill(0);
+
+    // Get the row sizes for the region.
+    for (let j = r1; j <= r2; ++j) {
+      const size = this.rowSections.sizeOf(j);
+      rowSizes[j - r1] = size;
+      height += size;
+    }
+
+    // Get the column sizes for the region.
+    for (let i = c1; i <= c2; ++i) {
+      const size = this.columnSections.sizeOf(i);
+      columnSizes[i - c1] = size;
+      width += size;
     }
   }
 }
