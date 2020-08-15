@@ -93,18 +93,11 @@ export default class PaintedGrid extends DataGrid {
 
     // Set up the paint region size variables.
     let width = 0;
-    let height = 0;
+    const height = 0;
 
     // Allocate the section sizes arrays.
-    const rowSizes = new Array<number>(r2 - r1 + 1).fill(0);
+    const rowSizes = [this.rowSections.sizeOf(r1)];
     const columnSizes = new Array<number>(c2 - c1 + 1).fill(0);
-
-    // Get the row sizes for the region.
-    for (let j = r1; j <= r2; ++j) {
-      const size = this.rowSections.sizeOf(j);
-      rowSizes[j - r1] = size;
-      height += size;
-    }
 
     // Get the column sizes for the region.
     for (let i = c1; i <= c2; ++i) {
