@@ -72,7 +72,8 @@ export class PaintedGrid extends DataGrid {
 
     // Get the visible content origin.
     const contentX = this.headerWidth;
-    const contentY = this.headerHeight + this.bodyHeight - contentH;
+    const contentY =
+      this.headerHeight + this.bodyHeight - contentH - this.scrollY;
 
     // Bail if the dirty rect does not intersect the content area.
     if (rx + rw <= contentX) {
