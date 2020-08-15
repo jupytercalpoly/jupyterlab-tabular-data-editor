@@ -2,6 +2,31 @@ import { DataGrid } from 'tde-datagrid';
 
 export default class PaintedGrid extends DataGrid {
   /**
+   * Get the extra styles of the PaintedGrid.
+   */
+  get extraStyle(): PaintedGrid.ExtraStyle {
+    return this._extraStyle;
+  }
+  /**
+   * Set the styles of the painted grid.
+   */
+  set extraStyle(value: PaintedGrid.ExtraStyle) {
+    // Bail if the style does not change.
+    if (this._extraStyle === value) {
+      return;
+    }
+
+    // Update the internal style.
+    this._extraStyle = { ...value };
+
+    // Schedule a repaint of the content.
+    this.repaintContent();
+
+    // Schedule a repaint of the overlay.
+    this.repaintOverlay();
+  }
+
+  /**
    * @override paints on the ghost row and column as well after painting the other regions.
    * Paint the grid content for the given dirty rect.
    *
