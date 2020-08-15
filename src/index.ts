@@ -126,7 +126,7 @@ function activateCsv(
       : Private.DARK_TEXT_CONFIG;
     tracker.forEach(grid => {
       grid.content.style = style;
-      grid.content.extraStyle = grid.content.rendererConfig = rendererConfig;
+      grid.content.extraStyle = extraStyle;
     });
   };
   if (themeManager) {
