@@ -68,5 +68,23 @@ export default class PaintedGrid extends DataGrid {
     const y1 = ry;
     const x2 = Math.min(rx + rw - 1, contentX + contentW - 1);
     const y2 = Math.min(ry + rh - 1, contentY + contentH - 1);
+
+    // Convert the dirty content bounds into cell bounds.
+    const r1 = this.dataModel.rowCount('body');
+    const c1 = this.columnSections.indexOf(x1 - contentX + this.scrollX);
+    let r2 = r1;
+    let c2 = this.columnSections.indexOf(x2 - contentX + this.scrollX);
+
+    // Fetch the max row and column.
+    const maxRow = this.rowSections.count - 1;
+    const maxColumn = this.columnSections.count - 1;
+
+    // Handle a dirty content area larger than the cell count.
+    if (r2 < 0) {
+      r2 = maxRow;
+    }
+    if (c2 < 0) {
+      c2 = maxColumn;
+    }
   }
 }
