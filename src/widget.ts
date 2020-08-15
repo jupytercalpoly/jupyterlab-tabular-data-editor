@@ -17,7 +17,7 @@ import {
   DataModel
 } from 'tde-datagrid';
 import { Message } from '@lumino/messaging';
-import { PanelLayout, Widget, ScrollBar, LayoutItem } from '@lumino/widgets';
+import { PanelLayout, Widget, LayoutItem } from '@lumino/widgets';
 import { EditorModel } from './newmodel';
 import { RichMouseHandler } from './handler';
 import { numberToCharacter } from './_helper';
@@ -69,12 +69,6 @@ export class DSVEditor extends Widget {
       },
       headerVisibility: 'all'
     });
-
-    // Connect to the data grid scroll bar signals.
-    this._grid.vScrollBar.thumbMoved.connect(this._onScroll, this);
-    this._grid.vScrollBar.stepRequested.connect(this._onScroll, this);
-    this._grid.hScrollBar.thumbMoved.connect(this._onScroll, this);
-    this._grid.hScrollBar.stepRequested.connect(this._onScroll, this);
 
     this._grid.addClass(CSV_GRID_CLASS);
     this._grid.headerVisibility = 'all';
@@ -936,11 +930,6 @@ export class DSVEditor extends Widget {
     message: 'ghost-row' | 'ghost-column' | null
   ): void {
     this._changeGhostOpacity(message);
-  }
-
-  private _onScroll(emitter: ScrollBar, message: number | string) {
-    // Update the positions of the ghosts and the corner hider
-    this._updateGhostElements();
   }
 
   private _onSelection(emitter: GhostSelectionModel): void {
