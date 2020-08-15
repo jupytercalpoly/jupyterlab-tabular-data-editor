@@ -59,9 +59,10 @@ export default class PaintedGrid extends DataGrid {
       return;
     }
 
-    // Fetch the geometry.
-    const bw = this.bodyWidth;
-    const pw = this.pageWidth;
+    // TODO: figure out where this might be necessary.
+    // // Fetch the geometry.
+    // const bw = this.bodyWidth;
+    // const pw = this.pageWidth;
 
     // Get the upper and lower bounds of the dirty content area.
     const x1 = Math.max(rx, contentX);
@@ -73,8 +74,9 @@ export default class PaintedGrid extends DataGrid {
     // in DataGrid. We need to see how they are used and if we need them.
 
     // Fill the region with the specified color.
-    this.canvasGC.fillStyle = color;
-    this.canvasGC.fillRect(xMin, yMin, xMax - xMin + 1, yMax - yMin + 1);
+    this.canvasGC.fillStyle = this._extraStyle.ghostRowColor;
+    this.canvasGC.fillRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
+
     // // Convert the dirty content bounds into cell bounds.
     // const r1 = this.dataModel.rowCount('body');
     // const c1 = this.columnSections.indexOf(x1 - contentX + this.scrollX);
@@ -124,4 +126,33 @@ export default class PaintedGrid extends DataGrid {
     //     rowSizes, columnSizes
     // };
   }
+
+  private _extraStyle: PaintedGrid.ExtraStyle | null;
 }
+
+/**
+ * Namespace for class statics.
+ */
+export namespace PaintedGrid {
+  export type ExtraStyle = {
+    /**
+     * The color of the ghost row.
+     *
+     * NOTE: This is painted on top of the last row and so
+     * in most cases an opaque color is chosen.
+     */
+    ghostRowColor?: string;
+    /**
+     * The color of the ghost column.
+     *
+     * NOTE: This is painted on top of the last column and so
+     * in most cases an opaque color is chosen.
+     */
+    ghostColumnColor?: string;
+  };
+}
+
+/**
+ * An extended set of style options to complement the base
+ * class style options.
+ */
