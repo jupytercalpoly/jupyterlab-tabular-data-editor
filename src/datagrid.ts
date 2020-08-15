@@ -24,6 +24,39 @@ export default class PaintedGrid extends DataGrid {
    * the base data grid graphics.
    */
   private _paintAddons(rx: number, ry: number, rw: number, rh: number): void {
-      
+    // Draw the ghost column and row if they are in view.
+    this._drawGhostRow(rx, ry, rw, rh);
+  }
+
+  /**
+   * Draw the ghost column and row if they are in view.
+   */
+  private _drawGhostRow(rx: number, ry: number, rw: number, rh: number): void {
+    // Get the visible content dimensions.
+    const contentW = this.bodyWidth - this.scrollX;
+    const contentH = this.defaultSizes.rowHeight;
+
+    // Bail if there is no content to draw.
+    if (contentW <= 0 || contentH <= 0) {
+      return;
+    }
+
+    // Get the visible content origin.
+    const contentX = 0;
+    const contentY = this.headerHeight + this.bodyHeight - contentH;
+
+    // Bail if the dirty rect does not intersect the content area.
+    if (rx + rw <= contentX) {
+      return;
+    }
+    if (ry + rh <= contentY) {
+      return;
+    }
+    if (rx >= contentX + contentW) {
+      return;
+    }
+    if (ry >= contentY + contentH) {
+      return;
+    }
   }
 }
