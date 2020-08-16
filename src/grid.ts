@@ -1,4 +1,5 @@
 import { DataGrid } from 'tde-datagrid';
+import { LabIcon, addIcon } from '@jupyterlab/ui-components';
 
 export class PaintedGrid extends DataGrid {
   constructor(options: PaintedGrid.IOptions) {
@@ -261,7 +262,7 @@ export class PaintedGrid extends DataGrid {
     this.canvasGC.fillStyle = this._extraStyle.ghostColumnColor;
     this.canvasGC.fillRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
 
-    this._drawRowIcon();
+    this._drawGhostRowIcon();
   }
 
   private _drawGhostColumnHeader(
@@ -310,7 +311,7 @@ export class PaintedGrid extends DataGrid {
     this._drawColumnIcon();
   }
 
-  private _drawRowIcon(): void {
+  private _drawGhostRowIcon(): void {
     // Get the center of the Icon.
     const xBar = this.headerWidth / 2;
     const yBar =
@@ -458,25 +459,43 @@ export namespace PaintedGrid {
      */
     ghostColumnColor?: string;
     /**
-     * The size of the ghost column add icon
+     * An array containing the information for icons.
      */
-    columnIconSize?: number;
+    icons?: { [key: string]: IIconArgs };
+  };
+
+  export type IIconArgs = {
     /**
-     * The size of the the ghost row add icon.
+     * The icon to paint on the grid.
      */
-    rowIconSize?: number;
+    icon: LabIcon;
     /**
-     * The color of the add icon.
+     * The type of column that should recieve the icon.
      */
-    iconColor?: string;
+    left?: number;
+    /**
+     * How far down to place the icon from the top of the cell border.
+     * The default is to center the icon vertically.
+     */
+    top?: number;
+    /**
+     * The desired width of the icon relative to the width of the cell.
+     * The default is to make the icon 1/5 of the column width.
+     */
+    width?: number;
   };
 
   export const defaultExtraStyle = {
     ghostRowColor: 'rgba(243, 243, 243, 0.80)',
     ghostColumnColor: 'rgba(243, 243, 243, 0.80)',
-    rowIconSize: 10,
-    columnIconSize: 15,
-    iconColor: '#616161'
+    icons: {
+      'ghost-column': {
+        icon: addIcon
+      },
+      'ghost-row': {
+        icon: addIcon
+      }
+    }
   };
 }
 
