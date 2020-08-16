@@ -312,72 +312,82 @@ export class PaintedGrid extends DataGrid {
   }
 
   private _drawGhostRowIcon(): void {
-    // Get the center of the Icon.
-    const xBar = this.headerWidth / 2;
-    const yBar =
+    // Get the dimensions for the cell.
+    const cellW = this.headerWidth;
+    const cellH = this.defaultSizes.rowHeight;
+
+    // Get the icon arguments.
+    const iconArgs = this._extraStyle.icons['ghost-row'];
+
+    // Bail early if there are no icon arguments.
+    if (!iconArgs) {
+      return;
+    }
+
+    // Unpack the icon arguments.
+    const { icon, color, width } = iconArgs;
+
+    // Parse the icon path from the icon string.
+    const { defaultWidth, viewBoxSize, path } = Private.parseSVG(icon.svgstr);
+
+    // Create a path 2d object from the path string.
+    const canvasPath = new Path2D(path);
+
+    // Solve for the scaling factor using the provided width or the default.
+    const scale = (width || cellW / 5) / defaultWidth;
+
+    // Orient to the desired origin for the icon.
+    this.canvasGC.translate(
+      cellW / 2 - this.scrollX - (viewBoxSize * scale) / 2,
       this.headerHeight +
-      this.bodyHeight -
-      this.defaultSizes.rowHeight / 2 -
-      this.scrollY;
+        this.bodyHeight -
+        this.scrollY -
+        cellH / 2 -
+        (viewBoxSize * scale) / 2
+    );
 
-    // Get the size of the Icon.
-    const size = this._extraStyle.rowIconSize;
+    // Scale the canvas.
+    this.canvasGC.scale(scale, scale);
 
-    // Draw the outline of the region.
-    const region = new Path2D();
+    // Set the canvas fill style.
+    this.canvasGC.fillStyle = color;
 
-    region.moveTo(xBar, yBar + size / 2);
-    region.lineTo(xBar + size / 14, yBar + size / 2);
-    region.lineTo(xBar + size / 14, yBar + size / 14);
-    region.lineTo(xBar + size / 2, yBar + size / 14);
-    region.lineTo(xBar + size / 2, yBar - size / 14);
-    region.lineTo(xBar + size / 14, yBar - size / 14);
-    region.lineTo(xBar + size / 14, yBar - size / 2);
-    region.lineTo(xBar - size / 14, yBar - size / 2);
-    region.lineTo(xBar - size / 14, yBar - size / 14);
-    region.lineTo(xBar - size / 2, yBar - size / 14);
-    region.lineTo(xBar - size / 2, yBar + size / 14);
-    region.lineTo(xBar - size / 14, yBar + size / 14);
-    region.lineTo(xBar - size / 14, yBar + size / 2);
-    region.closePath();
+    // Draw the icon.
+    this.canvasGC.fill(canvasPath, 'nonzero');
 
-    // Fill the region with the specified color.
-    this.canvasGC.fillStyle = this.extraStyle.iconColor;
-    this.canvasGC.fill(region, 'nonzero');
+    // Reset the canvas transforms to the identity.
+    this.canvasGC.setTransform(1, 0, 0, 1, 0, 0);
   }
 
   private _drawColumnIcon(): void {
     // get center of region.
-    const xBar =
-      this.headerWidth +
-      this.bodyWidth -
-      this.defaultSizes.columnWidth / 2 -
-      this.scrollX;
-    const yBar = this.headerHeight / 2;
-
-    // Get the size of the Icon.
-    const size = this._extraStyle.columnIconSize;
-
-    // Draw the outline of the region.
-    const region = new Path2D();
-    region.moveTo(xBar, yBar + size / 2);
-    region.lineTo(xBar + size / 14, yBar + size / 2);
-    region.lineTo(xBar + size / 14, yBar + size / 14);
-    region.lineTo(xBar + size / 2, yBar + size / 14);
-    region.lineTo(xBar + size / 2, yBar - size / 14);
-    region.lineTo(xBar + size / 14, yBar - size / 14);
-    region.lineTo(xBar + size / 14, yBar - size / 2);
-    region.lineTo(xBar - size / 14, yBar - size / 2);
-    region.lineTo(xBar - size / 14, yBar - size / 14);
-    region.lineTo(xBar - size / 2, yBar - size / 14);
-    region.lineTo(xBar - size / 2, yBar + size / 14);
-    region.lineTo(xBar - size / 14, yBar + size / 14);
-    region.lineTo(xBar - size / 14, yBar + size / 2);
-    region.closePath();
-
-    // Fill the region with the specified color.
-    this.canvasGC.fillStyle = this.extraStyle.iconColor;
-    this.canvasGC.fill(region, 'nonzero');
+    // const xBar =
+    //   this.headerWidth +
+    //   this.bodyWidth -
+    //   this.defaultSizes.columnWidth / 2 -
+    //   this.scrollX;
+    // const yBar = this.headerHeight / 2;
+    // // Get the size of the Icon.
+    // const size = this._extraStyle.columnIconSize;
+    // // Draw the outline of the region.
+    // const region = new Path2D();
+    // region.moveTo(xBar, yBar + size / 2);
+    // region.lineTo(xBar + size / 14, yBar + size / 2);
+    // region.lineTo(xBar + size / 14, yBar + size / 14);
+    // region.lineTo(xBar + size / 2, yBar + size / 14);
+    // region.lineTo(xBar + size / 2, yBar - size / 14);
+    // region.lineTo(xBar + size / 14, yBar - size / 14);
+    // region.lineTo(xBar + size / 14, yBar - size / 2);
+    // region.lineTo(xBar - size / 14, yBar - size / 2);
+    // region.lineTo(xBar - size / 14, yBar - size / 14);
+    // region.lineTo(xBar - size / 2, yBar - size / 14);
+    // region.lineTo(xBar - size / 2, yBar + size / 14);
+    // region.lineTo(xBar - size / 14, yBar + size / 14);
+    // region.lineTo(xBar - size / 14, yBar + size / 2);
+    // region.closePath();
+    // // Fill the region with the specified color.
+    // this.canvasGC.fillStyle = this.extraStyle.iconColor;
+    // this.canvasGC.fill(region, 'nonzero');
   }
 
   private _drawOverCorner(
@@ -470,6 +480,10 @@ export namespace PaintedGrid {
      */
     icon: LabIcon;
     /**
+     * The fill color for the icon.
+     */
+    color: string;
+    /**
      * The type of column that should recieve the icon.
      */
     left?: number;
@@ -490,10 +504,12 @@ export namespace PaintedGrid {
     ghostColumnColor: 'rgba(243, 243, 243, 0.80)',
     icons: {
       'ghost-column': {
-        icon: addIcon
+        icon: addIcon,
+        color: '#616161'
       },
       'ghost-row': {
-        icon: addIcon
+        icon: addIcon,
+        color: '#616161'
       }
     }
   };
@@ -503,49 +519,37 @@ export namespace PaintedGrid {
  * Namespace for module implementation details.
  */
 namespace Private {
-  /**
-   * An object used by the canvas to draw an svg path.
-   */
-  export interface ISVGSegment {
-    type: string;
-    points: Array<number>;
-  }
   export interface ISVGInfo {
-    width: number;
-    path: Array<ISVGSegment>;
+    defaultWidth: number;
+    viewBoxSize: number;
+    path: string;
   }
   /**
    * Parse an svg string into a standard form.
    */
   export function parseSVG(svgstr: string): ISVGInfo {
     // Set up a regular expression to get the width.
-    let regex = /width="(\d+)"/;
+    let regex = /width="(.+?)"/;
 
     // Find the width an parse it to an integer.
-    const width = parseInt(svgstr.match(regex)[1]);
+    const defaultWidth = parseInt(svgstr.match(regex)[1]);
+
+    // Redefine the regular expression to get the viewbox size.
+    regex = /viewBox="(.+?)"/;
+
+    const viewBox = svgstr
+      .match(regex)[1]
+      .split(' ')
+      .map(digit => parseInt(digit));
+
+    const viewBoxSize = viewBox[2];
 
     // Redefine the regular expression to get the path string.
     regex = /path d="(.+?)"/;
 
     // Fetch the path string.
-    const pathString = svgstr.match(regex)[1];
+    const path = svgstr.match(regex)[1];
 
-    // Redefine the regular expression to parse the path string
-    // Into separate segment strings.
-    regex = /\w(?:\d|\W)*/g;
-
-    // Get the segment strings.
-    const segmentStrings = pathString.match(regex);
-
-    // Parse each segment string into an SVGSegment object.
-    const path = segmentStrings.map(str => {
-      const type = str[0];
-      const points = str
-        .slice(1)
-        .split(' ')
-        .map(flt => parseFloat(flt));
-      return { type, points };
-    });
-    return { width, path };
+    return { defaultWidth, viewBoxSize, path };
   }
 }
