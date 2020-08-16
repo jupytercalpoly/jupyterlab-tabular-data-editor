@@ -481,6 +481,24 @@ export namespace PaintedGrid {
 }
 
 /**
- * An extended set of style options to complement the base
- * class style options.
+ * Namespace for module implementation details.
  */
+namespace Private {
+/**
+ * An object used by the canvas to draw an svg path.
+ */
+export interface ISVGPath {
+  type: string,
+  points: Array<number>
+}
+export interface ISVGInfo extends ISVGPath {
+   width: number
+}
+/**
+ * Parse an svg string into a standard form.
+ */
+export function parseSVG(svgstr: string): ISVGInfo {
+  let info: ISVGInfo;
+  
+  return info;
+}
