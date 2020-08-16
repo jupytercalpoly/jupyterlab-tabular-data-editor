@@ -59,9 +59,14 @@ export class PaintedGrid extends DataGrid {
     // Draw the ghost column.
     this._drawGhostColumn(rx, ry, rw, rh);
 
+    // Draw the header region for the ghost row.
     this._drawGhostRowHeader(rx, ry, rw, rh);
 
+    // Draw the header region for the ghost column.
     this._drawGhostColumnHeader(rx, ry, rw, rh);
+
+    // Draw over the corner to hide it from view.
+    this._drawOverCorner(rx, ry, rw, rh);
   }
 
   /**
@@ -183,7 +188,8 @@ export class PaintedGrid extends DataGrid {
     }
 
     // Get the visible content origin.
-    const contentX = this.headerWidth + this.bodyWidth - contentW - scrollX;
+    const contentX =
+      this.headerWidth + this.bodyWidth - contentW - this.scrollX;
     const contentY = this.headerHeight;
 
     // Bail if the dirty rect does not intersect the content area.
@@ -228,7 +234,8 @@ export class PaintedGrid extends DataGrid {
 
     // Get the visible content origin.
     const contentX = 0;
-    const contentY = this.headerHeight + this.bodyHeight - contentH - scrollY;
+    const contentY =
+      this.headerHeight + this.bodyHeight - contentH - this.scrollY;
 
     // Bail if the dirty rect does not intersect the content area.
     if (rx + rw <= contentX) {
@@ -245,7 +252,7 @@ export class PaintedGrid extends DataGrid {
     }
 
     // Get the upper and lower bounds of the dirty content area.
-    const x1 = Math.max(rx, contentX);
+    const x1 = rx;
     const y1 = Math.max(ry, contentY);
     const x2 = Math.min(rx + rw - 1, contentX + contentW - 1);
     const y2 = Math.min(ry + rh - 1, contentY + contentH - 1);
@@ -254,7 +261,7 @@ export class PaintedGrid extends DataGrid {
     this.canvasGC.fillStyle = this._extraStyle.ghostColumnColor;
     this.canvasGC.fillRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
 
-    this._drawRowIcon(x1, y1, x2, y2);
+    this._drawRowIcon();
   }
 
   private _drawGhostColumnHeader(
@@ -273,7 +280,8 @@ export class PaintedGrid extends DataGrid {
     }
 
     // Get the visible content origin.
-    const contentX = this.headerWidth + this.bodyWidth - contentW - scrollX;
+    const contentX =
+      this.headerWidth + this.bodyWidth - contentW - this.scrollX;
     const contentY = 0;
 
     // Bail if the dirty rect does not intersect the content area.
@@ -299,16 +307,55 @@ export class PaintedGrid extends DataGrid {
     // Fill the region with the specified color.
     this.canvasGC.fillStyle = this._extraStyle.ghostColumnColor;
     this.canvasGC.fillRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
-    this._drawColumnIcon(x1, y1, x2, y2);
+    this._drawColumnIcon();
   }
 
-  private _drawRowIcon(x1: number, y1: number, x2: number, y2: number): void {
-    // get center of region.
-    const xBar = (x2 + x1) / 2;
-    const yBar = (y2 + y1) / 2;
+  private _drawRowIcon(): void {
+    // Get the center of the Icon.
+    const xBar = this.headerWidth / 2;
+    const yBar =
+      this.headerHeight +
+      this.bodyHeight -
+      this.defaultSizes.rowHeight / 2 -
+      this.scrollY;
 
     // Get the size of the Icon.
     const size = this._extraStyle.rowIconSize;
+
+    // Draw the outline of the region.
+    const region = new Path2D();
+
+    region.moveTo(xBar, yBar + size / 2);
+    region.lineTo(xBar + size / 14, yBar + size / 2);
+    region.lineTo(xBar + size / 14, yBar + size / 14);
+    region.lineTo(xBar + size / 2, yBar + size / 14);
+    region.lineTo(xBar + size / 2, yBar - size / 14);
+    region.lineTo(xBar + size / 14, yBar - size / 14);
+    region.lineTo(xBar + size / 14, yBar - size / 2);
+    region.lineTo(xBar - size / 14, yBar - size / 2);
+    region.lineTo(xBar - size / 14, yBar - size / 14);
+    region.lineTo(xBar - size / 2, yBar - size / 14);
+    region.lineTo(xBar - size / 2, yBar + size / 14);
+    region.lineTo(xBar - size / 14, yBar + size / 14);
+    region.lineTo(xBar - size / 14, yBar + size / 2);
+    region.closePath();
+
+    // Fill the region with the specified color.
+    this.canvasGC.fillStyle = this.extraStyle.iconColor;
+    this.canvasGC.fill(region, 'nonzero');
+  }
+
+  private _drawColumnIcon(): void {
+    // get center of region.
+    const xBar =
+      this.headerWidth +
+      this.bodyWidth -
+      this.defaultSizes.columnWidth / 2 -
+      this.scrollX;
+    const yBar = this.headerHeight / 2;
+
+    // Get the size of the Icon.
+    const size = this._extraStyle.columnIconSize;
 
     // Draw the outline of the region.
     const region = new Path2D();
@@ -332,39 +379,50 @@ export class PaintedGrid extends DataGrid {
     this.canvasGC.fill(region, 'nonzero');
   }
 
-  private _drawColumnIcon(
-    x1: number,
-    y1: number,
-    x2: number,
-    y2: number
+  private _drawOverCorner(
+    rx: number,
+    ry: number,
+    rw: number,
+    rh: number
   ): void {
-    // get center of region.
-    const xBar = (x2 + x1) / 2;
-    const yBar = (y2 + y1) / 2;
+    // Get the visible content dimensions.
+    const contentW = this.defaultSizes.columnWidth;
+    const contentH = this.defaultSizes.rowHeight;
 
-    // Get the size of the Icon.
-    const size = this._extraStyle.rowIconSize;
+    // Bail if there is no content to draw.
+    if (contentW <= 0 || contentH <= 0) {
+      return;
+    }
 
-    // Draw the outline of the region.
-    const region = new Path2D();
-    region.moveTo(xBar, yBar + size / 2);
-    region.lineTo(xBar + size / 14, yBar + size / 2);
-    region.lineTo(xBar + size / 14, yBar + size / 14);
-    region.lineTo(xBar + size / 2, yBar + size / 14);
-    region.lineTo(xBar + size / 2, yBar - size / 14);
-    region.lineTo(xBar + size / 14, yBar - size / 14);
-    region.lineTo(xBar + size / 14, yBar - size / 2);
-    region.lineTo(xBar - size / 14, yBar - size / 2);
-    region.lineTo(xBar - size / 14, yBar - size / 14);
-    region.lineTo(xBar - size / 2, yBar - size / 14);
-    region.lineTo(xBar - size / 2, yBar + size / 14);
-    region.lineTo(xBar - size / 14, yBar + size / 14);
-    region.lineTo(xBar - size / 14, yBar + size / 2);
-    region.closePath();
+    // Get the visible content origin.
+    const contentX =
+      this.headerWidth + this.bodyWidth - contentW - this.scrollX;
+    const contentY =
+      this.headerHeight + this.bodyHeight - contentH - this.scrollY;
+
+    // Bail if the dirty rect does not intersect the content area.
+    if (rx + rw <= contentX) {
+      return;
+    }
+    if (ry + rh <= contentY) {
+      return;
+    }
+    if (rx >= contentX + contentW) {
+      return;
+    }
+    if (ry >= contentY + contentH) {
+      return;
+    }
+
+    // Get the upper and lower bounds of the dirty content area.
+    const x1 = Math.max(rx, contentX);
+    const y1 = Math.max(ry, contentY);
+    const x2 = Math.min(rx + rw - 1, contentX + contentW - 1);
+    const y2 = Math.min(ry + rh - 1, contentY + contentH - 1);
 
     // Fill the region with the specified color.
-    this.canvasGC.fillStyle = this.extraStyle.iconColor;
-    this.canvasGC.fill(region, 'nonzero');
+    this.canvasGC.fillStyle = this.style.voidColor;
+    this.canvasGC.fillRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
   }
 
   private _extraStyle: PaintedGrid.ExtraStyle;
@@ -414,8 +472,8 @@ export namespace PaintedGrid {
   };
 
   export const defaultExtraStyle = {
-    ghostRowColor: 'rgba(243, 243, 243, 0.65)',
-    ghostColumnColor: 'rgba(243, 243, 243, 0.65)',
+    ghostRowColor: 'rgba(243, 243, 243, 0.80)',
+    ghostColumnColor: 'rgba(243, 243, 243, 0.80)',
     rowIconSize: 10,
     columnIconSize: 15,
     iconColor: '#616161'
