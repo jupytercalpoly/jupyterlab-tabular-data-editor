@@ -57,11 +57,11 @@ export class PaintedGrid extends DataGrid {
     // Draw the ghost row.
     this._drawGhostRow(rx, ry, rw, rh);
 
-    // Draw the ghost column.
-    this._drawGhostColumn(rx, ry, rw, rh);
-
     // Draw the header region for the ghost row.
     this._drawGhostRowHeader(rx, ry, rw, rh);
+
+    // Draw the ghost column.
+    this._drawGhostColumn(rx, ry, rw, rh);
 
     // Draw the header region for the ghost column.
     this._drawGhostColumnHeader(rx, ry, rw, rh);
@@ -323,6 +323,8 @@ export class PaintedGrid extends DataGrid {
     if (!iconArgs) {
       return;
     }
+    // Get the current transform state.
+    const transform = this.canvasGC.getTransform();
 
     // Unpack the icon arguments.
     const { icon, color, width } = iconArgs;
@@ -338,7 +340,7 @@ export class PaintedGrid extends DataGrid {
 
     // Orient to the desired origin for the icon.
     this.canvasGC.translate(
-      cellW / 2 - this.scrollX - (viewBoxSize * scale) / 2,
+      cellW / 2 - (viewBoxSize * scale) / 2,
       this.headerHeight +
         this.bodyHeight -
         this.scrollY -
@@ -355,39 +357,58 @@ export class PaintedGrid extends DataGrid {
     // Draw the icon.
     this.canvasGC.fill(canvasPath, 'nonzero');
 
-    // Reset the canvas transforms to the identity.
-    this.canvasGC.setTransform(1, 0, 0, 1, 0, 0);
+    this.canvasGC.setTransform(transform);
   }
 
   private _drawColumnIcon(): void {
-    // get center of region.
-    // const xBar =
-    //   this.headerWidth +
-    //   this.bodyWidth -
-    //   this.defaultSizes.columnWidth / 2 -
-    //   this.scrollX;
-    // const yBar = this.headerHeight / 2;
-    // // Get the size of the Icon.
-    // const size = this._extraStyle.columnIconSize;
-    // // Draw the outline of the region.
-    // const region = new Path2D();
-    // region.moveTo(xBar, yBar + size / 2);
-    // region.lineTo(xBar + size / 14, yBar + size / 2);
-    // region.lineTo(xBar + size / 14, yBar + size / 14);
-    // region.lineTo(xBar + size / 2, yBar + size / 14);
-    // region.lineTo(xBar + size / 2, yBar - size / 14);
-    // region.lineTo(xBar + size / 14, yBar - size / 14);
-    // region.lineTo(xBar + size / 14, yBar - size / 2);
-    // region.lineTo(xBar - size / 14, yBar - size / 2);
-    // region.lineTo(xBar - size / 14, yBar - size / 14);
-    // region.lineTo(xBar - size / 2, yBar - size / 14);
-    // region.lineTo(xBar - size / 2, yBar + size / 14);
-    // region.lineTo(xBar - size / 14, yBar + size / 14);
-    // region.lineTo(xBar - size / 14, yBar + size / 2);
-    // region.closePath();
-    // // Fill the region with the specified color.
-    // this.canvasGC.fillStyle = this.extraStyle.iconColor;
-    // this.canvasGC.fill(region, 'nonzero');
+    // Get the dimensions for the cell.
+    const cellW = this.defaultSizes.columnWidth;
+    const cellH = this.headerHeight;
+
+    // Get the icon arguments.
+    const iconArgs = this._extraStyle.icons['ghost-column'];
+
+    // Bail early if there are no icon arguments.
+    if (!iconArgs) {
+      return;
+    }
+
+    // Get the current transform state.
+    const transform = this.canvasGC.getTransform();
+
+    // Unpack the icon arguments.
+    const { icon, color, width } = iconArgs;
+
+    // Parse the icon path from the icon string.
+    const { defaultWidth, viewBoxSize, path } = Private.parseSVG(icon.svgstr);
+
+    // Create a path 2d object from the path string.
+    const canvasPath = new Path2D(path);
+
+    // Solve for the scaling factor using the provided width or the default.
+    const scale = (width || cellW / 5) / defaultWidth;
+
+    // Orient to the desired origin for the icon.
+    this.canvasGC.translate(
+      this.headerWidth +
+        this.bodyWidth -
+        this.scrollX -
+        cellW / 2 -
+        (viewBoxSize * scale) / 2,
+      cellH / 2 - (viewBoxSize * scale) / 2
+    );
+
+    // Scale the canvas.
+    this.canvasGC.scale(scale, scale);
+
+    // Set the canvas fill style.
+    this.canvasGC.fillStyle = color;
+
+    // Draw the icon.
+    this.canvasGC.fill(canvasPath, 'nonzero');
+
+    // Reset the transform to the initial state
+    this.canvasGC.setTransform(transform);
   }
 
   private _drawOverCorner(
