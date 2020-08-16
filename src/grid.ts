@@ -489,12 +489,11 @@ namespace Private {
    */
   export interface ISVGSegment {
     type: string;
-    points: Array<number>
-
+    points: Array<number>;
   }
   export interface ISVGInfo {
-    width: number,
-    path: Array<ISVGSegment>
+    width: number;
+    path: Array<ISVGSegment>;
   }
   /**
    * Parse an svg string into a standard form.
@@ -518,13 +517,16 @@ namespace Private {
 
     // Get the segment strings.
     const segmentStrings = pathString.match(regex);
-    
+
     // Parse each segment string into an SVGSegment object.
-    const svgPath = segmentStrings.map(str => {
-        const type = str[0];
-        const points = str.slice(1).split(' ').map(flt => parseFloat(flt));
-        return { type, points };
-    })
-    return { width, svgPath }
+    const path = segmentStrings.map(str => {
+      const type = str[0];
+      const points = str
+        .slice(1)
+        .split(' ')
+        .map(flt => parseFloat(flt));
+      return { type, points };
+    });
+    return { width, path };
   }
 }
