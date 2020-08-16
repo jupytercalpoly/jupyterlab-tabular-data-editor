@@ -484,21 +484,47 @@ export namespace PaintedGrid {
  * Namespace for module implementation details.
  */
 namespace Private {
-/**
- * An object used by the canvas to draw an svg path.
- */
-export interface ISVGPath {
-  type: string,
-  points: Array<number>
-}
-export interface ISVGInfo extends ISVGPath {
-   width: number
-}
-/**
- * Parse an svg string into a standard form.
- */
-export function parseSVG(svgstr: string): ISVGInfo {
-  let info: ISVGInfo;
-  
-  return info;
+  /**
+   * An object used by the canvas to draw an svg path.
+   */
+  export interface ISVGSegment {
+    type: string;
+    points: Array<number>
+
+  }
+  export interface ISVGInfo {
+    width: number,
+    path: Array<ISVGSegment>
+  }
+  /**
+   * Parse an svg string into a standard form.
+   */
+  export function parseSVG(svgstr: string): ISVGInfo {
+    // Set up a regular expression to get the width.
+    let regex = /width="(\d+)"/;
+
+    // Find the width an parse it to an integer.
+    const width = parseInt(svgstr.match(regex)[1]);
+
+    // Redefine the regular expression to get the path string.
+    regex = /path d="(.+?)"/;
+
+    // Fetch the path string.
+    const pathString = svgstr.match(regex)[1];
+
+    // Redefine the regular expression to parse the path string
+    // Into separate segment strings.
+    regex = /\w(?:\d|\W)*/g;
+
+    // Get the segment strings.
+    const segmentStrings = pathString.match(regex);
+    
+    // Parse each segment string into an SVGSegment object.
+    const svgPath = segmentStrings.map(str => {
+        const type = str[0];
+        const points = str.slice(1).split(' ').map(flt => parseFloat(flt));
+        return { type, points };
+    })
+    return { width, svgPath }
+  }
 }
