@@ -537,7 +537,7 @@ namespace Private {
 
   export const DARK_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
     ghostRowColor: 'rgba(0, 0, 0, 0.65)',
-    ghostColumnColor: 'rgba(0, 0, 0, 0.65)'
+    ghostColumnColor: 'rgba(0, 0, 0, 0,55)'
   };
 
   /**

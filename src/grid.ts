@@ -1,5 +1,4 @@
 import { DataGrid } from 'tde-datagrid';
-import { addIcon } from '@jupyterlab/ui-components';
 
 export class PaintedGrid extends DataGrid {
   constructor(options: PaintedGrid.IOptions) {
@@ -255,15 +254,7 @@ export class PaintedGrid extends DataGrid {
     this.canvasGC.fillStyle = this._extraStyle.ghostColumnColor;
     this.canvasGC.fillRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
 
-    // Create the Icon elements.
-    const add = new Image();
-    addIcon.element({
-      container: add,
-      height: '5px',
-      width: '5px',
-      marginLeft: '2px'
-    });
-    this.canvasGC.drawImage(add, x1, y1);
+    this._drawRowIcon(x1, y1, x2, y2);
   }
 
   private _drawGhostColumnHeader(
@@ -273,8 +264,8 @@ export class PaintedGrid extends DataGrid {
     rh: number
   ): void {
     // Get the visible content dimensions.
-    const contentW = this.headerWidth;
-    const contentH = this.defaultSizes.rowHeight;
+    const contentW = this.defaultSizes.columnWidth;
+    const contentH = this.headerHeight;
 
     // Bail if there is no content to draw.
     if (contentW <= 0 || contentH <= 0) {
@@ -308,6 +299,72 @@ export class PaintedGrid extends DataGrid {
     // Fill the region with the specified color.
     this.canvasGC.fillStyle = this._extraStyle.ghostColumnColor;
     this.canvasGC.fillRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
+    this._drawColumnIcon(x1, y1, x2, y2);
+  }
+
+  private _drawRowIcon(x1: number, y1: number, x2: number, y2: number): void {
+    // get center of region.
+    const xBar = (x2 + x1) / 2;
+    const yBar = (y2 + y1) / 2;
+
+    // Get the size of the Icon.
+    const size = this._extraStyle.rowIconSize;
+
+    // Draw the outline of the region.
+    const region = new Path2D();
+    region.moveTo(xBar, yBar + size / 2);
+    region.lineTo(xBar + size / 14, yBar + size / 2);
+    region.lineTo(xBar + size / 14, yBar + size / 14);
+    region.lineTo(xBar + size / 2, yBar + size / 14);
+    region.lineTo(xBar + size / 2, yBar - size / 14);
+    region.lineTo(xBar + size / 14, yBar - size / 14);
+    region.lineTo(xBar + size / 14, yBar - size / 2);
+    region.lineTo(xBar - size / 14, yBar - size / 2);
+    region.lineTo(xBar - size / 14, yBar - size / 14);
+    region.lineTo(xBar - size / 2, yBar - size / 14);
+    region.lineTo(xBar - size / 2, yBar + size / 14);
+    region.lineTo(xBar - size / 14, yBar + size / 14);
+    region.lineTo(xBar - size / 14, yBar + size / 2);
+    region.closePath();
+
+    // Fill the region with the specified color.
+    this.canvasGC.fillStyle = this.extraStyle.iconColor;
+    this.canvasGC.fill(region, 'nonzero');
+  }
+
+  private _drawColumnIcon(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number
+  ): void {
+    // get center of region.
+    const xBar = (x2 + x1) / 2;
+    const yBar = (y2 + y1) / 2;
+
+    // Get the size of the Icon.
+    const size = this._extraStyle.rowIconSize;
+
+    // Draw the outline of the region.
+    const region = new Path2D();
+    region.moveTo(xBar, yBar + size / 2);
+    region.lineTo(xBar + size / 14, yBar + size / 2);
+    region.lineTo(xBar + size / 14, yBar + size / 14);
+    region.lineTo(xBar + size / 2, yBar + size / 14);
+    region.lineTo(xBar + size / 2, yBar - size / 14);
+    region.lineTo(xBar + size / 14, yBar - size / 14);
+    region.lineTo(xBar + size / 14, yBar - size / 2);
+    region.lineTo(xBar - size / 14, yBar - size / 2);
+    region.lineTo(xBar - size / 14, yBar - size / 14);
+    region.lineTo(xBar - size / 2, yBar - size / 14);
+    region.lineTo(xBar - size / 2, yBar + size / 14);
+    region.lineTo(xBar - size / 14, yBar + size / 14);
+    region.lineTo(xBar - size / 14, yBar + size / 2);
+    region.closePath();
+
+    // Fill the region with the specified color.
+    this.canvasGC.fillStyle = this.extraStyle.iconColor;
+    this.canvasGC.fill(region, 'nonzero');
   }
 
   private _extraStyle: PaintedGrid.ExtraStyle;
@@ -342,11 +399,26 @@ export namespace PaintedGrid {
      * in most cases an opaque color is chosen.
      */
     ghostColumnColor?: string;
+    /**
+     * The size of the ghost column add icon
+     */
+    columnIconSize?: number;
+    /**
+     * The size of the the ghost row add icon.
+     */
+    rowIconSize?: number;
+    /**
+     * The color of the add icon.
+     */
+    iconColor?: string;
   };
 
   export const defaultExtraStyle = {
     ghostRowColor: 'rgba(243, 243, 243, 0.65)',
-    ghostColumnColor: 'rgba(243, 243, 243, 0.65)'
+    ghostColumnColor: 'rgba(243, 243, 243, 0.65)',
+    rowIconSize: 10,
+    columnIconSize: 15,
+    iconColor: '#616161'
   };
 }
 
