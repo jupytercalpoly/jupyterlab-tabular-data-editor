@@ -4,7 +4,7 @@ import { LabIcon, addIcon } from '@jupyterlab/ui-components';
 export class PaintedGrid extends DataGrid {
   constructor(options: PaintedGrid.IOptions) {
     super(options);
-    this._extraStyle = options.extraStyle || PaintedGrid.defaultExtraStyle;
+    this._extraStyle = options.extraStyle || Private.defaultExtraStyle;
   }
   /**
    * Get the extra styles of the PaintedGrid.
@@ -50,7 +50,7 @@ export class PaintedGrid extends DataGrid {
   }
 
   /**
-   * Primary entry point for painting addition graphics on top of
+   * Primary entry point for painting additional graphics on top of
    * the base data grid graphics.
    */
   private _paintAddons(rx: number, ry: number, rw: number, rh: number): void {
@@ -107,9 +107,6 @@ export class PaintedGrid extends DataGrid {
     const y1 = Math.max(ry, contentY);
     const x2 = Math.min(rx + rw - 1, contentX + contentW - 1);
     const y2 = Math.min(ry + rh - 1, contentY + contentH - 1);
-
-    // TODO: this commented pattern appears in the related functions
-    // in DataGrid. We need to see how they are used and if we need them.
 
     // Fill the region with the specified color.
     this.canvasGC.fillStyle = this._extraStyle.ghostRowColor;
@@ -273,18 +270,18 @@ export class PaintedGrid extends DataGrid {
     const transform = this.canvasGC.getTransform();
 
     // Unpack the icon arguments.
-    const { icon, color, width } = iconArgs;
+    const { icon, color, height } = iconArgs;
 
     // Parse the icon path from the icon string.
-    const { defaultWidth, viewBoxSize, path } = Private.parseSVG(icon.svgstr);
+    const { defaultHeight, viewBoxSize, path } = Private.parseSVG(icon.svgstr);
 
     // Create a path 2d object from the path string.
     const canvasPath = new Path2D(path);
 
     // Solve for the scaling factor using the provided width or the default.
-    const scale = (width || cellW / 5) / defaultWidth;
+    const scale = (height * Math.min(cellW, cellH)) / defaultHeight;
 
-    // Orient to the desired origin for the icon.
+    // Orient the canvas to the desired origin for the icon.
     this.canvasGC.translate(
       cellW / 2 - (viewBoxSize * scale) / 2,
       this.headerHeight +
@@ -303,6 +300,7 @@ export class PaintedGrid extends DataGrid {
     // Draw the icon.
     this.canvasGC.fill(canvasPath, 'nonzero');
 
+    // Reset the canvas to it's default position.
     this.canvasGC.setTransform(transform);
   }
 
@@ -323,25 +321,25 @@ export class PaintedGrid extends DataGrid {
     const transform = this.canvasGC.getTransform();
 
     // Unpack the icon arguments.
-    const { icon, color, width } = iconArgs;
+    const { icon, color, height, left, top } = iconArgs;
 
     // Parse the icon path from the icon string.
-    const { defaultWidth, viewBoxSize, path } = Private.parseSVG(icon.svgstr);
+    const { defaultHeight, viewBoxSize, path } = Private.parseSVG(icon.svgstr);
 
     // Create a path 2d object from the path string.
     const canvasPath = new Path2D(path);
 
     // Solve for the scaling factor using the provided width or the default.
-    const scale = (width || cellW / 5) / defaultWidth;
+    const scale = (height * Math.min(cellH, cellW)) / defaultHeight;
 
     // Orient to the desired origin for the icon.
     this.canvasGC.translate(
       this.headerWidth +
         this.bodyWidth -
         this.scrollX -
-        cellW / 2 -
+        left * cellW -
         (viewBoxSize * scale) / 2,
-      cellH / 2 - (viewBoxSize * scale) / 2
+      top * cellH - (viewBoxSize * scale) / 2
     );
 
     // Scale the canvas.
@@ -436,7 +434,7 @@ export namespace PaintedGrid {
      */
     ghostColumnColor?: string;
     /**
-     * An array containing the information for icons.
+     * A object mapping data types to Icons.
      */
     icons?: { [key: string]: IIconArgs };
   };
@@ -451,34 +449,19 @@ export namespace PaintedGrid {
      */
     color: string;
     /**
-     * The type of column that should recieve the icon.
+     * How far left to center the Icon as a proportion of the width of the cell.
      */
     left?: number;
     /**
-     * How far down to place the icon from the top of the cell border.
-     * The default is to center the icon vertically.
+     * How far down to center the Icon as a proportion of the height of the grid.
      */
     top?: number;
     /**
-     * The desired width of the icon relative to the width of the cell.
-     * The default is to make the icon 1/5 of the column width.
+     * The height of the Icon as a proportion of the height of the cell.
+     * NOTE: If the width of the cell is less than the height, then this
+     * will be calculated as a proportion of the width.
      */
-    width?: number;
-  };
-
-  export const defaultExtraStyle = {
-    ghostRowColor: 'rgba(243, 243, 243, 0.80)',
-    ghostColumnColor: 'rgba(243, 243, 243, 0.80)',
-    icons: {
-      'ghost-column': {
-        icon: addIcon,
-        color: '#616161'
-      },
-      'ghost-row': {
-        icon: addIcon,
-        color: '#616161'
-      }
-    }
+    height?: number;
   };
 }
 
@@ -487,7 +470,7 @@ export namespace PaintedGrid {
  */
 namespace Private {
   export interface ISVGInfo {
-    defaultWidth: number;
+    defaultHeight: number;
     viewBoxSize: number;
     path: string;
   }
@@ -499,7 +482,7 @@ namespace Private {
     let regex = /width="(.+?)"/;
 
     // Find the width an parse it to an integer.
-    const defaultWidth = parseInt(svgstr.match(regex)[1]);
+    const defaultHeight = parseInt(svgstr.match(regex)[1]);
 
     // Redefine the regular expression to get the viewbox size.
     regex = /viewBox="(.+?)"/;
@@ -517,6 +500,26 @@ namespace Private {
     // Fetch the path string.
     const path = svgstr.match(regex)[1];
 
-    return { defaultWidth, viewBoxSize, path };
+    return { defaultHeight, viewBoxSize, path };
   }
+  export const defaultExtraStyle = {
+    ghostRowColor: 'rgba(243, 243, 243, 0.80)',
+    ghostColumnColor: 'rgba(243, 243, 243, 0.80)',
+    icons: {
+      'ghost-column': {
+        icon: addIcon,
+        color: '#616161',
+        height: 1 / 2,
+        left: 1 / 2,
+        top: 1 / 2
+      },
+      'ghost-row': {
+        icon: addIcon,
+        color: '#616161',
+        height: 1 / 2,
+        left: 1 / 2,
+        top: 1 / 2
+      }
+    }
+  };
 }

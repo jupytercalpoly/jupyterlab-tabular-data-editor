@@ -20,6 +20,7 @@ import { ILauncher } from '@jupyterlab/launcher';
 import { /*IEditMenu,*/ IMainMenu } from '@jupyterlab/mainmenu';
 import { Contents } from '@jupyterlab/services';
 import {
+  addIcon,
   undoIcon,
   redoIcon,
   cutIcon,
@@ -79,6 +80,7 @@ function activateCsv(
 
   // The current styles for the data grids.
   let style: DataGrid.Style = Private.LIGHT_STYLE;
+  const extraStyle: PaintedGrid.ExtraStyle = Private.LIGHT_EXTRA_STYLE;
   let rendererConfig: TextRenderConfig = Private.LIGHT_TEXT_CONFIG;
 
   if (restorer) {
@@ -109,6 +111,8 @@ function activateCsv(
     widget.content.style = style;
 
     widget.content.rendererConfig = rendererConfig;
+
+    widget.content.extraStyle = extraStyle;
   });
 
   // Keep the themes up-to-date.
@@ -127,6 +131,7 @@ function activateCsv(
     tracker.forEach(grid => {
       grid.content.style = style;
       grid.content.extraStyle = extraStyle;
+      grid.content.rendererConfig = rendererConfig;
     });
   };
   if (themeManager) {
@@ -531,13 +536,45 @@ namespace Private {
   };
 
   export const LIGHT_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
-    ghostRowColor: 'rgba(243, 243, 243, 0.65)',
-    ghostColumnColor: 'rgba(243, 243, 243, 0.65)'
+    ghostRowColor: 'rgba(243, 243, 243, 0.80)',
+    ghostColumnColor: 'rgba(243, 243, 243, 0.80)',
+    icons: {
+      'ghost-column': {
+        icon: addIcon,
+        color: '#616161',
+        height: 1 / 2,
+        left: 1 / 2,
+        top: 1 / 2
+      },
+      'ghost-row': {
+        icon: addIcon,
+        color: '#616161',
+        height: 1 / 2,
+        left: 1 / 2,
+        top: 1 / 2
+      }
+    }
   };
 
   export const DARK_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
     ghostRowColor: 'rgba(0, 0, 0, 0.65)',
-    ghostColumnColor: 'rgba(0, 0, 0, 0,55)'
+    ghostColumnColor: 'rgba(0, 0, 0, 0.65)',
+    icons: {
+      'ghost-column': {
+        icon: addIcon,
+        color: '#bdbdbd',
+        height: 1 / 2,
+        left: 1 / 2,
+        top: 1 / 2
+      },
+      'ghost-row': {
+        icon: addIcon,
+        color: '#bdbdbd',
+        height: 1 / 2,
+        left: 1 / 2,
+        top: 1 / 2
+      }
+    }
   };
 
   /**
