@@ -91,6 +91,7 @@ export class DSVEditor extends Widget {
 
     // Connect to the mouse handler signals.
     handler.mouseUpSignal.connect(this._onMouseUp, this);
+    handler.hoverSignal.connect(this._onMouseHover, this);
 
     // init search service to search for matches with the data grid
     this._searchService = new GridSearchService(this._grid);
@@ -232,7 +233,7 @@ export class DSVEditor extends Widget {
     return this._searchService;
   }
 
-  get grid(): DataGrid {
+  get grid(): PaintedGrid {
     return this._grid;
   }
 
@@ -822,6 +823,39 @@ export class DSVEditor extends Widget {
     }
     this._row = hit.row;
     this._column = hit.column;
+  }
+
+  /**
+   * A handler for the on mouse up signal
+   */
+  private _onMouseHover(
+    emitter: RichMouseHandler,
+    hoverRegion: 'ghost-row' | 'ghost-column' | null
+  ): void {
+    // Switch both to non-hovered state.
+    const style = { ...this._grid.extraStyle } as PaintedGrid.ExtraStyle;
+    if (this.grid.style.voidColor === '#F3F3F3') {
+      style.ghostColumnColor = 'rgba(243, 243, 243, 0.80)';
+      style.ghostRowColor = 'rgba(243, 243, 243, 0.80)';
+    } else {
+      style.ghostColumnColor = 'rgba(0, 0, 0, 0.65)';
+      style.ghostRowColor = 'rgba(0, 0, 0, 0.65)';
+    }
+    switch (hoverRegion) {
+      case null: {
+        break;
+      }
+      case 'ghost-row': {
+        style.ghostRowColor = 'rgba(0, 0, 0, 0)';
+        break;
+      }
+      case 'ghost-column': {
+        style.ghostColumnColor = 'rgba(0, 0, 0, 0)';
+        break;
+      }
+    }
+    // Schedule a repaint of the grid.
+    this._grid.extraStyle = style;
   }
 
   private _region: DataModel.CellRegion;
