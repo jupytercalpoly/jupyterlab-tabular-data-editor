@@ -449,17 +449,15 @@ export namespace PaintedGrid {
      */
     color: string;
     /**
-     * How far left to center the Icon as a proportion of the width of the cell.
+     * Distance right in pixcels from the left cell boundary.
      */
     left?: number;
     /**
-     * How far down to center the Icon as a proportion of the height of the cell.
+     * Distance right in pixcels from the top cell boundary.
      */
     top?: number;
     /**
-     * The height of the Icon as a proportion of the height of the cell.
-     * NOTE: If the width of the cell is less than the height, then this
-     * will be calculated as a proportion of the width.
+     * Height of icon in pixcels.
      */
     height?: number;
   };
@@ -509,16 +507,16 @@ namespace Private {
       'ghost-column': {
         icon: addIcon,
         color: '#616161',
-        height: 1 / 2,
-        left: 1 / 2,
-        top: 1 / 2
+        height: 18,
+        left: 63,
+        top: 9
       },
       'ghost-row': {
         icon: addIcon,
         color: '#616161',
-        height: 1 / 2,
-        left: 1 / 2,
-        top: 1 / 2
+        height: 18,
+        left: 63,
+        top: 9
       }
     }
   };
