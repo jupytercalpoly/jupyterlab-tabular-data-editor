@@ -59,7 +59,8 @@
     "tde-csvviewer": "^1.1.6",
     "tde-datagrid": "^1.0.11",
     "tde-datastore": "^0.1.1",
-    "tde-dragdrop": "^0.0.1"
+    "tde-dragdrop": "^0.0.1",
+    "vega": "^5.13.0"
   },
   "devDependencies": {
     "@babel/core": "^7",
