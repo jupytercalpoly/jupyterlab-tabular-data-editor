@@ -9,13 +9,13 @@ export class HeaderCellEditor extends TextCellEditor {
    */
   protected getCellInfo(cell: CellEditor.CellConfig): ICellInfo {
     const { grid, row, column } = cell;
-    const data = grid.dataModel.data('column-header', row, column);
+    const data = grid.dataModel!.data('column-header', row, column);
 
     const columnX =
       grid.headerWidth - grid.scrollX + grid.columnOffset('body', column);
-    const rowY = grid.headerHeight - grid.scrollY + grid.rowOffset('body', row);
+    const rowY = 0;
     const width = grid.columnSize('body', column);
-    const height = grid.rowSize('body', row);
+    const height = grid.headerHeight;
 
     return {
       grid: grid,
