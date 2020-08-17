@@ -18,7 +18,8 @@ import {
   DataGrid,
   TextRenderer,
   SelectionModel,
-  DataModel
+  DataModel,
+  CellRenderer
 } from 'tde-datagrid';
 import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget, LayoutItem } from '@lumino/widgets';
@@ -430,6 +431,7 @@ export class DSVEditor extends Widget {
       // set inital status of litestore
       this.updateModel(update);
       dataModel.onChangedSignal.connect(this._onModelSignal, this);
+      dataModel.isDataDetectionChanged.connect(this._updateRenderer, this);
       // dataModel.cancelEditingSignal.connect(this._cancelEditing, this);
     }
 
@@ -444,10 +446,13 @@ export class DSVEditor extends Widget {
     if (this._baseRenderer === null) {
       return;
     }
+    const isDataDetection = this.dataModel && this.dataModel.isDataDetection;
     const rendererConfig = this._baseRenderer;
     const renderer = new TextRenderer({
       textColor: rendererConfig.textColor,
-      horizontalAlignment: rendererConfig.horizontalAlignment,
+      horizontalAlignment: isDataDetection
+        ? this.cellHorizontalAlignmentRendererFunc()
+        : rendererConfig.horizontalAlignment,
       backgroundColor: this._searchService.cellBackgroundColorRendererFunc(
         rendererConfig
       )
@@ -458,6 +463,18 @@ export class DSVEditor extends Widget {
       'corner-header': renderer,
       'row-header': renderer
     });
+  }
+
+  cellHorizontalAlignmentRendererFunc(): CellRenderer.ConfigOption<
+    TextRenderer.HorizontalAlignment
+  > {
+    return ({ region, row, column }) => {
+      if (region !== 'body') {
+        return 'center';
+      }
+      const { type } = this.dataModel.metadata(region, row, column);
+      return type === 'number' || type === 'integer' ? 'right' : 'left';
+    };
   }
 
   /**
@@ -1013,7 +1030,7 @@ export class EditableCSVDocumentWidget extends DocumentWidget<DSVEditor> {
     );
   }
 
-  toggleDataDetection() {
+  toggleDataDetection(): void {
     const isDataDetection = this.content.dataModel.isDataDetection;
     if (!isDataDetection) {
       this.node.setAttribute('isDataDetection', 'true');
