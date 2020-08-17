@@ -788,7 +788,7 @@ export class DSVEditor extends Widget {
   /**
    * Updates the context menu elements.
    */
-  private _updateContextElements() {
+  private _updateContextElements(): void {
     // Update the column header, row header, and background elements.
     this._background.style.width = `${this._grid.bodyWidth}px`;
     this._background.style.height = `${this._grid.bodyHeight}px`;
