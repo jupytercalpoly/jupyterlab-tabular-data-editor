@@ -56,7 +56,7 @@
     "@lumino/virtualdom": "^1.7.3",
     "@lumino/widgets": "^1.13.3",
     "@types/codemirror": "0.0.76",
-    "tde-csvviewer": "^1.1.3",
+    "tde-csvviewer": "^1.1.4",
     "tde-datagrid": "^1.0.11",
     "tde-datastore": "^0.1.1",
     "tde-dragdrop": "^0.0.1"
