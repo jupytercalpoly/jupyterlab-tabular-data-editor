@@ -615,7 +615,7 @@ export class DSVEditor extends Widget {
         this._litestore.undo();
 
         // Have the model emit the opposite change to the Grid.
-        this.dataModel.emitOppositeChange(gridState.nextChange);
+        this.dataModel.emitOppositeChange(gridState);
 
         if (!selection) {
           break;

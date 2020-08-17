@@ -1154,7 +1154,8 @@ export class EditorModel extends MutableDataModel {
   /**
    * Emits the change which undoes the change passed in.
    */
-  emitOppositeChange(change: DataModel.ChangedArgs): void {
+  emitOppositeChange(update: DSVEditor.GridState): void {
+    const change = update.nextChange;
     // Bail early if there is no change.
     if (!change) {
       return;
@@ -1170,14 +1171,23 @@ export class EditorModel extends MutableDataModel {
         break;
       }
       case 'cells-changed':
-        gridUpdate = {
-          type: 'cells-changed',
-          region: change.region,
-          row: change.row,
-          column: change.column,
-          rowSpan: change.rowSpan,
-          columnSpan: change.columnSpan
-        };
+        if (
+          update.nextCommand === 'clear-rows' ||
+          update.nextCommand === 'clear-columns'
+        ) {
+          gridUpdate = {
+            type: 'model-reset'
+          };
+        } else {
+          gridUpdate = {
+            type: 'cells-changed',
+            region: change.region,
+            row: change.row,
+            column: change.column,
+            rowSpan: change.rowSpan,
+            columnSpan: change.columnSpan
+          };
+        }
         break;
       case 'rows-inserted':
         gridUpdate = {
