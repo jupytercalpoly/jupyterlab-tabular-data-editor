@@ -1491,22 +1491,35 @@ export class EditorModel extends MutableDataModel {
   /**
    * The total rows currently stored in the DSVModel.
    */
-  private _modelRows(): number {
+  private _stringRows(): number {
+    if (!this.model.doneParsing) {
+      console.log(
+        `The rows of the string have been requested while 
+        the model is still parsing which will likely produce undesired behavior.`
+      );
+    }
     return this._model.rowCount('body') + 1;
   }
 
   /**
    * The total columns currently stored in the DSVModel.
    */
-  private _modelColumns(): number {
+  private _stringColumns(): number {
+    if (!this.model.doneParsing) {
+      console.log(
+        `The columns of the string have been requested while 
+      the model is still parsing which will likely produce undesired behavior.`
+      );
+    }
     return this._model.columnCount('body');
   }
 
   /**
    * Computes the offset index at the end of a given row (note: row delimeter not included).
+   * NOTE: For the purposes of this function we care about the number of rows in the raw string.
    */
   private _rowEnd(row: number): number {
-    const rows = this._modelRows();
+    const rows = this._stringRows();
     const rowTrim = this._model.rowDelimiter.length;
     // See if we are on any row but the last.
     if (row + 1 < rows) {
@@ -1516,7 +1529,7 @@ export class EditorModel extends MutableDataModel {
   }
 
   private _openSlice(row: number, start: number, end: number): string {
-    if (end + 1 < this._modelColumns()) {
+    if (end + 1 < this._stringColumns()) {
       const trimRight = this._model.delimiter.length;
       return this._model.rawData.slice(
         this._model.getOffsetIndex(row, start),
@@ -1612,7 +1625,20 @@ export class EditorModel extends MutableDataModel {
       rowMap,
       columnMap
     );
+    // Get the default initial rows.
+    const initialRows = this.model.initialRows;
+
+    // Set the initial rows to be the total row count,
+    // so that parsing happens synchronously.
+    this.model.initialRows = rowMap.length;
+
+    // Parse the string.
     this._model.parseAsync();
+
+    // Restore the initial rows to their default.
+    this._model.initialRows = initialRows;
+
+    // Insert the value map values.
     this._model.rawData = this._peformMicroSlice(
       valueMap,
       rowMap,
@@ -1658,9 +1684,9 @@ export class EditorModel extends MutableDataModel {
     // Sort the keys according to where they appear in the string.
     keys = keys.sort((elem1, elem2) => {
       return (
-        elem1[0] * this._modelColumns() +
+        elem1[0] * columnMap.length +
         elem1[1] -
-        (elem2[0] * this._modelColumns() + elem2[1])
+        (elem2[0] * columnMap.length + elem2[1])
       );
     });
 
@@ -1691,7 +1717,7 @@ export class EditorModel extends MutableDataModel {
       const endKey = keys[index + 1];
 
       // Check if the previous key is at the last column
-      if (startKey[1] + 1 === this._modelColumns()) {
+      if (startKey[1] + 1 === columnMap.length) {
         sliceStart = this.model.getOffsetIndex(startKey[0] + 1, 0) - rdl;
       } else {
         sliceStart =
