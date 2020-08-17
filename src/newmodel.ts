@@ -22,6 +22,7 @@ export class EditorModel extends MutableDataModel {
   private _columnsRemoved: number;
   private _saving = false;
   private _ghostsRevealed = true;
+  private _isDataDetection = false;
   // private _onChangeSignal: Signal<this, string> = new Signal<this, string>(
   //   this
   // );
@@ -137,14 +138,28 @@ export class EditorModel extends MutableDataModel {
     );
   }
 
+  get isDataDetection(): boolean {
+    return this._isDataDetection;
+  }
+
+  set isDataDetection(bool: boolean) {
+    if (this._isDataDetection === bool) {
+      return;
+    }
+    this._isDataDetection = bool;
+  }
+
   metadata(
     region: DataModel.CellRegion,
     row: number,
     column: number
   ): DataModel.Metadata {
-    // data is empty
-    console.log(region);
-    if (region !== 'body' || this.data(region, row, column) === '') {
+    // use text editor if data detection is off, region is not the body, or data is empty
+    if (
+      !this._isDataDetection ||
+      region !== 'body' ||
+      this.data(region, row, column) === ''
+    ) {
       return { type: 'string' };
     }
 

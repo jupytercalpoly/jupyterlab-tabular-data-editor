@@ -1,4 +1,8 @@
-import { CommandToolbarButton, ToolbarButton } from '@jupyterlab/apputils';
+import {
+  CommandToolbarButton,
+  Toolbar,
+  ToolbarButton
+} from '@jupyterlab/apputils';
 import { ActivityMonitor } from '@jupyterlab/coreutils';
 import {
   ABCWidgetFactory,
@@ -958,20 +962,31 @@ export class EditableCSVDocumentWidget extends DocumentWidget<DSVEditor> {
       new CommandToolbarButton({ commands, id: pasteToolbar })
     );
 
+    /* possible feature
+    const filterData = new FilterButton({ selected: content.delimiter });
+    this.toolbar.addItem('filter-data', filterData);
+    */
+
+    this.toolbar.addItem('spacer', Toolbar.createSpacerItem());
     this.toolbar.addItem(
       'date-detection',
       new ToolbarButton({
         label: 'Data Detection',
         iconClass: 'jp-ToggleSwitch',
-        tooltip: 'Enable / Disable Data Detection' //,
-        // onClick
+        tooltip: 'Enable / Disable Data Detection',
+        onClick: () => this.toggleDataDetection()
       })
     );
+  }
 
-    /* possible feature
-    const filterData = new FilterButton({ selected: content.delimiter });
-    this.toolbar.addItem('filter-data', filterData);
-    */
+  toggleDataDetection() {
+    const isDataDetection = this.content.dataModel.isDataDetection;
+    if (!isDataDetection) {
+      this.node.setAttribute('isDataDetection', 'true');
+    } else {
+      this.node.removeAttribute('isDataDetection');
+    }
+    this.content.dataModel.isDataDetection = !isDataDetection;
   }
 
   /**

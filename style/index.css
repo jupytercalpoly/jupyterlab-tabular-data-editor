@@ -120,8 +120,16 @@ input[type='checkbox'] {
 .jp-Toolbar-item .bp3-button-text {
   display: flex;
   flex-direction: row-reverse;
+  align-items: center;
 }
 
+/* Styling for the label */
+.jp-Toolbar-item .bp3-button-text .jp-ToolbarButtonComponent-label {
+  color: var(--jp-ui-font-color3);
+  padding-right: 10px;
+}
+
+/* Default styles for the toggle switch */
 .jp-Toolbar-item .jp-ToggleSwitch {
   display: flex;
   align-items: center;
@@ -133,6 +141,7 @@ input[type='checkbox'] {
   width: 35px;
 }
 
+/* Styles for the circle */
 .jp-Toolbar-item .jp-ToggleSwitch::before {
   content: '';
   height: 10px;
@@ -145,13 +154,21 @@ input[type='checkbox'] {
   border-radius: 50%;
 }
 
-[data-jp-debugger='true'] .jp-Toolbar-item .jp-ToggleSwitch,
-[data-jp-table='true'] .jp-Toolbar-item .jp-ToggleSwitch {
-  background-color: var(--jp-warn-color0);
+/* Toggle switch on */
+[isDataDetection='true'] .jp-Toolbar-item .jp-ToggleSwitch {
+  background-color: #1976d2;
 }
 
-[data-jp-debugger='true'] .jp-Toolbar-item .jp-ToggleSwitch::before,
-[data-jp-table='true'] .jp-Toolbar-item .jp-ToggleSwitch::before {
-  margin-left: 50%;
+/* Toggle switch on */
+[isDataDetection='true']
+  .jp-Toolbar-item
+  .bp3-button-text
+  .jp-ToolbarButtonComponent-label {
+  color: var(--jp-ui-font-color0);
+}
+
+/* Toggle switch on */
+[isDataDetection='true'] .jp-Toolbar-item .jp-ToggleSwitch::before {
+  margin-left: 60%;
   margin-right: 5px;
 }
