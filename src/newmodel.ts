@@ -1120,7 +1120,7 @@ export class EditorModel extends MutableDataModel {
       case 'cells-changed':
         gridUpdate = {
           type: 'cells-changed',
-          region: 'body',
+          region: change.region,
           row: change.row,
           column: change.column,
           rowSpan: change.rowSpan,
