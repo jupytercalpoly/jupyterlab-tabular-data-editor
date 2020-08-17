@@ -453,7 +453,7 @@ export namespace PaintedGrid {
      */
     left?: number;
     /**
-     * How far down to center the Icon as a proportion of the height of the grid.
+     * How far down to center the Icon as a proportion of the height of the cell.
      */
     top?: number;
     /**
