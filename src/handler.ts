@@ -10,25 +10,33 @@ import {
 } from 'tde-datagrid';
 import { Drag } from '@lumino/dragdrop';
 import { Signal } from '@lumino/signaling';
-import { renderSelection, IBoundingRegion, BoundedDrag } from './selection';
+import { renderSelection, IBoundingRegion, BoundedDrag } from './drag';
 import { EditorModel } from './newmodel';
 import { DSVEditor } from './widget';
-import HeaderCellEditor from './headercelleditor';
+import { HeaderCellEditor } from './headercelleditor';
+// import { BasicKeyHandler } from 'tde-datagrid';
 
 export class RichMouseHandler extends BasicMouseHandler {
   private _moveLine: BoundedDrag;
+  private _lastHoverRegion: 'ghost-row' | 'ghost-column' | null;
   constructor(options: RichMouseHandler.IOptions) {
     super();
     this._grid = options.grid;
     this._cursor = null;
   }
+  get mouseWheelSignal(): Signal<this, null> {
+    return this._mouseWheelSignal;
+  }
+  get hoverSignal(): Signal<this, 'ghost-row' | 'ghost-column' | null> {
+    return this._ghostHoverSignal;
+  }
 
-  get resizeSignal(): Signal<this, null> {
+  get mouseMoveSignal(): Signal<this, null> {
     return this._resizeSignal;
   }
 
-  get clickSignal(): Signal<this, DataGrid.HitTestResult> {
-    return this._clickSignal;
+  get mouseUpSignal(): Signal<this, DataGrid.HitTestResult> {
+    return this._mouseUpSignal;
   }
 
   /**
@@ -58,10 +66,14 @@ export class RichMouseHandler extends BasicMouseHandler {
 
       // Get the bounds for horizontal movement (measured from the left).
       const shadowWidth = Math.abs(leftSide - rightSide);
+      const ghostColumnIndex = this._grid.dataModel.columnCount('body') - 1;
       leftBound = left + this._grid.headerWidth;
       rightBound =
         leftBound +
-        Math.min(this._grid.pageWidth, this._grid.bodyWidth) -
+        Math.min(
+          this._grid.pageWidth,
+          this._grid.columnOffset('body', ghostColumnIndex)
+        ) -
         shadowWidth;
     } else if (region === 'row-header') {
       // x-axis bounds are the same
@@ -69,10 +81,14 @@ export class RichMouseHandler extends BasicMouseHandler {
 
       // Get the vertical bounds (measured from the top).
       const shadowHeight = Math.abs(topSide - bottomSide);
+      const ghostRowIndex = this._grid.dataModel.rowCount('body') - 1;
       topBound = top + this._grid.headerHeight;
       bottomBound =
         topBound +
-        Math.min(this._grid.pageHeight, this._grid.bodyHeight) -
+        Math.min(
+          this._grid.pageHeight,
+          this._grid.rowOffset('body', ghostRowIndex)
+        ) -
         shadowHeight;
     }
     return {
@@ -122,12 +138,29 @@ export class RichMouseHandler extends BasicMouseHandler {
     }
   }
 
+  onWheel(grid: DataGrid, event: WheelEvent): void {
+    this._mouseWheelSignal.emit(null);
+    super.onWheel(grid, event);
+  }
+
   /**
    * @override
    * @param grid
    * @param event
    */
   onMouseHover(grid: DataGrid, event: MouseEvent): void {
+    // See if we are on a ghost row or ghost column.
+    const { row, column } = grid.hitTest(event.clientX, event.clientY);
+    let hoverRegion: 'ghost-row' | 'ghost-column' | null = null;
+    if (row === grid.dataModel.rowCount('body') - 1) {
+      hoverRegion = 'ghost-row';
+    } else if (column === grid.dataModel.columnCount('body') - 1) {
+      hoverRegion = 'ghost-column';
+    }
+    if (this._lastHoverRegion !== hoverRegion) {
+      this.hoverSignal.emit(hoverRegion);
+    }
+    this._lastHoverRegion = hoverRegion;
     this._event = event;
     super.onMouseHover(grid, event);
   }
@@ -139,6 +172,19 @@ export class RichMouseHandler extends BasicMouseHandler {
    * @param event - The mouse down event of interest.
    */
   onMouseDown(grid: DataGrid, event: MouseEvent): void {
+    const model = grid.dataModel as EditorModel;
+
+    let update: DSVEditor.ModelChangedArgs;
+    if (this._lastHoverRegion === 'ghost-row') {
+      update = model.addRows('body', model.rowCount('body') - 1);
+      model.onChangedSignal.emit(update);
+      return;
+    }
+    if (this._lastHoverRegion === 'ghost-column') {
+      update = model.addColumns('body', model.columnCount('body') - 1);
+      model.onChangedSignal.emit(update);
+      return;
+    }
     super.onMouseDown(grid, event);
     if (this._cursor === 'grab') {
       this._cursor = 'grabbing';
@@ -250,12 +296,17 @@ export class RichMouseHandler extends BasicMouseHandler {
     // get the left and top offsets of the grid viewport
     const { left, top } = this._grid.viewport.node.getBoundingClientRect();
     if (region === 'column-header') {
+      // Get the index of the ghost row.
+      const ghostRowIndex = this._grid.dataModel.rowCount('body') - 1;
+
       topSide = top + this._grid.headerHeight;
+      // Add on to the topSide the distance to the ghost row, or the distance
+      // to the bottom of the page if the full grid isn't in view.
       bottomSide =
-        top +
+        topSide +
         Math.min(
-          this._grid.pageHeight + this._grid.headerHeight,
-          this._grid.bodyHeight + this._grid.headerHeight
+          this._grid.pageHeight,
+          this._grid.rowOffset('body', ghostRowIndex)
         );
       leftSide =
         left +
@@ -264,6 +315,8 @@ export class RichMouseHandler extends BasicMouseHandler {
         this._grid.scrollX;
       rightSide = leftSide + this._grid.columnSize('body', index);
     } else if (region === 'row-header') {
+      // Get the index of the ghost column.
+      const ghostColumnIndex = this._grid.dataModel.columnCount('body') - 1;
       topSide =
         top +
         this._grid.headerHeight +
@@ -271,11 +324,13 @@ export class RichMouseHandler extends BasicMouseHandler {
         this._grid.scrollY;
       bottomSide = topSide + this._grid.rowSize('body', index);
       leftSide = left + this._grid.headerWidth;
+      // Add on to the leftSide the distance to the ghost column, or the distance
+      // to the right of the page if the full grid isn't in view.
       rightSide =
-        left +
+        leftSide +
         Math.min(
-          this._grid.pageWidth + this._grid.headerWidth,
-          this._grid.headerWidth + this._grid.bodyWidth
+          this._grid.pageWidth,
+          this._grid.columnOffset('body', ghostColumnIndex)
         );
     }
     return { topSide, bottomSide, leftSide, rightSide };
@@ -288,11 +343,16 @@ export class RichMouseHandler extends BasicMouseHandler {
    * @param event - The mouse move event of interest.
    */
   onMouseMove(grid: DataGrid, event: MouseEvent): void {
+    // const model = grid.dataModel as EditorModel;
+    // model.ghostsRevealed = true;
+    this._resizeSignal.emit(null);
     // Fetch the press data.
     if (this._moveData) {
       this.updateLinePosition(event);
     } else {
+      // model.ghostsRevealed = false;
       super.onMouseMove(grid, event);
+      // model.ghostsRevealed = true;
     }
     return;
   }
@@ -395,15 +455,14 @@ export class RichMouseHandler extends BasicMouseHandler {
    * @param event
    */
   onMouseUp(grid: DataGrid, event: MouseEvent): void {
-    // emit the current mouse position to the Editor
     this._event = event;
+    const model = grid.dataModel as EditorModel;
+    // emit the current mouse position to the Editor
     const hit = grid.hitTest(event.clientX, event.clientY);
-    this._clickSignal.emit(hit);
+    this._mouseUpSignal.emit(hit);
     // if move data exists, handle the move first
     if (this._moveData) {
-      const model = grid.dataModel as EditorModel;
       const selectionModel = this._grid.selectionModel;
-
       // we can assume there is a selection as it is necessary to move rows/columns
       const { r1, r2, c1, c2 } = selectionModel.currentSelection();
       let update: DSVEditor.ModelChangedArgs;
@@ -445,13 +504,6 @@ export class RichMouseHandler extends BasicMouseHandler {
         model.onChangedSignal.emit(update);
       }
     }
-    if (
-      this.pressData &&
-      (this.pressData.type === 'column-resize' ||
-        this.pressData.type === 'row-resize')
-    ) {
-      this._resizeSignal.emit(null);
-    }
     this.release();
     return;
   }
@@ -464,7 +516,7 @@ export class RichMouseHandler extends BasicMouseHandler {
   onContextMenu(grid: DataGrid, event: MouseEvent): void {
     const { clientX, clientY } = event;
     const hit = grid.hitTest(clientX, clientY);
-    this._clickSignal.emit(hit);
+    this._mouseUpSignal.emit(hit);
 
     // if the right click is in the current selection, return
     if (
@@ -474,13 +526,13 @@ export class RichMouseHandler extends BasicMouseHandler {
       return;
     }
     // otherwise select the respective row/column/cell
-    super.onMouseDown(grid, event);
+    this.onMouseDown(grid, event);
   }
 
   /**
    * Handles a double click event
    */
-  onMouseDoubleClick(grid: DataGrid, event: MouseEvent) {
+  onMouseDoubleClick(grid: DataGrid, event: MouseEvent): void {
     const { region, row, column } = grid.hitTest(event.clientX, event.clientY);
     if (region === 'column-header') {
       if (grid.editable) {
@@ -515,7 +567,7 @@ export class RichMouseHandler extends BasicMouseHandler {
         const editor = new HeaderCellEditor();
 
         // Begin editing the cell.
-        grid.editorController!.edit(cell, { editor, onCommit });
+        grid.editorController.edit(cell, { editor, onCommit });
       }
     }
     super.onMouseDoubleClick(grid, event);
@@ -525,8 +577,13 @@ export class RichMouseHandler extends BasicMouseHandler {
   private _event: MouseEvent;
   private _cursor: string | null;
   private _moveData: MoveData | null;
-  private _clickSignal = new Signal<this, DataGrid.HitTestResult>(this);
+  private _mouseUpSignal = new Signal<this, DataGrid.HitTestResult>(this);
   private _resizeSignal = new Signal<this, null>(this);
+  private _mouseWheelSignal = new Signal<this, null>(this);
+  private _ghostHoverSignal = new Signal<
+    this,
+    'ghost-row' | 'ghost-column' | null
+  >(this);
   private _selectionIndex: number; // The index of the row/column where the move line is present
 }
 

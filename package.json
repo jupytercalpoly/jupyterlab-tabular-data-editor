@@ -1,6 +1,6 @@
 {
   "name": "jupyterlab-tabular-data-editor",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "EXPERIMENTAL: JupyterLab Tabular Data Editor for CSV files",
   "keywords": [
     "jupyter",
@@ -56,10 +56,11 @@
     "@lumino/virtualdom": "^1.7.3",
     "@lumino/widgets": "^1.13.3",
     "@types/codemirror": "0.0.76",
-    "tde-csvviewer": "^1.1.3",
-    "tde-datagrid": "^1.0.6",
+    "tde-csvviewer": "^1.1.6",
+    "tde-datagrid": "^1.0.11",
     "tde-datastore": "^0.1.1",
-    "tde-dragdrop": "^0.0.1"
+    "tde-dragdrop": "^0.0.1",
+    "vega": "^5.13.0"
   },
   "devDependencies": {
     "@babel/core": "^7",

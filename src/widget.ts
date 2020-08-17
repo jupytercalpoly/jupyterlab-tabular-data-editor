@@ -1,4 +1,8 @@
-import { CommandToolbarButton } from '@jupyterlab/apputils';
+import {
+  CommandToolbarButton,
+  Toolbar,
+  ToolbarButton
+} from '@jupyterlab/apputils';
 import { ActivityMonitor } from '@jupyterlab/coreutils';
 import {
   ABCWidgetFactory,
@@ -11,14 +15,13 @@ import { Signal } from '@lumino/signaling';
 import { TextRenderConfig } from 'tde-csvviewer';
 import {
   BasicKeyHandler,
-  BasicSelectionModel,
   DataGrid,
   TextRenderer,
   SelectionModel,
   DataModel
 } from 'tde-datagrid';
 import { Message } from '@lumino/messaging';
-import { PanelLayout, Widget } from '@lumino/widgets';
+import { PanelLayout, Widget, LayoutItem } from '@lumino/widgets';
 import { EditorModel } from './newmodel';
 import { RichMouseHandler } from './handler';
 import { numberToCharacter } from './_helper';
@@ -28,9 +31,11 @@ import { CommandIDs } from './index';
 import { VirtualDOM, h } from '@lumino/virtualdom';
 import { GridSearchService } from './searchservice';
 import { Litestore } from './litestore';
+import GhostSelectionModel from './selectionmodel';
 import { Fields } from 'tde-datastore';
 import { ListField, MapField } from 'tde-datastore';
 import { unsaveDialog } from './dialog';
+import { PaintedGrid } from './grid';
 
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
@@ -42,6 +47,9 @@ const RENDER_TIMEOUT = 1000;
 
 export class DSVEditor extends Widget {
   private _background: HTMLElement;
+  private _ghostCorner: LayoutItem;
+  private _ghostRow: LayoutItem;
+  private _ghostColumn: LayoutItem;
   /**
    * Construct a new CSV viewer.
    */
@@ -53,8 +61,8 @@ export class DSVEditor extends Widget {
 
     this.addClass(CSV_CLASS);
 
-    //Datagrid Size
-    this._grid = new DataGrid({
+    // Initialize the data grid.
+    this._grid = new PaintedGrid({
       defaultSizes: {
         rowHeight: 24,
         columnWidth: 144,
@@ -66,18 +74,23 @@ export class DSVEditor extends Widget {
 
     this._grid.addClass(CSV_GRID_CLASS);
     this._grid.headerVisibility = 'all';
-    this._grid.keyHandler = new BasicKeyHandler();
+    const keyHandler = new BasicKeyHandler();
+    this._grid.keyHandler = keyHandler;
+
     this._grid.copyConfig = {
       separator: '\t',
       format: DataGrid.copyFormatGeneric,
       headers: 'none',
       warningThreshold: 1e6
     };
+    layout.addWidget(this._grid);
+
+    // Add the mouse handler to the grid.
     const handler = new RichMouseHandler({ grid: this._grid });
     this._grid.mouseHandler = handler;
-    handler.clickSignal.connect(this._onMouseClick, this);
-    handler.resizeSignal.connect(this._onResize, this);
-    layout.addWidget(this._grid);
+
+    // Connect to the mouse handler signals.
+    handler.mouseUpSignal.connect(this._onMouseUp, this);
 
     // init search service to search for matches with the data grid
     this._searchService = new GridSearchService(this._grid);
@@ -93,7 +106,6 @@ export class DSVEditor extends Widget {
         }
       })
     );
-
     this._rowHeader = VirtualDOM.realize(
       h.div({
         className: ROW_HEADER_CLASS,
@@ -112,6 +124,7 @@ export class DSVEditor extends Widget {
         }
       })
     );
+
     // append the column and row headers to the viewport
     this._grid.viewport.node.appendChild(this._rowHeader);
     this._grid.viewport.node.appendChild(this._columnHeader);
@@ -129,6 +142,27 @@ export class DSVEditor extends Widget {
     });
     this._grid.editingEnabled = true;
     this.commandSignal.connect(this._onCommand, this);
+  }
+
+  /**
+   * The ghost row of the grid.
+   */
+  get ghostRow(): LayoutItem {
+    return this._ghostRow;
+  }
+
+  /**
+   * The ghost column of the grid.
+   */
+  get ghostColumn(): LayoutItem {
+    return this._ghostColumn;
+  }
+
+  /**
+   * The ghost corner of the grid.
+   */
+  get ghostCorner(): LayoutItem {
+    return this._ghostCorner;
   }
 
   /**
@@ -167,6 +201,16 @@ export class DSVEditor extends Widget {
   }
   set style(value: DataGrid.Style) {
     this._grid.style = value;
+  }
+
+  /**
+   * The style used by the data grid.
+   */
+  get extraStyle(): PaintedGrid.ExtraStyle {
+    return this._grid.extraStyle;
+  }
+  set extraStyle(value: PaintedGrid.ExtraStyle) {
+    this._grid.extraStyle = value;
   }
 
   get coords(): Array<number | null> {
@@ -221,6 +265,24 @@ export class DSVEditor extends Widget {
     } else if (!this.dirty) {
       this.title.className = this.title.className.replace(DIRTY_CLASS, '');
     }
+  }
+
+  get rowsSelected(): number {
+    const selection: SelectionModel.Selection = this._grid.selectionModel.currentSelection();
+    if (!selection) {
+      return 0;
+    }
+    const { r1, r2 } = selection;
+    return Math.abs(r2 - r1) + 1;
+  }
+
+  get columnsSelected(): number {
+    const selection: SelectionModel.Selection = this._grid.selectionModel.currentSelection();
+    if (!selection) {
+      return 0;
+    }
+    const { c1, c2 } = selection;
+    return Math.abs(c2 - c1) + 1;
   }
 
   /**
@@ -333,7 +395,8 @@ export class DSVEditor extends Widget {
         data,
         delimiter
       }));
-      this._grid.selectionModel = new BasicSelectionModel({ dataModel });
+      const selectionModel = new GhostSelectionModel({ dataModel });
+      this._grid.selectionModel = selectionModel;
 
       // create litestore
       this._litestore = new Litestore({
@@ -351,12 +414,12 @@ export class DSVEditor extends Widget {
       const rowUpdate = {
         index: 0,
         remove: 0,
-        values: toArray(range(0, this.dataModel.totalRows()))
+        values: toArray(range(0, this.dataModel.totalRows))
       };
       const columnUpdate = {
         index: 0,
         remove: 0,
-        values: toArray(range(0, this.dataModel.totalColumns()))
+        values: toArray(range(0, this.dataModel.totalColumns))
       };
 
       // Add the map updates to the update object.
@@ -368,17 +431,9 @@ export class DSVEditor extends Widget {
       dataModel.onChangedSignal.connect(this._onModelSignal, this);
       // dataModel.cancelEditingSignal.connect(this._cancelEditing, this);
     }
-    // update the position of the background row and column headers
-    this._background.style.width = `${this._grid.bodyWidth}px`;
-    this._background.style.height = `${this._grid.bodyHeight}px`;
-    this._background.style.left = `${this._grid.headerWidth}px`;
-    this._background.style.top = `${this._grid.headerHeight}px`;
-    this._columnHeader.style.left = `${this._grid.headerWidth}px`;
-    this._columnHeader.style.height = `${this._grid.headerHeight}px`;
-    this._columnHeader.style.width = `${this._grid.bodyWidth}px`;
-    this._rowHeader.style.top = `${this._grid.headerHeight}px`;
-    this._rowHeader.style.width = `${this._grid.headerWidth}px`;
-    this._rowHeader.style.height = `${this._grid.bodyHeight}px`;
+
+    // Update the div elements of the grid.
+    this._updateContextElements();
   }
 
   /**
@@ -412,7 +467,7 @@ export class DSVEditor extends Widget {
    */
   private _onModelSignal(
     emitter: EditorModel,
-    args: DSVEditor.ModelChangedArgs
+    args: DSVEditor.ModelChangedArgs | null
   ): void {
     this.updateModel(args);
   }
@@ -443,10 +498,13 @@ export class DSVEditor extends Widget {
   private _onCommand(emitter: DSVEditor, command: DSVEditor.Commands): void {
     const selectionModel = this._grid.selectionModel;
     const selection = selectionModel.currentSelection();
+    const rowSpan = this.rowsSelected;
+    const colSpan = this.columnsSelected;
     let r1, r2, c1, c2: number;
 
     // grab selection if it exists
     if (selection) {
+      // r1 and c1 are always first row/column
       r1 = Math.min(selection.r1, selection.r2);
       r2 = Math.max(selection.r1, selection.r2);
       c1 = Math.min(selection.c1, selection.c2);
@@ -467,41 +525,42 @@ export class DSVEditor extends Widget {
 
     switch (command) {
       case 'insert-rows-above': {
-        update = this.dataModel.addRows(this._region, this._row);
+        update = this.dataModel.addRows(this._region, r1, rowSpan);
 
         // Add the type property so we can differentiate an insert above from an insert below.
         update.type = command;
         break;
       }
       case 'insert-rows-below': {
-        update = this.dataModel.addRows(this._region, this._row + 1);
+        update = this.dataModel.addRows(this._region, r2 + 1, rowSpan);
 
         // Add the command to the grid state.
         update.gridStateUpdate.nextCommand = command;
 
         // move the selection down a row to account for the new row being inserted
-        newSelection.r1 += 1;
-        newSelection.r2 += 1;
+        newSelection.r1 += rowSpan;
+        newSelection.r2 += rowSpan;
         break;
       }
       case 'insert-columns-left': {
-        update = this.dataModel.addColumns(this._region, this._column);
+        update = this.dataModel.addColumns(this._region, c1, colSpan);
         break;
       }
       case 'insert-columns-right': {
-        update = this.dataModel.addColumns(this._region, this._column + 1);
+        update = this.dataModel.addColumns(this._region, c2 + 1, colSpan);
+        update.type = command;
 
         // move the selection right a column to account for the new column being inserted
-        newSelection.c1 += 1;
-        newSelection.c2 += 1;
+        newSelection.c1 += colSpan;
+        newSelection.c2 += colSpan;
         break;
       }
       case 'remove-rows': {
-        update = this.dataModel.removeRows(this._region, this._row);
+        update = this.dataModel.removeRows(this._region, r1, rowSpan);
         break;
       }
       case 'remove-columns': {
-        update = this.dataModel.removeColumns(this._region, this._column);
+        update = this.dataModel.removeColumns(this._region, c1, colSpan);
         break;
       }
       case 'cut-cells':
@@ -602,11 +661,11 @@ export class DSVEditor extends Widget {
         let move: DataModel.ChangedArgs;
         // handle special cases for selection
         if (command === 'insert-rows-below') {
-          r1 += 1;
-          r2 += 1;
+          r1 += rowSpan;
+          r2 += rowSpan;
         } else if (command === 'insert-columns-right') {
-          c1 += 1;
-          c2 += 1;
+          c1 += colSpan;
+          c2 += colSpan;
         } else if (command === 'move-rows') {
           move = gridChange as DataModel.RowsMovedArgs;
           r1 = move.destination;
@@ -647,11 +706,16 @@ export class DSVEditor extends Widget {
    * @param update The modelChanged args for the Datagrid (may be null)
    */
   public updateModel(update?: DSVEditor.ModelChangedArgs): void {
+    // if not selection was passed through, take the current selection
+    // Bail early if there is no update.
+    if (!update) {
+      return;
+    }
+    // If no selection property was passed in, record the current selection.
     // grab current selection if none exists
     if (!update.selection) {
       update.selection = this._grid.selectionModel.currentSelection();
     }
-
     // for every litestore change except the init, set the dirty boolean to true
     this.dirty =
       update &&
@@ -659,7 +723,6 @@ export class DSVEditor extends Widget {
       update.gridStateUpdate.nextCommand === 'init'
         ? false
         : true;
-
     // Update the litestore.
     this._litestore.beginTransaction();
     this._litestore.updateRecord(
@@ -726,18 +789,11 @@ export class DSVEditor extends Widget {
     this._grid.editorController.cancel();
   }
 
-  private _onMouseClick(
-    emitter: RichMouseHandler,
-    hit: DataGrid.HitTestResult
-  ): void {
-    if (hit.region !== 'void') {
-      this._region = hit.region;
-    }
-    this._row = hit.row;
-    this._column = hit.column;
-  }
-
-  private _onResize(emitter: RichMouseHandler): void {
+  /**
+   * Updates the context menu elements.
+   */
+  private _updateContextElements(): void {
+    // Update the column header, row header, and background elements.
     this._background.style.width = `${this._grid.bodyWidth}px`;
     this._background.style.height = `${this._grid.bodyHeight}px`;
     this._background.style.left = `${this._grid.headerWidth}px`;
@@ -750,11 +806,29 @@ export class DSVEditor extends Widget {
     this._rowHeader.style.height = `${this._grid.bodyHeight}px`;
   }
 
+  /**
+   * Handles a mouse up signal.
+   */
+  private _onMouseUp(
+    emitter: RichMouseHandler,
+    hit: DataGrid.HitTestResult
+  ): void {
+    // Update the context menu elements as they may have moved.
+    this._updateContextElements();
+
+    // Record where the hit took place.
+    if (hit.region !== 'void') {
+      this._region = hit.region;
+    }
+    this._row = hit.row;
+    this._column = hit.column;
+  }
+
   private _region: DataModel.CellRegion;
   private _row: number;
   private _column: number;
   private _context: DocumentRegistry.Context;
-  private _grid: DataGrid;
+  private _grid: PaintedGrid;
   private _searchService: GridSearchService;
   private _monitor: ActivityMonitor<
     DocumentRegistry.IModel,
@@ -892,6 +966,27 @@ export class EditableCSVDocumentWidget extends DocumentWidget<DSVEditor> {
     const filterData = new FilterButton({ selected: content.delimiter });
     this.toolbar.addItem('filter-data', filterData);
     */
+
+    this.toolbar.addItem('spacer', Toolbar.createSpacerItem());
+    this.toolbar.addItem(
+      'date-detection',
+      new ToolbarButton({
+        label: 'Data Detection',
+        iconClass: 'jp-ToggleSwitch',
+        tooltip: 'Enable / Disable Data Detection',
+        onClick: () => this.toggleDataDetection()
+      })
+    );
+  }
+
+  toggleDataDetection() {
+    const isDataDetection = this.content.dataModel.isDataDetection;
+    if (!isDataDetection) {
+      this.node.setAttribute('isDataDetection', 'true');
+    } else {
+      this.node.removeAttribute('isDataDetection');
+    }
+    this.content.dataModel.isDataDetection = !isDataDetection;
   }
 
   /**

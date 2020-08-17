@@ -1,5 +1,10 @@
 @import '~@lumino/default-theme/style/datagrid.css';
 
+/* necessary to override the default checkbox styling */
+input[type='checkbox'] {
+  height: 100%;
+}
+
 /*DATAGRID*/
 
 /*border of a cell*/
@@ -12,6 +17,8 @@
 /*surrounding of the cell when double clicked*/
 .lm-DataGrid-cellEditorOccluder {
   border: none;
+  /* Needed to place the cellEditor above everything else */
+  z-index: 2;
 }
 
 /*Inside the cell when double-clicked*/
@@ -67,6 +74,7 @@
 
 .jp-background {
   border: none;
+  color: rgba(255, 255, 255, 0);
 }
 
 /*scrollbar*/
@@ -82,4 +90,85 @@
 .lm-ScrollBar-button {
   min-height: 12px;
   min-width: 12px;
+}
+
+.jp-ghost {
+  position: absolute;
+}
+
+.jp-light-mode-ghost {
+  background-color: rgba(243, 243, 243, 0.55);
+}
+
+.jp-dark-mode-ghost {
+  background-color: rgba(0, 0, 0, 0.55);
+}
+
+.jp-transparent-ghost {
+  background-color: rgba(0, 0, 0, 0);
+}
+
+.jp-light-mode-corner-ghost {
+  background-color: rgb(243, 243, 243);
+}
+
+.jp-dark-mode-corner-ghost {
+  background-color: rgb(0, 0, 0);
+}
+
+/* Toggle Switch CSS */
+.jp-Toolbar-item .bp3-button-text {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+}
+
+/* Styling for the label */
+.jp-Toolbar-item .bp3-button-text .jp-ToolbarButtonComponent-label {
+  color: var(--jp-ui-font-color3);
+  padding-right: 10px;
+}
+
+/* Default styles for the toggle switch */
+.jp-Toolbar-item .jp-ToggleSwitch {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  background-color: var(--jp-border-color1);
+  -webkit-transition: 0.4s;
+  transition: 0.4s;
+  border-radius: 34px;
+  width: 35px;
+}
+
+/* Styles for the circle */
+.jp-Toolbar-item .jp-ToggleSwitch::before {
+  content: '';
+  height: 10px;
+  width: 10px;
+  margin-left: 5px;
+  margin-right: 50%;
+  background-color: white;
+  -webkit-transition: 0.4s;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+/* Toggle switch on */
+[isDataDetection='true'] .jp-Toolbar-item .jp-ToggleSwitch {
+  background-color: #1976d2;
+}
+
+/* Toggle switch on */
+[isDataDetection='true']
+  .jp-Toolbar-item
+  .bp3-button-text
+  .jp-ToolbarButtonComponent-label {
+  color: var(--jp-ui-font-color0);
+}
+
+/* Toggle switch on */
+[isDataDetection='true'] .jp-Toolbar-item .jp-ToggleSwitch::before {
+  margin-left: 60%;
+  margin-right: 5px;
 }

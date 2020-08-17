@@ -20,6 +20,7 @@ import { ILauncher } from '@jupyterlab/launcher';
 import { /*IEditMenu,*/ IMainMenu } from '@jupyterlab/mainmenu';
 import { Contents } from '@jupyterlab/services';
 import {
+  addIcon,
   undoIcon,
   redoIcon,
   cutIcon,
@@ -31,13 +32,13 @@ import {
 import { DataGrid } from '@lumino/datagrid';
 import { DSVEditor, EditableCSVViewerFactory } from './widget';
 import { CSVSearchProvider } from './searchprovider';
+import { PaintedGrid } from './grid';
 
 /**
  * The name of the factories that creates widgets.
  */
 const FACTORY_CSV = 'Tabular Data Editor';
 // const FACTORY_TSV = 'TSVTable';
-
 /**
  * Initialization data for the jupyterlab-tabular-data-editor extension.
  */
@@ -79,6 +80,7 @@ function activateCsv(
 
   // The current styles for the data grids.
   let style: DataGrid.Style = Private.LIGHT_STYLE;
+  const extraStyle: PaintedGrid.ExtraStyle = Private.LIGHT_EXTRA_STYLE;
   let rendererConfig: TextRenderConfig = Private.LIGHT_TEXT_CONFIG;
 
   if (restorer) {
@@ -107,7 +109,10 @@ function activateCsv(
     }
     // Set the theme for the new widget.
     widget.content.style = style;
+
     widget.content.rendererConfig = rendererConfig;
+
+    widget.content.extraStyle = extraStyle;
   });
 
   // Keep the themes up-to-date.
@@ -117,11 +122,15 @@ function activateCsv(
         ? themeManager.isLight(themeManager.theme)
         : true;
     style = isLight ? Private.LIGHT_STYLE : Private.DARK_STYLE;
+    const extraStyle = isLight
+      ? Private.LIGHT_EXTRA_STYLE
+      : Private.DARK_EXTRA_STYLE;
     rendererConfig = isLight
       ? Private.LIGHT_TEXT_CONFIG
       : Private.DARK_TEXT_CONFIG;
     tracker.forEach(grid => {
       grid.content.style = style;
+      grid.content.extraStyle = extraStyle;
       grid.content.rendererConfig = rendererConfig;
     });
   };
@@ -189,7 +198,12 @@ function addCommands(
   });
 
   commands.addCommand(CommandIDs.insertRowsAbove, {
-    label: 'Insert Row Above',
+    label: () => {
+      const numRows = tracker.currentWidget.content.rowsSelected;
+      return numRows === 1
+        ? 'Insert Row Above'
+        : `Insert ${numRows} Rows Above`;
+    },
     execute: () => {
       // emit a signal to the EditableDSVModel
       tracker.currentWidget &&
@@ -198,7 +212,12 @@ function addCommands(
   });
 
   commands.addCommand(CommandIDs.insertRowsBelow, {
-    label: 'Insert Row Below',
+    label: () => {
+      const numRows = tracker.currentWidget.content.rowsSelected;
+      return numRows === 1
+        ? 'Insert Row Below'
+        : `Insert ${numRows} Rows Below`;
+    },
     execute: () => {
       // emit a signal to the EditableDSVModel
       tracker.currentWidget &&
@@ -207,7 +226,10 @@ function addCommands(
   });
 
   commands.addCommand(CommandIDs.removeRows, {
-    label: 'Remove Row',
+    label: () => {
+      const numRows = tracker.currentWidget.content.rowsSelected;
+      return numRows === 1 ? 'Remove Row' : `Remove ${numRows} Rows`;
+    },
     execute: () => {
       tracker.currentWidget &&
         tracker.currentWidget.content.commandSignal.emit('remove-rows');
@@ -215,7 +237,12 @@ function addCommands(
   });
 
   commands.addCommand(CommandIDs.insertColumnsLeft, {
-    label: 'Insert Column Left',
+    label: () => {
+      const numCols = tracker.currentWidget.content.columnsSelected;
+      return numCols === 1
+        ? 'Insert Column Left'
+        : `Insert ${numCols} Columns Left`;
+    },
     execute: () => {
       tracker.currentWidget &&
         tracker.currentWidget.content.commandSignal.emit('insert-columns-left');
@@ -223,7 +250,12 @@ function addCommands(
   });
 
   commands.addCommand(CommandIDs.insertColumnsRight, {
-    label: 'Insert Column Right',
+    label: () => {
+      const numCols = tracker.currentWidget.content.columnsSelected;
+      return numCols === 1
+        ? 'Insert Column Right'
+        : `Insert ${numCols} Columns Right`;
+    },
     execute: () => {
       tracker.currentWidget &&
         tracker.currentWidget.content.commandSignal.emit(
@@ -233,7 +265,10 @@ function addCommands(
   });
 
   commands.addCommand(CommandIDs.removeColumns, {
-    label: 'Remove Column',
+    label: () => {
+      const numCols = tracker.currentWidget.content.columnsSelected;
+      return numCols === 1 ? 'Remove Column' : `Remove ${numCols} Columns`;
+    },
     execute: () => {
       tracker.currentWidget &&
         tracker.currentWidget.content.commandSignal.emit('remove-columns');
@@ -323,7 +358,7 @@ function addCommands(
     icon: saveIcon,
     iconLabel: 'Save',
     className: 'jp-toolbar-save',
-    caption: 'Redo',
+    caption: 'Save',
     execute: () => {
       tracker.currentWidget &&
         tracker.currentWidget.content.commandSignal.emit('save');
@@ -500,6 +535,48 @@ namespace Private {
     //rowBackgroundColor: i => (i % 2 === 0 ? '#212121' : '#111111')
   };
 
+  export const LIGHT_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
+    ghostRowColor: 'rgba(243, 243, 243, 0.80)',
+    ghostColumnColor: 'rgba(243, 243, 243, 0.80)',
+    icons: {
+      'ghost-column': {
+        icon: addIcon,
+        color: '#616161',
+        height: 1 / 2,
+        left: 1 / 2,
+        top: 1 / 2
+      },
+      'ghost-row': {
+        icon: addIcon,
+        color: '#616161',
+        height: 1 / 2,
+        left: 1 / 2,
+        top: 1 / 2
+      }
+    }
+  };
+
+  export const DARK_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
+    ghostRowColor: 'rgba(0, 0, 0, 0.65)',
+    ghostColumnColor: 'rgba(0, 0, 0, 0.65)',
+    icons: {
+      'ghost-column': {
+        icon: addIcon,
+        color: '#bdbdbd',
+        height: 1 / 2,
+        left: 1 / 2,
+        top: 1 / 2
+      },
+      'ghost-row': {
+        icon: addIcon,
+        color: '#bdbdbd',
+        height: 1 / 2,
+        left: 1 / 2,
+        top: 1 / 2
+      }
+    }
+  };
+
   /**
    * The light config for the data grid renderer.
    */
@@ -515,8 +592,8 @@ namespace Private {
    */
   export const DARK_TEXT_CONFIG: TextRenderConfig = {
     textColor: '#F5F5F5',
-    matchBackgroundColor: '#F99C3D',
-    currentMatchBackgroundColor: '#F57C00',
+    matchBackgroundColor: 'rgba(0, 84, 168, 0.5)',
+    currentMatchBackgroundColor: '#0055AA',
     horizontalAlignment: 'center'
   };
 }
