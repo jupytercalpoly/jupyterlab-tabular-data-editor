@@ -138,7 +138,7 @@ export class RichMouseHandler extends BasicMouseHandler {
     }
   }
 
-  onWheel(grid: DataGrid, event: WheelEvent) {
+  onWheel(grid: DataGrid, event: WheelEvent): void {
     this._mouseWheelSignal.emit(null);
     super.onWheel(grid, event);
   }

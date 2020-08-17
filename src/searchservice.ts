@@ -51,7 +51,7 @@ export class GridSearchService {
     config: TextRenderConfig
   ): CellRenderer.ConfigFunc<string> {
     return ({ value, row, column }): string => {
-      if (this._query) {
+      if (this._query && value) {
         if ((value as string).match(this._query)) {
           if (
             this._currentMatch.line === row &&
