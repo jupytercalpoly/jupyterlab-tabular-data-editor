@@ -27,7 +27,7 @@ import { RichMouseHandler } from './handler';
 import { numberToCharacter } from './_helper';
 import { toArray, range } from '@lumino/algorithm';
 import { CommandRegistry } from '@lumino/commands';
-import { CommandIDs } from './index';
+import { CommandIDs, LIGHT_EXTRA_STYLE, DARK_EXTRA_STYLE } from './index';
 import { VirtualDOM, h } from '@lumino/virtualdom';
 import { GridSearchService } from './searchservice';
 import { Litestore } from './litestore';
@@ -835,11 +835,11 @@ export class DSVEditor extends Widget {
     // Switch both to non-hovered state.
     const style = { ...this._grid.extraStyle } as PaintedGrid.ExtraStyle;
     if (this.grid.style.voidColor === '#F3F3F3') {
-      style.ghostColumnColor = 'rgba(243, 243, 243, 0.80)';
-      style.ghostRowColor = 'rgba(243, 243, 243, 0.80)';
+      style.ghostColumnColor = LIGHT_EXTRA_STYLE.ghostColumnColor;
+      style.ghostRowColor = LIGHT_EXTRA_STYLE.ghostRowColor;
     } else {
-      style.ghostColumnColor = 'rgba(0, 0, 0, 0.65)';
-      style.ghostRowColor = 'rgba(0, 0, 0, 0.65)';
+      style.ghostColumnColor = DARK_EXTRA_STYLE.ghostColumnColor;
+      style.ghostRowColor = DARK_EXTRA_STYLE.ghostRowColor;
     }
     switch (hoverRegion) {
       case null: {
