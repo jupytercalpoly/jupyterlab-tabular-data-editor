@@ -1,4 +1,4 @@
-import { CommandToolbarButton } from '@jupyterlab/apputils';
+import { CommandToolbarButton, ToolbarButton } from '@jupyterlab/apputils';
 import { ActivityMonitor } from '@jupyterlab/coreutils';
 import {
   ABCWidgetFactory,
@@ -956,6 +956,16 @@ export class EditableCSVDocumentWidget extends DocumentWidget<DSVEditor> {
     this.toolbar.addItem(
       'paste',
       new CommandToolbarButton({ commands, id: pasteToolbar })
+    );
+
+    this.toolbar.addItem(
+      'date-detection',
+      new ToolbarButton({
+        label: 'Data Detection',
+        iconClass: 'jp-ToggleSwitch',
+        tooltip: 'Enable / Disable Data Detection' //,
+        // onClick
+      })
     );
 
     /* possible feature
