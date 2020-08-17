@@ -46,7 +46,7 @@ export class HeaderCellEditor extends TextCellEditor {
     this.viewportOccluder.style.position = 'absolute';
 
     this.editorContainer.style.left = cellInfo.x - 1 - headerWidth + 'px';
-    this.editorContainer.style.top = cellInfo.y - 1 - headerHeight + 'px';
+    this.editorContainer.style.top = cellInfo.y + 'px';
     this.editorContainer.style.width = cellInfo.width + 1 + 'px';
     this.editorContainer.style.height = headerHeight + 1 + 'px';
     this.editorContainer.style.visibility = 'visible';
