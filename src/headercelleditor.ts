@@ -13,9 +13,9 @@ export class HeaderCellEditor extends TextCellEditor {
 
     const columnX =
       grid.headerWidth - grid.scrollX + grid.columnOffset('body', column);
-    const rowY = grid.headerHeight - grid.scrollY + grid.rowOffset('body', row);
+    const rowY = 0;
     const width = grid.columnSize('body', column);
-    const height = grid.rowSize('body', row);
+    const height = grid.headerHeight;
 
     return {
       grid: grid,
@@ -46,7 +46,7 @@ export class HeaderCellEditor extends TextCellEditor {
     this.viewportOccluder.style.position = 'absolute';
 
     this.editorContainer.style.left = cellInfo.x - 1 - headerWidth + 'px';
-    this.editorContainer.style.top = cellInfo.y - 1 - headerHeight + 'px';
+    this.editorContainer.style.top = cellInfo.y + 'px';
     this.editorContainer.style.width = cellInfo.width + 1 + 'px';
     this.editorContainer.style.height = headerHeight + 1 + 'px';
     this.editorContainer.style.visibility = 'visible';
