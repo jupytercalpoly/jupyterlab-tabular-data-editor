@@ -811,9 +811,18 @@ export class DSVEditor extends Widget {
    * Updates the context menu elements.
    */
   private _updateContextElements(): void {
+    // calculate dimensions for the ghost row/column
+    const ghostRow = this._grid.rowSize(
+      'body',
+      this._grid.rowCount('body') - 1
+    );
+    const ghostColumn = this._grid.columnSize(
+      'body',
+      this._grid.columnCount('body') - 1
+    );
     // Update the column header, row header, and background elements.
-    this._background.style.width = `${this._grid.bodyWidth}px`;
-    this._background.style.height = `${this._grid.bodyHeight}px`;
+    this._background.style.width = `${this._grid.bodyWidth - ghostColumn}px`;
+    this._background.style.height = `${this._grid.bodyHeight - ghostRow}px`;
     this._background.style.left = `${this._grid.headerWidth}px`;
     this._background.style.top = `${this._grid.headerHeight}px`;
     this._columnHeader.style.left = `${this._grid.headerWidth}px`;

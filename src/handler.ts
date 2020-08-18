@@ -18,7 +18,7 @@ import { HeaderCellEditor } from './headercelleditor';
 
 export class RichMouseHandler extends BasicMouseHandler {
   private _moveLine: BoundedDrag;
-  private _lastHoverRegion: 'ghost-row' | 'ghost-column' | null;
+  private _currentHoverRegion: 'ghost-row' | 'ghost-column' | null;
   constructor(options: RichMouseHandler.IOptions) {
     super();
     this._grid = options.grid;
@@ -167,18 +167,20 @@ export class RichMouseHandler extends BasicMouseHandler {
    * @param event
    */
   onMouseHover(grid: DataGrid, event: MouseEvent): void {
-    // See if we are on a ghost row or ghost column.
+    // See if we are on a ghost row or ghost column. If not, null
     const { row, column } = grid.hitTest(event.clientX, event.clientY);
     let hoverRegion: 'ghost-row' | 'ghost-column' | null = null;
     if (row === grid.dataModel.rowCount('body') - 1) {
       hoverRegion = 'ghost-row';
     } else if (column === grid.dataModel.columnCount('body') - 1) {
       hoverRegion = 'ghost-column';
+    } else {
+      hoverRegion = null;
     }
-    if (this._lastHoverRegion !== hoverRegion) {
+    if (this._currentHoverRegion !== hoverRegion) {
       this.hoverSignal.emit(hoverRegion);
     }
-    this._lastHoverRegion = hoverRegion;
+    this._currentHoverRegion = hoverRegion;
     this._event = event;
     super.onMouseHover(grid, event);
   }
@@ -192,14 +194,13 @@ export class RichMouseHandler extends BasicMouseHandler {
   onMouseDown(grid: DataGrid, event: MouseEvent): void {
     const model = grid.dataModel as EditorModel;
 
-    let update: DSVEditor.ModelChangedArgs;
-    if (this._lastHoverRegion === 'ghost-row') {
-      update = model.addRows('body', model.rowCount('body') - 1);
-      model.onChangedSignal.emit(update);
-      return;
-    }
-    if (this._lastHoverRegion === 'ghost-column') {
-      update = model.addColumns('body', model.columnCount('body') - 1);
+    // if the event was a left click and the hover region isn't null
+    if (event.type === 'mousedown' && this._currentHoverRegion) {
+      const update: DSVEditor.ModelChangedArgs =
+        // add a row/column based on currentHoverRegion, get update object
+        this._currentHoverRegion === 'ghost-row'
+          ? model.addRows('body', model.rowCount('body') - 1)
+          : model.addColumns('body', model.columnCount('body') - 1);
       model.onChangedSignal.emit(update);
       return;
     }
