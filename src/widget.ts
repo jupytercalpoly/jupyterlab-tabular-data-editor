@@ -18,7 +18,8 @@ import {
   DataGrid,
   TextRenderer,
   SelectionModel,
-  DataModel
+  DataModel,
+  CellRenderer
 } from 'tde-datagrid';
 import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget, LayoutItem } from '@lumino/widgets';
@@ -27,7 +28,7 @@ import { RichMouseHandler } from './handler';
 import { numberToCharacter } from './_helper';
 import { toArray, range } from '@lumino/algorithm';
 import { CommandRegistry } from '@lumino/commands';
-import { CommandIDs } from './index';
+import { CommandIDs, LIGHT_EXTRA_STYLE, DARK_EXTRA_STYLE } from './index';
 import { VirtualDOM, h } from '@lumino/virtualdom';
 import { GridSearchService } from './searchservice';
 import { Litestore } from './litestore';
@@ -91,6 +92,7 @@ export class DSVEditor extends Widget {
 
     // Connect to the mouse handler signals.
     handler.mouseUpSignal.connect(this._onMouseUp, this);
+    handler.hoverSignal.connect(this._onMouseHover, this);
 
     // init search service to search for matches with the data grid
     this._searchService = new GridSearchService(this._grid);
@@ -232,7 +234,7 @@ export class DSVEditor extends Widget {
     return this._searchService;
   }
 
-  get grid(): DataGrid {
+  get grid(): PaintedGrid {
     return this._grid;
   }
 
@@ -429,6 +431,7 @@ export class DSVEditor extends Widget {
       // set inital status of litestore
       this.updateModel(update);
       dataModel.onChangedSignal.connect(this._onModelSignal, this);
+      dataModel.isDataDetectionChanged.connect(this._updateRenderer, this);
       // dataModel.cancelEditingSignal.connect(this._cancelEditing, this);
     }
 
@@ -443,10 +446,13 @@ export class DSVEditor extends Widget {
     if (this._baseRenderer === null) {
       return;
     }
+    const isDataDetection = this.dataModel && this.dataModel.isDataDetection;
     const rendererConfig = this._baseRenderer;
     const renderer = new TextRenderer({
       textColor: rendererConfig.textColor,
-      horizontalAlignment: rendererConfig.horizontalAlignment,
+      horizontalAlignment: isDataDetection
+        ? this.cellHorizontalAlignmentRendererFunc()
+        : rendererConfig.horizontalAlignment,
       backgroundColor: this._searchService.cellBackgroundColorRendererFunc(
         rendererConfig
       )
@@ -457,6 +463,18 @@ export class DSVEditor extends Widget {
       'corner-header': renderer,
       'row-header': renderer
     });
+  }
+
+  cellHorizontalAlignmentRendererFunc(): CellRenderer.ConfigOption<
+    TextRenderer.HorizontalAlignment
+  > {
+    return ({ region, row, column }) => {
+      const { type } = this.dataModel.metadata(region, row, column);
+      if (region !== 'body' || type === 'boolean') {
+        return 'center';
+      }
+      return type === 'number' || type === 'integer' ? 'right' : 'left';
+    };
   }
 
   /**
@@ -615,7 +633,7 @@ export class DSVEditor extends Widget {
         this._litestore.undo();
 
         // Have the model emit the opposite change to the Grid.
-        this.dataModel.emitOppositeChange(gridState.nextChange);
+        this.dataModel.emitOppositeChange(gridState);
 
         if (!selection) {
           break;
@@ -824,6 +842,39 @@ export class DSVEditor extends Widget {
     this._column = hit.column;
   }
 
+  /**
+   * A handler for the on mouse up signal
+   */
+  private _onMouseHover(
+    emitter: RichMouseHandler,
+    hoverRegion: 'ghost-row' | 'ghost-column' | null
+  ): void {
+    // Switch both to non-hovered state.
+    const style = { ...this._grid.extraStyle } as PaintedGrid.ExtraStyle;
+    if (this.grid.style.voidColor === '#F3F3F3') {
+      style.ghostColumnColor = LIGHT_EXTRA_STYLE.ghostColumnColor;
+      style.ghostRowColor = LIGHT_EXTRA_STYLE.ghostRowColor;
+    } else {
+      style.ghostColumnColor = DARK_EXTRA_STYLE.ghostColumnColor;
+      style.ghostRowColor = DARK_EXTRA_STYLE.ghostRowColor;
+    }
+    switch (hoverRegion) {
+      case null: {
+        break;
+      }
+      case 'ghost-row': {
+        style.ghostRowColor = 'rgba(0, 0, 0, 0)';
+        break;
+      }
+      case 'ghost-column': {
+        style.ghostColumnColor = 'rgba(0, 0, 0, 0)';
+        break;
+      }
+    }
+    // Schedule a repaint of the grid.
+    this._grid.extraStyle = style;
+  }
+
   private _region: DataModel.CellRegion;
   private _row: number;
   private _column: number;
@@ -979,7 +1030,7 @@ export class EditableCSVDocumentWidget extends DocumentWidget<DSVEditor> {
     );
   }
 
-  toggleDataDetection() {
+  toggleDataDetection(): void {
     const isDataDetection = this.content.dataModel.isDataDetection;
     if (!isDataDetection) {
       this.node.setAttribute('isDataDetection', 'true');

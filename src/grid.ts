@@ -202,7 +202,7 @@ export class PaintedGrid extends DataGrid {
     const y2 = Math.min(ry + rh - 1, contentY + contentH - 1);
 
     // Fill the region with the specified color.
-    this.canvasGC.fillStyle = this._extraStyle.ghostColumnColor;
+    this.canvasGC.fillStyle = this._extraStyle.ghostRowColor;
     this.canvasGC.fillRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
 
     this._drawGhostRowIcon();
