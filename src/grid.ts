@@ -523,8 +523,6 @@ export class PaintedGrid extends DataGrid {
       // Fetch the data type for the column.
       const metadata = model.metadata('body', 0, rgn.column + i);
 
-      console.log(rgn.column + i, metadata, metadata.type);
-
       // Fetch the icon spec from the type
       const iconArgs = this._extraStyle.icons[metadata.type];
 
