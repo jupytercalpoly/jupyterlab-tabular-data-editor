@@ -16,12 +16,13 @@ An account of tasks and features that are completed or planned
 - [x] Search and Replace
 - [x] Clear contents
 - [x] CSV launcher
-- [ ] Multi row/column moving
-- [ ] Ghost row/column
+- [x] Multi row/column insert/remove
+- [x] Ghost row/column
 - [ ] Data type detection
 ---
 **Potential Future Features**
 - [ ] Moving cells
+- [ ] Multi row/column move
 - [ ] Filter
 - [ ] Sort
 - [ ] Referencing other cells in formulas (relative positioning)
@@ -29,7 +30,13 @@ An account of tasks and features that are completed or planned
 
 ## Current Progress
 
-### 08/03/20 - 08/7/20
+### 08/10/20 - 08/14/20
+- CSV launcher - Kalen
+- Unsaved changes dialog - Kalen
+- Scroll and select while searching - Kalen
+- Multi insert/remove for rows/columns - Kalen
+
+### 08/03/20 - 08/07/20
 #### [Demo 2](https://docs.google.com/presentation/d/1ZGjFb3RkoR5Cc39DDdtU-AYAoYMNVMyUM9g80qgNzos/edit?usp=sharing)
 - Litestore refactor - Kalen
 - Selection UI/UX fixes - Kalen
