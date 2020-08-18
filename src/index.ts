@@ -502,26 +502,19 @@ export const LIGHT_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
   ghostRowColor: 'rgba(243, 243, 243, 0.80)',
   ghostColumnColor: 'rgba(243, 243, 243, 0.80)',
   icons: {
-    // NOTE: TO GET CENTERED, COMPUTE
-    // left = defaultSizes['columnWidth'] / 2 - size / 2
-    // top = defaultSizes['columnHeaderHeight'] / 2 - size / 2
-    // The defaultSizes are in the DSVEditor constructor in widget.ts
     'ghost-column': {
       icon: addIcon,
       color: '#616161',
       size: 18,
-      left: 63,
-      top: 9
+      left: 63 /* set to columnWidth / 2 - size / 2 to make centered */,
+      top: 9 /* set to columnHeaderHeight / 2 - size / 2 to make centered */
     },
-    // NOTE: TO GET CENTERED, COMPUTE
-    //left = defaultSizes['rowHeaderWidth'] / 2 - size / 2
-    //top = defaultSizes['rowHeight'] / 2 - size / 2
     'ghost-row': {
       icon: addIcon,
       color: '#bdbdbd',
       size: 12,
-      left: 26,
-      top: 6
+      left: 26 /* set to rowHeaderWidth / 2 - size / 2 to make centered */,
+      top: 6 /* set to rowHeight / 2 - size / 2 to make centered. */
     }
   }
 };
