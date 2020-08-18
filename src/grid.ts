@@ -391,6 +391,50 @@ export class PaintedGrid extends DataGrid {
     this.canvasGC.fillRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
   }
 
+  private _paintIcons(rx: number, ry: number, rw: number, rh: number): void {
+    // Get the visible content dimensions.
+    const contentW = this.bodyWidth - this.scrollX;
+    const contentH = this.headerHeight;
+
+    // Bail if there is no content to draw.
+    if (contentW <= 0 || contentH <= 0) {
+      return;
+    }
+    // Get the visible content origin.
+    const contentX = this.headerWidth;
+    const contentY = 0;
+    // Bail if the dirty rect does not intersect the content area.
+    if (rx + rw <= contentX) {
+      return;
+    }
+    if (ry + rh <= contentY) {
+      return;
+    }
+    if (rx >= contentX + contentW) {
+      return;
+    }
+    if (ry >= contentY + contentH) {
+      return;
+    }
+    // Get the upper and lower bounds of the dirty content area.
+    const x1 = Math.max(rx, contentX);
+    const y1 = ry;
+    const x2 = Math.min(rx + rw - 1, contentX + contentW - 1);
+    const y2 = Math.min(ry + rh - 1, contentY + contentH - 1);
+
+    // Convert the dirty content bounds into cell bounds.
+    const c1 = this.columnSections.indexOf(x1 - contentX + this.scrollX);
+    let c2 = this.columnSections.indexOf(x2 - contentX + this.scrollX);
+
+    // Fetch the max column.
+    const maxColumn = this.columnSections.count - 1;
+
+    // Handle a dirty content area larger than the cell count.
+    if (c2 < 0) {
+      c2 = maxColumn;
+    }
+  }
+
   private _extraStyle: PaintedGrid.ExtraStyle;
 }
 
