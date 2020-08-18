@@ -256,7 +256,6 @@ export class PaintedGrid extends DataGrid {
 
   private _drawGhostRowIcon(): void {
     // Get the dimensions for the cell.
-    const cellW = this.headerWidth;
     const cellH = this.defaultSizes.rowHeight;
 
     // Get the icon arguments.
@@ -270,25 +269,21 @@ export class PaintedGrid extends DataGrid {
     const transform = this.canvasGC.getTransform();
 
     // Unpack the icon arguments.
-    const { icon, color, height } = iconArgs;
+    const { icon, color, size, top, left } = iconArgs;
 
     // Parse the icon path from the icon string.
-    const { defaultHeight, viewBoxSize, path } = Private.parseSVG(icon.svgstr);
+    const { defaultSize, path } = Private.parseSVG(icon.svgstr);
 
     // Create a path 2d object from the path string.
     const canvasPath = new Path2D(path);
 
     // Solve for the scaling factor using the provided width or the default.
-    const scale = (height * Math.min(cellW, cellH)) / defaultHeight;
+    const scale = size / defaultSize;
 
     // Orient the canvas to the desired origin for the icon.
     this.canvasGC.translate(
-      cellW / 2 - (viewBoxSize * scale) / 2,
-      this.headerHeight +
-        this.bodyHeight -
-        this.scrollY -
-        cellH / 2 -
-        (viewBoxSize * scale) / 2
+      left,
+      this.headerHeight + this.bodyHeight - cellH + top - this.scrollY
     );
 
     // Scale the canvas.
@@ -307,7 +302,6 @@ export class PaintedGrid extends DataGrid {
   private _drawColumnIcon(): void {
     // Get the dimensions for the cell.
     const cellW = this.defaultSizes.columnWidth;
-    const cellH = this.headerHeight;
 
     // Get the icon arguments.
     const iconArgs = this._extraStyle.icons['ghost-column'];
@@ -321,25 +315,21 @@ export class PaintedGrid extends DataGrid {
     const transform = this.canvasGC.getTransform();
 
     // Unpack the icon arguments.
-    const { icon, color, height, left, top } = iconArgs;
+    const { icon, color, size, left, top } = iconArgs;
 
     // Parse the icon path from the icon string.
-    const { defaultHeight, viewBoxSize, path } = Private.parseSVG(icon.svgstr);
+    const { defaultSize, path } = Private.parseSVG(icon.svgstr);
 
     // Create a path 2d object from the path string.
     const canvasPath = new Path2D(path);
 
     // Solve for the scaling factor using the provided width or the default.
-    const scale = (height * Math.min(cellH, cellW)) / defaultHeight;
+    const scale = size / defaultSize;
 
     // Orient to the desired origin for the icon.
     this.canvasGC.translate(
-      this.headerWidth +
-        this.bodyWidth -
-        this.scrollX -
-        left * cellW -
-        (viewBoxSize * scale) / 2,
-      top * cellH - (viewBoxSize * scale) / 2
+      this.headerWidth + this.bodyWidth - cellW + left - this.scrollX,
+      top
     );
 
     // Scale the canvas.
@@ -449,19 +439,17 @@ export namespace PaintedGrid {
      */
     color: string;
     /**
-     * How far left to center the Icon as a proportion of the width of the cell.
+     * Distance right in pixcels from the left cell boundary.
      */
     left?: number;
     /**
-     * How far down to center the Icon as a proportion of the height of the cell.
+     * Distance right in pixcels from the top cell boundary.
      */
     top?: number;
     /**
-     * The height of the Icon as a proportion of the height of the cell.
-     * NOTE: If the width of the cell is less than the height, then this
-     * will be calculated as a proportion of the width.
+     * Size of icon in pixcels.
      */
-    height?: number;
+    size?: number;
   };
 }
 
@@ -470,29 +458,22 @@ export namespace PaintedGrid {
  */
 namespace Private {
   export interface ISVGInfo {
-    defaultHeight: number;
-    viewBoxSize: number;
+    defaultSize: number;
     path: string;
   }
   /**
    * Parse an svg string into a standard form.
    */
   export function parseSVG(svgstr: string): ISVGInfo {
-    // Set up a regular expression to get the width.
-    let regex = /width="(.+?)"/;
-
-    // Find the width an parse it to an integer.
-    const defaultHeight = parseInt(svgstr.match(regex)[1]);
-
-    // Redefine the regular expression to get the viewbox size.
-    regex = /viewBox="(.+?)"/;
+    // Set up a regular expression to get the size.
+    let regex = /viewBox="(.+?)"/;
 
     const viewBox = svgstr
       .match(regex)[1]
       .split(' ')
       .map(digit => parseInt(digit));
 
-    const viewBoxSize = viewBox[2];
+    const defaultSize = viewBox[2];
 
     // Redefine the regular expression to get the path string.
     regex = /path d="(.+?)"/;
@@ -500,7 +481,7 @@ namespace Private {
     // Fetch the path string.
     const path = svgstr.match(regex)[1];
 
-    return { defaultHeight, viewBoxSize, path };
+    return { defaultSize, path };
   }
   export const defaultExtraStyle = {
     ghostRowColor: 'rgba(243, 243, 243, 0.80)',
@@ -509,16 +490,17 @@ namespace Private {
       'ghost-column': {
         icon: addIcon,
         color: '#616161',
-        height: 1 / 2,
-        left: 1 / 2,
-        top: 1 / 2
+        size: 18,
+        left: 63,
+        top: 9
       },
+
       'ghost-row': {
         icon: addIcon,
-        color: '#616161',
-        height: 1 / 2,
-        left: 1 / 2,
-        top: 1 / 2
+        color: '#bdbdbd',
+        size: 12,
+        left: 26,
+        top: 6
       }
     }
   };

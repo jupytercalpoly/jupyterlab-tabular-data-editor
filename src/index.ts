@@ -505,37 +505,39 @@ export const LIGHT_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
     'ghost-column': {
       icon: addIcon,
       color: '#616161',
-      height: 1 / 2,
-      left: 1 / 2,
-      top: 1 / 2
+      size: 18,
+      left: 63 /* set to columnWidth / 2 - size / 2 to make centered */,
+      top: 9 /* set to columnHeaderHeight / 2 - size / 2 to make centered */
     },
     'ghost-row': {
       icon: addIcon,
-      color: '#616161',
-      height: 1 / 2,
-      left: 1 / 2,
-      top: 1 / 2
+      color: '#bdbdbd',
+      size: 12,
+      left: 26 /* set to rowHeaderWidth / 2 - size / 2 to make centered */,
+      top: 6 /* set to rowHeight / 2 - size / 2 to make centered. */
     }
   }
 };
-
+/**
+ *
+ */
 export const DARK_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
   ghostRowColor: 'rgba(0, 0, 0, 0.65)',
   ghostColumnColor: 'rgba(0, 0, 0, 0.65)',
   icons: {
     'ghost-column': {
       icon: addIcon,
-      color: '#bdbdbd',
-      height: 1 / 2,
-      left: 1 / 2,
-      top: 1 / 2
+      color: '#616161',
+      size: 18,
+      left: 63 /* set to columnWidth / 2 - size / 2 to make centered */,
+      top: 9 /* set to columnHeaderHeight / 2 - size / 2 to make centered */
     },
     'ghost-row': {
       icon: addIcon,
       color: '#bdbdbd',
-      height: 1 / 2,
-      left: 1 / 2,
-      top: 1 / 2
+      size: 12,
+      left: 26 /* set to rowHeaderWidth / 2 - size / 2 to make centered */,
+      top: 6 /* set to rowHeight / 2 - size / 2 to make centered. */
     }
   }
 };
