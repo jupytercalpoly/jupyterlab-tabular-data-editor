@@ -564,20 +564,6 @@ namespace Private {
   };
 
   /**
-   * The dark theme for the data grid.
-   */
-  export const DARK_STYLE: DataGrid.Style = {
-    ...DataGrid.defaultStyle,
-    voidColor: 'black',
-    backgroundColor: '#111111',
-    headerBackgroundColor: '#424242',
-    gridLineColor: 'rgba(235, 235, 235, 0.15)',
-    headerGridLineColor: 'rgba(235, 235, 235, 0.25)',
-    headerSelectionFillColor: 'rgba(20, 20, 20, 0.25)'
-    //rowBackgroundColor: i => (i % 2 === 0 ? '#212121' : '#111111')
-  };
-
-  /**
    * The light config for the data grid renderer.
    */
   export const LIGHT_TEXT_CONFIG: TextRenderConfig = {
