@@ -23,6 +23,7 @@ export class EditorModel extends MutableDataModel {
   private _saving = false;
   private _ghostsRevealed = true;
   private _isDataDetection = false;
+  private _isDataDetectionChanged = new Signal<this, null>(this);
   // private _onChangeSignal: Signal<this, string> = new Signal<this, string>(
   //   this
   // );
@@ -147,6 +148,11 @@ export class EditorModel extends MutableDataModel {
       return;
     }
     this._isDataDetection = bool;
+    this._isDataDetectionChanged.emit(null);
+  }
+
+  get isDataDetectionChanged(): Signal<this, null> {
+    return this._isDataDetectionChanged;
   }
 
   metadata(
@@ -164,7 +170,7 @@ export class EditorModel extends MutableDataModel {
     }
 
     const arr = [];
-    for (let i = 0; i < this.rowCount('body'); i++) {
+    for (let i = 0; i < this.totalRows - 1; i++) {
       arr.push(this.data(region, i, column));
     }
 
