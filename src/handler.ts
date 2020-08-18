@@ -103,33 +103,51 @@ export class RichMouseHandler extends BasicMouseHandler {
    * @override
    * Returns the proper resize cursor type based on the region clicked
    * Calls cursorByRegion if no resize cursor is correct
-   * @param region The current region
+   * @param area The current area "top" | "left" | "right" | "bottom" | "none"
    */
-  cursorForHandle(region: ResizeHandle): string {
+  cursorForHandle(area: ResizeHandle): string {
+    // grab the current row/column
+    const { region, row, column } = this._grid.hitTest(
+      this._event.clientX,
+      this._event.clientY
+    );
+    const model = this._grid.dataModel as EditorModel;
+
+    // show the pointer cursor for the ghost row/column
+    if (row === model.totalRows - 1 || column === model.totalColumns) {
+      return (this._cursor = 'pointer');
+    }
+
     const cursorMap = {
       top: 'ns-resize',
       left: 'ew-resize',
       right: 'ew-resize',
       bottom: 'ns-resize',
-      none: this.cursorByRegion()
+      none: this.cursorByRegion(region, row, column)
     };
-    this._cursor = cursorMap[region];
+    this._cursor = cursorMap[area];
     return this._cursor;
   }
 
   /**
    * Called from the cursorForHandle function to enable grab cursor by region
+   * @param region The current region in the model
+   * @param row The current row
+   * @param column The current column
    */
-  cursorByRegion(): string {
-    const hit = this._grid.hitTest(this._event.clientX, this._event.clientY);
+  cursorByRegion(
+    region: DataModel.CellRegion | 'void',
+    row: number,
+    column: number
+  ): string {
     // display the grab cursor if the row/column is in the curent selection
-    switch (hit.region) {
+    switch (region) {
       case 'row-header':
-        return this._grid.selectionModel.isRowSelected(hit.row)
+        return this._grid.selectionModel.isRowSelected(row)
           ? 'grab'
           : 'default';
       case 'column-header':
-        return this._grid.selectionModel.isColumnSelected(hit.column)
+        return this._grid.selectionModel.isColumnSelected(column)
           ? 'grab'
           : 'default';
       default: {
