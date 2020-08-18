@@ -503,6 +503,16 @@ function buildContextMenu(
 
 export default [extension];
 
+const DATATYPE_ICON = {
+  colorLight: '#1e88e5',
+  colorDark: '#2196f3',
+  position: {
+    size: 16,
+    left: 2,
+    top: 6
+  }
+};
+
 export const LIGHT_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
   ghostRowColor: 'rgba(243, 243, 243, 0.80)',
   ghostColumnColor: 'rgba(243, 243, 243, 0.80)',
@@ -523,31 +533,23 @@ export const LIGHT_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
     },
     string: {
       icon: new LabIcon({ name: 'tde:string', svgstr: stringSvgString }),
-      color: 'black',
-      size: 12,
-      left: 2,
-      top: 6
+      color: DATATYPE_ICON.colorLight,
+      ...DATATYPE_ICON.position
     },
     integer: {
       icon: new LabIcon({ name: 'tde:number', svgstr: numberSvgStr }),
-      color: 'black',
-      size: 12,
-      left: 2,
-      top: 6
+      color: DATATYPE_ICON.colorLight,
+      ...DATATYPE_ICON.position
     },
     boolean: {
       icon: new LabIcon({ name: 'tde:checkbox', svgstr: checkboxSvgStr }),
-      color: 'black',
-      size: 12,
-      left: 2,
-      top: 6
+      color: DATATYPE_ICON.colorLight,
+      ...DATATYPE_ICON.position
     },
     date: {
       icon: new LabIcon({ name: 'tde:date', svgstr: calendarSvgStr }),
-      color: 'black',
-      size: 12,
-      left: 2,
-      top: 6
+      color: DATATYPE_ICON.colorLight,
+      ...DATATYPE_ICON.position
     }
   }
 };
@@ -574,31 +576,23 @@ export const DARK_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
     },
     string: {
       icon: new LabIcon({ name: 'tde:string', svgstr: stringSvgString }),
-      color: 'grey',
-      size: 12,
-      left: 2,
-      top: 6
+      color: DATATYPE_ICON.colorDark,
+      ...DATATYPE_ICON.position
     },
     integer: {
       icon: new LabIcon({ name: 'tde:number', svgstr: numberSvgStr }),
-      color: 'grey',
-      size: 12,
-      left: 2,
-      top: 6
+      color: DATATYPE_ICON.colorDark,
+      ...DATATYPE_ICON.position
     },
     boolean: {
       icon: new LabIcon({ name: 'tde:checkbox', svgstr: checkboxSvgStr }),
-      color: 'grey',
-      size: 12,
-      left: 2,
-      top: 6
+      color: DATATYPE_ICON.colorDark,
+      ...DATATYPE_ICON.position
     },
     date: {
       icon: new LabIcon({ name: 'tde:date', svgstr: calendarSvgStr }),
-      color: 'grey',
-      size: 12,
-      left: 2,
-      top: 6
+      color: DATATYPE_ICON.colorDark,
+      ...DATATYPE_ICON.position
     }
   }
 };
