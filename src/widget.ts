@@ -469,10 +469,10 @@ export class DSVEditor extends Widget {
     TextRenderer.HorizontalAlignment
   > {
     return ({ region, row, column }) => {
-      if (region !== 'body') {
+      const { type } = this.dataModel.metadata(region, row, column);
+      if (region !== 'body' || type === 'boolean') {
         return 'center';
       }
-      const { type } = this.dataModel.metadata(region, row, column);
       return type === 'number' || type === 'integer' ? 'right' : 'left';
     };
   }
