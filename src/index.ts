@@ -498,48 +498,6 @@ function buildContextMenu(
 
 export default [extension];
 
-export const LIGHT_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
-  ghostRowColor: 'rgba(243, 243, 243, 0.80)',
-  ghostColumnColor: 'rgba(243, 243, 243, 0.80)',
-  icons: {
-    'ghost-column': {
-      icon: addIcon,
-      color: '#616161',
-      height: 1 / 2,
-      left: 1 / 2,
-      top: 1 / 2
-    },
-    'ghost-row': {
-      icon: addIcon,
-      color: '#616161',
-      height: 1 / 2,
-      left: 1 / 2,
-      top: 1 / 2
-    }
-  }
-};
-
-export const DARK_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
-  ghostRowColor: 'rgba(0, 0, 0, 0.65)',
-  ghostColumnColor: 'rgba(0, 0, 0, 0.65)',
-  icons: {
-    'ghost-column': {
-      icon: addIcon,
-      color: '#bdbdbd',
-      height: 1 / 2,
-      left: 1 / 2,
-      top: 1 / 2
-    },
-    'ghost-row': {
-      icon: addIcon,
-      color: '#bdbdbd',
-      height: 1 / 2,
-      left: 1 / 2,
-      top: 1 / 2
-    }
-  }
-};
-
 /**
  * A namespace for private data.
  */
@@ -573,6 +531,55 @@ namespace Private {
     headerGridLineColor: 'rgba(235, 235, 235, 0.25)',
     headerSelectionFillColor: 'rgba(20, 20, 20, 0.25)'
     //rowBackgroundColor: i => (i % 2 === 0 ? '#212121' : '#111111')
+  };
+
+  export const LIGHT_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
+    ghostRowColor: 'rgba(243, 243, 243, 0.80)',
+    ghostColumnColor: 'rgba(243, 243, 243, 0.80)',
+    icons: {
+      // NOTE: TO GET CENTERED, COMPUTE
+      // left = defaultSizes['columnWidth'] / 2 - size / 2
+      // top = defaultSizes['columnHeaderHeight'] / 2 - size / 2
+      // The defaultSizes are in the DSVEditor constructor in widget.ts
+      'ghost-column': {
+        icon: addIcon,
+        color: '#616161',
+        size: 18,
+        left: 63,
+        top: 9
+      },
+      // NOTE: TO GET CENTERED, COMPUTE
+      //left = defaultSizes['rowHeaderWidth'] / 2 - size / 2
+      //top = defaultSizes['rowHeight'] / 2 - size / 2
+      'ghost-row': {
+        icon: addIcon,
+        color: '#bdbdbd',
+        size: 12,
+        left: 26,
+        top: 6
+      }
+    }
+  };
+
+  export const DARK_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
+    ghostRowColor: 'rgba(0, 0, 0, 0.65)',
+    ghostColumnColor: 'rgba(0, 0, 0, 0.65)',
+    icons: {
+      'ghost-column': {
+        icon: addIcon,
+        color: '#616161',
+        size: 18,
+        left: 63,
+        top: 9
+      },
+      'ghost-row': {
+        icon: addIcon,
+        color: '#bdbdbd',
+        size: 12,
+        left: 26,
+        top: 6
+      }
+    }
   };
 
   /**
