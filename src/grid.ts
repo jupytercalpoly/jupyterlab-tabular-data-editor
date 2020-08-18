@@ -487,7 +487,7 @@ export class PaintedGrid extends DataGrid {
     }
 
     // Create the paint region object.
-    const rgn: DataGrid.PaintRegion = {
+    const rgn = {
       region: 'column-header',
       xMin: x1,
       yMin: y1,
