@@ -27,12 +27,17 @@ import {
   copyIcon,
   pasteIcon,
   saveIcon,
-  spreadsheetIcon
+  spreadsheetIcon,
+  LabIcon
 } from '@jupyterlab/ui-components';
 import { DataGrid } from '@lumino/datagrid';
 import { DSVEditor, EditableCSVViewerFactory } from './widget';
 import { CSVSearchProvider } from './searchprovider';
 import { PaintedGrid } from './grid';
+import calendarSvgStr from './style/svg/calendar.svg';
+import checkboxSvgStr from './style/svg/checkbox.svg';
+import numberSvgStr from './style/svg/number.svg';
+import stringSvgString from './style/svg/string.svg';
 
 /**
  * The name of the factories that creates widgets.
@@ -515,6 +520,34 @@ export const LIGHT_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
       size: 12,
       left: 26 /* set to rowHeaderWidth / 2 - size / 2 to make centered */,
       top: 6 /* set to rowHeight / 2 - size / 2 to make centered. */
+    },
+    string: {
+      icon: new LabIcon({ name: 'tde:string', svgstr: stringSvgString }),
+      color: 'black',
+      size: 12,
+      left: 2,
+      top: 6
+    },
+    number: {
+      icon: new LabIcon({ name: 'tde:number', svgstr: numberSvgStr }),
+      color: 'black',
+      size: 12,
+      left: 2,
+      top: 6
+    },
+    boolean: {
+      icon: new LabIcon({ name: 'tde:checkbox', svgstr: checkboxSvgStr }),
+      color: 'black',
+      size: 12,
+      left: 2,
+      top: 6
+    },
+    date: {
+      icon: new LabIcon({ name: 'tde:date', svgstr: calendarSvgStr }),
+      color: 'black',
+      size: 12,
+      left: 2,
+      top: 6
     }
   }
 };
@@ -538,6 +571,34 @@ export const DARK_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
       size: 12,
       left: 26 /* set to rowHeaderWidth / 2 - size / 2 to make centered */,
       top: 6 /* set to rowHeight / 2 - size / 2 to make centered. */
+    },
+    string: {
+      icon: new LabIcon({ name: 'tde:string', svgstr: stringSvgString }),
+      color: 'grey',
+      size: 12,
+      left: 2,
+      top: 6
+    },
+    number: {
+      icon: new LabIcon({ name: 'tde:number', svgstr: numberSvgStr }),
+      color: 'grey',
+      size: 12,
+      left: 2,
+      top: 6
+    },
+    boolean: {
+      icon: new LabIcon({ name: 'tde:checkbox', svgstr: checkboxSvgStr }),
+      color: 'grey',
+      size: 12,
+      left: 2,
+      top: 6
+    },
+    date: {
+      icon: new LabIcon({ name: 'tde:date', svgstr: calendarSvgStr }),
+      color: 'grey',
+      size: 12,
+      left: 2,
+      top: 6
     }
   }
 };
