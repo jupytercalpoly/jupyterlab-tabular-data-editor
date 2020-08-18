@@ -36,6 +36,11 @@ An account of tasks and features that are completed or planned
 - Scroll and select while searching - Kalen
 - Multi insert/remove for rows/columns - Kalen
 - Ghost column and ghost row - Logan
+- Usability testing - Ryan
+- Dark theme search color change - Ryan
+
+**Completed Prototypes - Ryan**
+- Data detection
 
 ### 08/03/20 - 08/07/20
 #### [Demo 2](https://docs.google.com/presentation/d/1ZGjFb3RkoR5Cc39DDdtU-AYAoYMNVMyUM9g80qgNzos/edit?usp=sharing)
