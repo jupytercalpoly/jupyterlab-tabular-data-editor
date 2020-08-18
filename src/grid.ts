@@ -70,8 +70,11 @@ export class PaintedGrid extends DataGrid {
     // Draw over the corner to hide it from view.
     this._drawOverCorner(rx, ry, rw, rh);
 
-    // Draw the other icons.
-    this._drawIcons(rx, ry, rw, rh);
+    // Draw the icons.
+    const model = this.dataModel as EditorModel;
+    if (model.isDataDetection) {
+      this._drawIcons(rx, ry, rw, rh);
+    }
   }
 
   /**
@@ -504,6 +507,11 @@ export class PaintedGrid extends DataGrid {
       // Fetch the size of the column.
       const columnSize = rgn.columnSizes[i];
 
+      // Bail if we are on the last column.
+      if (rgn.column + i + 1 === this.dataModel.columnCount('body')) {
+        return;
+      }
+
       // Skip zero sized columns.
       if (columnSize === 0) {
         continue;
@@ -513,12 +521,12 @@ export class PaintedGrid extends DataGrid {
       const model = this.dataModel as EditorModel;
 
       // Fetch the data type for the column.
-      const type = model.metadata('body', 0, rgn.column + i).type;
+      const metadata = model.metadata('body', 0, rgn.column + i);
 
-      console.log(type);
+      console.log(rgn.column + i, metadata, metadata.type);
 
       // Fetch the icon spec from the type
-      const iconArgs = this._extraStyle.icons[type];
+      const iconArgs = this._extraStyle.icons[metadata.type];
 
       // Skip if there is no icon args.
       if (!iconArgs) {

@@ -34,10 +34,10 @@ import { DataGrid } from '@lumino/datagrid';
 import { DSVEditor, EditableCSVViewerFactory } from './widget';
 import { CSVSearchProvider } from './searchprovider';
 import { PaintedGrid } from './grid';
-import calendarSvgStr from './style/svg/calendar.svg';
-import checkboxSvgStr from './style/svg/checkbox.svg';
-import numberSvgStr from './style/svg/number.svg';
-import stringSvgString from './style/svg/string.svg';
+import calendarSvgStr from '../style/icons/calendar.svg';
+import checkboxSvgStr from '../style/icons/checkbox.svg';
+import numberSvgStr from '../style/icons/number.svg';
+import stringSvgString from '../style/icons/string.svg';
 
 /**
  * The name of the factories that creates widgets.
@@ -528,7 +528,7 @@ export const LIGHT_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
       left: 2,
       top: 6
     },
-    number: {
+    integer: {
       icon: new LabIcon({ name: 'tde:number', svgstr: numberSvgStr }),
       color: 'black',
       size: 12,
@@ -579,7 +579,7 @@ export const DARK_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
       left: 2,
       top: 6
     },
-    number: {
+    integer: {
       icon: new LabIcon({ name: 'tde:number', svgstr: numberSvgStr }),
       color: 'grey',
       size: 12,
