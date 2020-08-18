@@ -1,5 +1,6 @@
 import { DataGrid } from 'tde-datagrid';
 import { LabIcon, addIcon } from '@jupyterlab/ui-components';
+import { EditorModel } from './newmodel';
 
 export class PaintedGrid extends DataGrid {
   constructor(options: PaintedGrid.IOptions) {
@@ -68,6 +69,9 @@ export class PaintedGrid extends DataGrid {
 
     // Draw over the corner to hide it from view.
     this._drawOverCorner(rx, ry, rw, rh);
+
+    // Draw the other icons.
+    this._drawIcons(rx, ry, rw, rh);
   }
 
   /**
@@ -391,7 +395,7 @@ export class PaintedGrid extends DataGrid {
     this.canvasGC.fillRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
   }
 
-  private _paintIcons(rx: number, ry: number, rw: number, rh: number): void {
+  private _drawIcons(rx: number, ry: number, rw: number, rh: number): void {
     // Get the visible content dimensions.
     const contentW = this.bodyWidth - this.scrollX;
     const contentH = this.headerHeight;
@@ -416,22 +420,143 @@ export class PaintedGrid extends DataGrid {
     if (ry >= contentY + contentH) {
       return;
     }
+
+    // Fetch the geometry.
+    const bw = this.bodyWidth;
+    const pw = this.pageWidth;
+
     // Get the upper and lower bounds of the dirty content area.
     const x1 = Math.max(rx, contentX);
     const y1 = ry;
-    const x2 = Math.min(rx + rw - 1, contentX + contentW - 1);
+    let x2 = Math.min(rx + rw - 1, contentX + contentW - 1);
     const y2 = Math.min(ry + rh - 1, contentY + contentH - 1);
 
     // Convert the dirty content bounds into cell bounds.
+    const r1 = this.columnHeaderSections.indexOf(y1);
     const c1 = this.columnSections.indexOf(x1 - contentX + this.scrollX);
+    let r2 = this.columnHeaderSections.indexOf(y2);
     let c2 = this.columnSections.indexOf(x2 - contentX + this.scrollX);
 
-    // Fetch the max column.
+    // Fetch the max row and column.
+    const maxRow = this.columnHeaderSections.count - 1;
     const maxColumn = this.columnSections.count - 1;
 
     // Handle a dirty content area larger than the cell count.
+    if (r2 < 0) {
+      r2 = maxRow;
+    }
     if (c2 < 0) {
       c2 = maxColumn;
+    }
+
+    // Convert the cell bounds back to visible coordinates.
+    const x = this.columnSections.offsetOf(c1) + contentX - this.scrollX;
+    const y = this.columnHeaderSections.offsetOf(r1);
+
+    // Set up the paint region size variables.
+    let width = 0;
+    let height = 0;
+
+    // Allocate the section sizes arrays.
+    const rowSizes = new Array<number>(r2 - r1 + 1);
+    const columnSizes = new Array<number>(c2 - c1 + 1);
+
+    // Get the row sizes for the region.
+    for (let j = r1; j <= r2; ++j) {
+      const size = this.columnHeaderSections.sizeOf(j);
+      rowSizes[j - r1] = size;
+      height += size;
+    }
+
+    // Get the column sizes for the region.
+    for (let i = c1; i <= c2; ++i) {
+      const size = this.columnSections.sizeOf(i);
+      columnSizes[i - c1] = size;
+      width += size;
+    }
+
+    // Adjust the geometry if the last column is stretched.
+    if (this.stretchLastColumn && pw > bw && c2 === maxColumn) {
+      const dw = this.pageWidth - this.bodyWidth;
+      columnSizes[columnSizes.length - 1] += dw;
+      width += dw;
+      x2 += dw;
+    }
+
+    // Create the paint region object.
+    const rgn: DataGrid.PaintRegion = {
+      region: 'column-header',
+      xMin: x1,
+      yMin: y1,
+      xMax: x2,
+      yMax: y2,
+      x,
+      y,
+      width,
+      height,
+      row: r1,
+      column: c1,
+      rowSizes,
+      columnSizes
+    };
+
+    for (let x = rgn.x, i = 0, n = rgn.columnSizes.length; i < n; ++i) {
+      // Fetch the size of the column.
+      const columnSize = rgn.columnSizes[i];
+
+      // Skip zero sized columns.
+      if (columnSize === 0) {
+        continue;
+      }
+
+      // Fetch the model.
+      const model = this.dataModel as EditorModel;
+
+      // Fetch the data type for the column.
+      const type = model.metadata('body', 0, rgn.column + i).type;
+
+      console.log(type);
+
+      // Fetch the icon spec from the type
+      const iconArgs = this._extraStyle.icons[type];
+
+      // Skip if there is no icon args.
+      if (!iconArgs) {
+        continue;
+      }
+
+      // Unpack the icon arguments.
+      const { icon, color, size, left, top } = iconArgs;
+
+      // Parse the icon path from the icon string.
+      const { defaultSize, path } = Private.parseSVG(icon.svgstr);
+
+      // Create a path 2d object from the path string.
+      const canvasPath = new Path2D(path);
+
+      // Get the default position of the canvas drawer.
+      const transform = this.canvasGC.getTransform();
+
+      // Orient to the desired origin for the icon.
+      this.canvasGC.translate(x + left, y + top);
+
+      // Solve for the scaling factor using the provided width or the default.
+      const scale = size / defaultSize;
+
+      // Scale the canvas.
+      this.canvasGC.scale(scale, scale);
+
+      // Set the canvas fill style.
+      this.canvasGC.fillStyle = color;
+
+      // Draw the icon.
+      this.canvasGC.fill(canvasPath, 'nonzero');
+
+      // Reset the transform to the initial state
+      this.canvasGC.setTransform(transform);
+
+      // Increment the running X coordinate.
+      x += columnSize;
     }
   }
 
