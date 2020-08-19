@@ -433,6 +433,10 @@ export class DSVEditor extends Widget {
       dataModel.onChangedSignal.connect(this._onModelSignal, this);
       dataModel.isDataDetectionChanged.connect(this._updateRenderer, this);
       // dataModel.cancelEditingSignal.connect(this._cancelEditing, this);
+      // Add a Column 1 header if this is a blank csv.
+      if (!data) {
+        this.dataModel.setData('column-header', 0, 0, 'Column 1');
+      }
     }
 
     // Update the div elements of the grid.
