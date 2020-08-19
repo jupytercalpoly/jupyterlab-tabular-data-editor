@@ -428,6 +428,15 @@ export class DSVEditor extends Widget {
       update.rowUpdate = rowUpdate;
       update.columnUpdate = columnUpdate;
 
+      // Add a Column 1 header if this is a blank csv.
+      if (!data) {
+        // Set up the update to the valueMap.
+        const valueUpdate: { [key: string]: string } = {};
+
+        // Set a value for the column header.
+        valueUpdate['0,0'] = 'Column 1';
+      }
+
       // set inital status of litestore
       this.updateModel(update);
       dataModel.onChangedSignal.connect(this._onModelSignal, this);
