@@ -54,7 +54,10 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
     this._query = query;
 
     // when changes are made to the datamodel, rerun the search
-    searchTarget.content.dataModel.changed.connect(this.rerunSearch, this);
+    searchTarget.content.dataModel.onChangedSignal.connect(
+      this.rerunSearch,
+      this
+    );
 
     // query for the matches in the model data
     searchTarget.content.searchService.find(query);
@@ -126,7 +129,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
     update?: DSVEditor.ModelChangedArgs
   ): Promise<boolean> {
     const { line, column } = this._target.content.searchService.currentMatch;
-    await this._target.content.dataModel.setData(
+    this._target.content.dataModel.setData(
       'body',
       line,
       column,
@@ -135,7 +138,6 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
       1,
       update
     );
-    this.moveToCell();
     return true;
   }
 
