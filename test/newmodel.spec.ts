@@ -3,9 +3,12 @@ import { EditorModel } from '../src/newmodel';
 import { DSVEditor } from '../src/widget';
 import { toArray, range } from '@lumino/algorithm';
 import { Litestore } from '../src/litestore';
+import { DATA } from './data';
 
 const delimiter = ',';
 let model: EditorModel;
+let dataMatrix: string[][];
+let bigModel: EditorModel;
 
 function updateLitestore(
   model: EditorModel,
@@ -27,6 +30,42 @@ function updateLitestore(
     }
   );
 }
+beforeAll(() => {
+  // Parse the data matrix once.
+  dataMatrix = DATA.split('\n').map(row => row.split(','));
+
+  bigModel = new EditorModel({ data: DATA, delimiter });
+
+  // Define the initial update object for the litestore.
+  const update: DSVEditor.ModelChangedArgs = {};
+
+  // Define the initial state of the row and column map.
+  const rowUpdate = {
+    index: 0,
+    remove: 0,
+    values: toArray(range(0, bigModel.totalRows))
+  };
+  const columnUpdate = {
+    index: 0,
+    remove: 0,
+    values: toArray(range(0, bigModel.totalColumns))
+  };
+
+  // Add the map updates to the update object.
+  update.rowUpdate = rowUpdate;
+  update.columnUpdate = columnUpdate;
+
+  // Define the litestore
+  bigModel.litestore = new Litestore({
+    id: 0,
+    schemas: [DSVEditor.DATAMODEL_SCHEMA]
+  });
+
+  // set inital status of litestore
+  bigModel.litestore.beginTransaction();
+  updateLitestore(bigModel, update);
+  bigModel.litestore.endTransaction();
+});
 
 beforeEach(() => {
   const data = [
@@ -70,7 +109,7 @@ beforeEach(() => {
 describe('Row & Column Map Manipulation', () => {
   it('should add a row to the row map', () => {
     const update = model.addRows('body', 0, 1);
-    console.log(update);
+
     model.litestore.beginTransaction();
     updateLitestore(model, update);
     model.litestore.endTransaction();
@@ -79,7 +118,7 @@ describe('Row & Column Map Manipulation', () => {
       schema: DSVEditor.DATAMODEL_SCHEMA,
       record: DSVEditor.RECORD_ID
     });
-    console.log(rowMap);
+
     const compareArray = [];
     for (let i = 0; i < rowMap.length; i++) {
       compareArray.push(rowMap[i]);
@@ -168,7 +207,6 @@ describe('Serialization', () => {
       schema: DSVEditor.DATAMODEL_SCHEMA,
       record: DSVEditor.RECORD_ID
     });
-    console.log(valueMap);
 
     // Check that the valueMap was properly updated.
     expect(valueMap['1,0']).toBe('hello');
@@ -265,9 +303,213 @@ describe('Serialization', () => {
 
     refMatrix.splice(3, 0, ['', '', '']);
 
-    console.log(refMatrix);
     const expectedData = refMatrix.map(row => row.join(',')).join('\n');
     const newString = model.updateString();
     expect(newString).toBe(expectedData);
   });
+});
+
+/**
+ * A test suite for testing data processing on a large data set.
+ * NOTE: All of these tests should be wrapped in a promise resolution
+ * for the model to be done parsing.
+ */
+describe('Large string tests', () => {
+  it('Should serialize a cell entry', () => {
+    bigModel.model.ready.then(() => {
+      // Initialize the update object
+      const update: DSVEditor.ModelChangedArgs = {};
+
+      // Apply the change to the update object
+      bigModel.setData('body', 900, 0, 'hello', 1, 1, update);
+
+      // Update the litestore.
+      bigModel.litestore.beginTransaction();
+      updateLitestore(bigModel, update);
+      bigModel.litestore.endTransaction();
+
+      // Update the data matrix.
+      dataMatrix[900][0] = 'hello';
+
+      // Serialize
+      const string = bigModel.updateString();
+
+      // Compare
+      const same = string === dataMatrix.map(row => row.join(',')).join('\n');
+      expect(same).toBe(true);
+    });
+  });
+
+  it('Should add a row to the end', () => {
+    bigModel.model.ready.then(() => {
+      const update = bigModel.addRows('body', 1000, 1);
+
+      // Update the litestore.
+      bigModel.litestore.beginTransaction();
+      updateLitestore(bigModel, update);
+      bigModel.litestore.endTransaction();
+
+      // Update the data matrix.
+      dataMatrix.push(new Array(dataMatrix[0].length).fill(''));
+
+      // Serialize
+      const string = bigModel.updateString();
+
+      // Compare
+      const same = string === dataMatrix.map(row => row.join(',')).join('\n');
+      expect(same).toBe(true);
+    });
+  });
+  it('Should add a column to the end', () => {
+    bigModel.model.ready.then(() => {
+      const maxColumn = bigModel.totalColumns - 1;
+      const update = bigModel.addColumns('body', maxColumn, 1);
+
+      // Update the litestore.
+      bigModel.litestore.beginTransaction();
+      updateLitestore(bigModel, update);
+      bigModel.litestore.endTransaction();
+
+      // Update the data matrix.
+      dataMatrix.forEach((row, index) => {
+        dataMatrix[index].push('');
+      });
+
+      // Serialize
+      const string = bigModel.updateString();
+
+      // Compare
+      const same = string === dataMatrix.map(row => row.join(',')).join('\n');
+      expect(same).toBe(true);
+    });
+  });
+  it('Should clear a row', () => {
+    bigModel.model.ready.then(() => {
+      const update = bigModel.clearRows('body', 800);
+
+      // Update the litestore.
+      bigModel.litestore.beginTransaction();
+      updateLitestore(bigModel, update);
+      bigModel.litestore.endTransaction();
+
+      // Update the data matrix.
+      dataMatrix[800] = new Array(dataMatrix.length[0]).fill('');
+
+      // Serialize
+      const string = bigModel.updateString();
+
+      // Compare
+      const same = string === dataMatrix.map(row => row.join(',')).join('\n');
+      expect(same).toBe(true);
+    });
+  });
+  it('Should clear a column', () => {
+    bigModel.model.ready.then(() => {
+      const update = bigModel.clearColumns('body', 700);
+
+      // Update the litestore
+      bigModel.litestore.beginTransaction();
+      updateLitestore(bigModel, update);
+      bigModel.litestore.endTransaction();
+
+      // Update the data matrix.
+      dataMatrix.forEach((elem, index) => {
+        dataMatrix[index][700] = '';
+      });
+
+      // Serialize
+      const string = bigModel.updateString();
+
+      // Compare
+      const same = string === dataMatrix.map(row => row.join(',')).join('\n');
+      expect(same).toBe(true);
+    });
+  });
+  it('Should move a row', () => {
+    bigModel.model.ready.then(() => {
+      const update = bigModel.moveRows('body', 900, 950, 1);
+
+      // Update the litestore
+      bigModel.litestore.beginTransaction();
+      updateLitestore(bigModel, update);
+      bigModel.litestore.endTransaction();
+
+      // Update the data matrix.
+      [dataMatrix[900], dataMatrix[950]] = [dataMatrix[950], dataMatrix[900]];
+
+      // Serialize
+      const string = bigModel.updateString();
+
+      // Compare
+      const same = string === dataMatrix.map(row => row.join(',')).join('\n');
+      expect(same).toBe(true);
+    });
+  });
+  it('Should move a column', () => {
+    bigModel.model.ready.then(() => {
+      const update = bigModel.moveColumns('body', 5, 2, 1);
+
+      // Update the litestore
+      bigModel.litestore.beginTransaction();
+      updateLitestore(bigModel, update);
+      bigModel.litestore.endTransaction();
+
+      // Update the data matrix.
+      dataMatrix.forEach(row => {
+        [row[2], row[5]] = [row[5], row[2]];
+      });
+
+      // Serialize
+      const string = bigModel.updateString();
+
+      // Compare
+      const same = string === dataMatrix.map(row => row.join(',')).join('\n');
+      expect(same).toBe(true);
+    });
+  });
+  // TODO: Add these tests
+  // it('Should remove a row', () => {
+  //   bigModel.model.ready.then(() => {
+
+  //   })
+  // })
+  // it('Should remove a column', () => {
+  //   bigModel.model.ready.then(() => {
+
+  //   })
+  // })
+  // })
+  // })
+  // it('Should clear a cell selection', () => {
+  //   bigModel.model.ready.then(() => {
+
+  //   })
+  // });
+  // it('Should add multiple columns', () => {
+  //   bigModel.model.ready.then(() => {
+
+  //   })
+  // });
+  // it('Should add multiple rows', () => {
+  //   bigModel.model.ready.then(() => {
+
+  //   })
+  // });
+  // it('Should cut a region', () => {
+  //   bigModel.model.ready.then(() => {
+
+  //   })
+  // });
+  // it('Should it should paste a region', () => {
+  //   bigModel.model.ready.then(() => {
+
+  //   })
+  // });
+  // it('Should undo', () => {
+  //   bigModel.model.ready.then(() => {
+
+  //   })
+  // });
+  // it('Should redo', () => {
+  //   bigModel.model.ready.then(() => {
 });

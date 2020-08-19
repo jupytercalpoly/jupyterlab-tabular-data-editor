@@ -369,12 +369,8 @@ export class EditorModel extends MutableDataModel {
   bulkSetData(
     rowArray: Array<number>,
     columnArray: Array<number>,
-    value: string,
-    startRow: number,
-    startColumn: number,
-    endRow: number,
-    endColumn: number
-  ): void {
+    value: string
+  ): DSVEditor.ModelChangedArgs {
     // Set up an udate object for the litestore.
     const update: DSVEditor.ModelChangedArgs = {};
 
@@ -400,14 +396,7 @@ export class EditorModel extends MutableDataModel {
     update.valueUpdate = valueUpdate;
 
     // Define the next change to the data model.
-    const nextChange: DataModel.ChangedArgs = {
-      type: 'cells-changed',
-      region: 'body',
-      row: startRow,
-      column: startColumn,
-      rowSpan: endRow - startRow + 1,
-      columnSpan: endColumn - startColumn + 1
-    };
+    const nextChange: DataModel.ChangedArgs = { type: 'model-reset' };
 
     // Get a snapshot of the current state of the grid.
     const gridState = {
@@ -421,6 +410,9 @@ export class EditorModel extends MutableDataModel {
 
     // Emit the model change to the datagrid.
     this.emitChanged(nextChange);
+
+    // Return the update object.
+    return update;
   }
 
   /**
