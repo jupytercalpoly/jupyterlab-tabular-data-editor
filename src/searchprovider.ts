@@ -126,7 +126,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
     update?: DSVEditor.ModelChangedArgs
   ): Promise<boolean> {
     const { line, column } = this._target.content.searchService.currentMatch;
-    await this._target.content.dataModel.setData(
+    this._target.content.dataModel.setData(
       'body',
       line,
       column,
@@ -135,7 +135,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
       1,
       update
     );
-    this.moveToCell();
+    this.highlightNext();
     return true;
   }
 
