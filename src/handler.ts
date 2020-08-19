@@ -407,7 +407,6 @@ export class RichMouseHandler extends BasicMouseHandler {
       currentColumn = maxColumn;
     }
 
-    // Update the position.
     switch (region) {
       case 'row-header': {
         const offset =
@@ -415,6 +414,7 @@ export class RichMouseHandler extends BasicMouseHandler {
             ? this._grid.rowOffset('body', currentRow + 1)
             : this._grid.rowOffset('body', currentRow);
         this._moveLine.manualPositionUpdate(null, offset + top - 1.5);
+        this._selectionIndex = currentRow;
         break;
       }
       case 'column-header': {
@@ -423,6 +423,7 @@ export class RichMouseHandler extends BasicMouseHandler {
             ? this._grid.columnOffset('body', currentColumn + 1)
             : this._grid.columnOffset('body', currentColumn);
         this._moveLine.manualPositionUpdate(offset + left - 1.5, null);
+        this._selectionIndex = currentColumn;
         break;
       }
     }
