@@ -117,14 +117,18 @@ export class BoundedDrag extends Drag {
     return [x, y];
   }
 
-  manualPositionUpdate(xLocation: number, yLocation: number): void {
+  manualPositionUpdate(xLocation?: number, yLocation?: number): void {
     // Bail early if there is already a bounding region
     if (this._boundingRegion) {
       return;
     }
     const style = this.dragImage.style;
-    style.top = `${yLocation}px`;
-    style.left = `${xLocation}px`;
+    if (xLocation) {
+      style.left = `${xLocation}px`;
+    }
+    if (yLocation) {
+      style.top = `${yLocation}px`;
+    }
   }
   private _boundingRegion: IBoundingRegion | null;
 }
