@@ -383,86 +383,47 @@ export class RichMouseHandler extends BasicMouseHandler {
    */
   updateLinePosition(event: MouseEvent): void {
     // find the region we originally clicked on.
-    const { region } = this._moveData;
+    const { region, row, column } = this._moveData;
 
-    // Get boundaries of the previous row or column we were over.
-    const previousSection = this.getRowOrColumnSection(
-      region,
-      this._selectionIndex
-    );
+    // Get the body origin
+    let { left, top } = this._grid.viewport.node.getBoundingClientRect();
+    left += this._grid.headerWidth;
+    top += this._grid.headerHeight;
 
-    // Unpack the row and column bounds.
-    const { topSide, bottomSide, leftSide, rightSide } = previousSection;
-    const {
-      topBound,
-      bottomBound,
-      leftBound,
-      rightBound
-    } = this.computeGridBoundingRegion(region, previousSection);
+    // Map the mouse loc to the virtual coordinates.
+    const { vx, vy } = this._grid.mapToVirtual(event.clientX, event.clientY);
 
-    // see if we have crossed the boundary to a neighboring row/column
+    // Fetch the current row and column.
+    let currentColumn = this._grid.columnAt('body', vx);
+    let currentRow = this._grid.rowAt('body', vy);
+
+    // Bound the current row and current column to be within the non-ghost part of the grid.
+    const maxRow = this._grid.dataModel.rowCount('body') - 2;
+    const maxColumn = this._grid.dataModel.columnCount('body') - 2;
+    if (currentRow > maxRow) {
+      currentRow = maxRow;
+    }
+    if (currentColumn > maxColumn) {
+      currentColumn = maxColumn;
+    }
+
     switch (region) {
-      case 'column-header': {
-        const columnWidth = Math.abs(leftSide - rightSide);
-        // bail early if we are still within the bounds or outside of the grid viewport
-        if (
-          (leftSide < event.clientX && event.clientX < rightSide) ||
-          (event.clientX < leftBound ||
-            rightBound + columnWidth < event.clientX)
-        ) {
-          return;
-        } else if (event.clientX < leftSide) {
-          // we are at the previous column, get the new region
-          this._selectionIndex--;
-          const { leftSide, topSide } = this.getRowOrColumnSection(
-            region,
-            this._selectionIndex
-          );
-          this._moveLine.manualPositionUpdate(leftSide - 1, topSide);
-        } else {
-          // check to ensure selection index stays within the bounds of the grid's columns
-          if (this._selectionIndex <= this._grid.columnCount('body') - 1) {
-            this._selectionIndex++;
-          }
-
-          // we are at the next column, get the new region
-          const { topSide, rightSide } = this.getRowOrColumnSection(
-            region,
-            this._selectionIndex
-          );
-          this._moveLine.manualPositionUpdate(rightSide - 1, topSide);
-        }
+      case 'row-header': {
+        const offset =
+          row < currentRow
+            ? this._grid.rowOffset('body', currentRow + 1)
+            : this._grid.rowOffset('body', currentRow);
+        this._moveLine.manualPositionUpdate(null, offset + top - 1.5);
+        this._selectionIndex = currentRow;
         break;
       }
-      case 'row-header': {
-        const rowHeight = Math.abs(topSide - bottomSide);
-        // bail early if we are still within the bounds or outside of the grid viewport
-        if (
-          (topSide < event.clientY && event.clientY < bottomSide) ||
-          (event.clientY < topBound || bottomBound + rowHeight < event.clientY)
-        ) {
-          return;
-        } else if (event.clientY < topSide) {
-          // we are at the previous row, get the new region
-          this._selectionIndex--;
-          const { leftSide, topSide } = this.getRowOrColumnSection(
-            region,
-            this._selectionIndex
-          );
-          this._moveLine.manualPositionUpdate(leftSide, topSide - 1);
-        } else {
-          // check to ensure selection index stays within the bounds of the grid's rows
-          if (this._selectionIndex <= this._grid.rowCount('body') - 1) {
-            this._selectionIndex++;
-          }
-
-          // we are at the next column, get the new region
-          const { bottomSide, leftSide } = this.getRowOrColumnSection(
-            region,
-            this._selectionIndex
-          );
-          this._moveLine.manualPositionUpdate(leftSide, bottomSide - 1);
-        }
+      case 'column-header': {
+        const offset =
+          column < currentColumn
+            ? this._grid.columnOffset('body', currentColumn + 1)
+            : this._grid.columnOffset('body', currentColumn);
+        this._moveLine.manualPositionUpdate(offset + left - 1.5, null);
+        this._selectionIndex = currentColumn;
         break;
       }
     }
