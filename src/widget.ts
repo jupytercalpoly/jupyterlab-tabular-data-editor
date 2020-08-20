@@ -37,6 +37,7 @@ import { Fields } from 'tde-datastore';
 import { ListField, MapField } from 'tde-datastore';
 import { unsaveDialog } from './dialog';
 import { PaintedGrid } from './grid';
+import { HeaderTextRenderer } from './headercelleditor';
 
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
@@ -457,9 +458,19 @@ export class DSVEditor extends Widget {
         rendererConfig
       )
     });
+    const headerRenderer = new HeaderTextRenderer({
+      textColor: rendererConfig.textColor,
+      horizontalAlignment: isDataDetection ? 'left' : 'center',
+      backgroundColor: this._searchService.cellBackgroundColorRendererFunc(
+        rendererConfig
+      ),
+      indent: 25,
+      dataDetection: isDataDetection
+    });
+
     this._grid.cellRenderers.update({
       body: renderer,
-      'column-header': renderer,
+      'column-header': headerRenderer,
       'corner-header': renderer,
       'row-header': renderer
     });

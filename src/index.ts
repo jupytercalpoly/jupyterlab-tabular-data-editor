@@ -509,7 +509,7 @@ const DATATYPE_ICON = {
   position: {
     size: 16,
     left: 2,
-    top: 6
+    top: 10
   }
 };
 
