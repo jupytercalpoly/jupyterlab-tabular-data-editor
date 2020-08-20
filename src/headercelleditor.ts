@@ -63,15 +63,21 @@ export class HeaderCellEditor extends TextCellEditor {
 
 export class HeaderTextRenderer extends TextRenderer {
   constructor(options: HeaderTextRenderer.IOptions) {
-    super();
+    super(options);
     this._headerIndent = options.indent;
+    this._dataDetection = options.dataDetection;
   }
   paint(gc: GraphicsContext, config: CellRenderer.CellConfig): void {
-    let x = config.x;
-    x += this._headerIndent;
-    super.paint(gc, { ...config, x });
+    if (this._dataDetection) {
+      let x = config.x;
+      x += this._headerIndent;
+      super.paint(gc, { ...config, x });
+      return;
+    }
+    super.paint(gc, config);
   }
   private _headerIndent: number;
+  private _dataDetection: boolean;
 }
 
 /**
@@ -94,5 +100,6 @@ export type ICellInfo = {
 export namespace HeaderTextRenderer {
   export interface IOptions extends TextRenderer.IOptions {
     indent: number;
+    dataDetection: boolean;
   }
 }

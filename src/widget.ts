@@ -460,12 +460,14 @@ export class DSVEditor extends Widget {
     });
     const headerRenderer = new HeaderTextRenderer({
       textColor: rendererConfig.textColor,
-      horizontalAlignment: 'left',
+      horizontalAlignment: isDataDetection ? 'left' : 'center',
       backgroundColor: this._searchService.cellBackgroundColorRendererFunc(
         rendererConfig
       ),
-      indent: 25
+      indent: 25,
+      dataDetection: isDataDetection
     });
+
     this._grid.cellRenderers.update({
       body: renderer,
       'column-header': headerRenderer,
