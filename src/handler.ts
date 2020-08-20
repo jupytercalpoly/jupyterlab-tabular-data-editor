@@ -24,15 +24,9 @@ export class RichMouseHandler extends BasicMouseHandler {
     this._grid = options.grid;
     this._cursor = null;
   }
-  get mouseWheelSignal(): Signal<this, null> {
-    return this._mouseWheelSignal;
-  }
+
   get hoverSignal(): Signal<this, 'ghost-row' | 'ghost-column' | null> {
     return this._ghostHoverSignal;
-  }
-
-  get mouseMoveSignal(): Signal<this, null> {
-    return this._resizeSignal;
   }
 
   get mouseUpSignal(): Signal<this, DataGrid.HitTestResult> {
@@ -154,11 +148,6 @@ export class RichMouseHandler extends BasicMouseHandler {
         return 'default';
       }
     }
-  }
-
-  onWheel(grid: DataGrid, event: WheelEvent): void {
-    this._mouseWheelSignal.emit(null);
-    super.onWheel(grid, event);
   }
 
   /**
@@ -388,9 +377,6 @@ export class RichMouseHandler extends BasicMouseHandler {
    * @param event - The mouse move event of interest.
    */
   onMouseMove(grid: DataGrid, event: MouseEvent): void {
-    // const model = grid.dataModel as EditorModel;
-    // model.ghostsRevealed = true;
-    this._resizeSignal.emit(null);
     // Fetch the press data.
     if (this._moveData) {
       this.updateLinePosition(event);
@@ -584,8 +570,6 @@ export class RichMouseHandler extends BasicMouseHandler {
   private _cursor: string | null;
   private _moveData: MoveData | null;
   private _mouseUpSignal = new Signal<this, DataGrid.HitTestResult>(this);
-  private _resizeSignal = new Signal<this, null>(this);
-  private _mouseWheelSignal = new Signal<this, null>(this);
   private _ghostHoverSignal = new Signal<
     this,
     'ghost-row' | 'ghost-column' | null
