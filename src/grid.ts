@@ -74,6 +74,7 @@ export class PaintedGrid extends DataGrid {
     const model = this.dataModel as EditorModel;
     if (model && model.isDataDetection) {
       this._drawIcons(rx, ry, rw, rh);
+      this.drawCornerHeaderRegion(0, 0, this.headerWidth, this.headerHeight);
     }
   }
 
