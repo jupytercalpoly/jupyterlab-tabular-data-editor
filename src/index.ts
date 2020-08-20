@@ -27,12 +27,17 @@ import {
   copyIcon,
   pasteIcon,
   saveIcon,
-  spreadsheetIcon
+  spreadsheetIcon,
+  LabIcon
 } from '@jupyterlab/ui-components';
 import { DataGrid } from '@lumino/datagrid';
 import { DSVEditor, EditableCSVViewerFactory } from './widget';
 import { CSVSearchProvider } from './searchprovider';
 import { PaintedGrid } from './grid';
+import calendarSvgStr from '../style/icons/calendar.svg';
+import checkboxSvgStr from '../style/icons/checkbox.svg';
+import numberSvgStr from '../style/icons/number.svg';
+import stringSvgString from '../style/icons/string.svg';
 
 /**
  * The name of the factories that creates widgets.
@@ -80,7 +85,7 @@ function activateCsv(
 
   // The current styles for the data grids.
   let style: DataGrid.Style = Private.LIGHT_STYLE;
-  const extraStyle: PaintedGrid.ExtraStyle = Private.LIGHT_EXTRA_STYLE;
+  const extraStyle: PaintedGrid.ExtraStyle = LIGHT_EXTRA_STYLE;
   let rendererConfig: TextRenderConfig = Private.LIGHT_TEXT_CONFIG;
 
   if (restorer) {
@@ -122,9 +127,7 @@ function activateCsv(
         ? themeManager.isLight(themeManager.theme)
         : true;
     style = isLight ? Private.LIGHT_STYLE : Private.DARK_STYLE;
-    const extraStyle = isLight
-      ? Private.LIGHT_EXTRA_STYLE
-      : Private.DARK_EXTRA_STYLE;
+    const extraStyle = isLight ? LIGHT_EXTRA_STYLE : DARK_EXTRA_STYLE;
     rendererConfig = isLight
       ? Private.LIGHT_TEXT_CONFIG
       : Private.DARK_TEXT_CONFIG;
@@ -500,6 +503,100 @@ function buildContextMenu(
 
 export default [extension];
 
+const DATATYPE_ICON = {
+  colorLight: '#1e88e5',
+  colorDark: '#2196f3',
+  position: {
+    size: 16,
+    left: 2,
+    top: 10
+  }
+};
+
+export const LIGHT_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
+  ghostRowColor: 'rgba(243, 243, 243, 0.80)',
+  ghostColumnColor: 'rgba(243, 243, 243, 0.80)',
+  icons: {
+    'ghost-column': {
+      icon: addIcon,
+      color: '#616161',
+      size: 18,
+      left: 63 /* set to columnWidth / 2 - size / 2 to make centered */,
+      top: 9 /* set to columnHeaderHeight / 2 - size / 2 to make centered */
+    },
+    'ghost-row': {
+      icon: addIcon,
+      color: '#bdbdbd',
+      size: 12,
+      left: 26 /* set to rowHeaderWidth / 2 - size / 2 to make centered */,
+      top: 6 /* set to rowHeight / 2 - size / 2 to make centered. */
+    },
+    string: {
+      icon: new LabIcon({ name: 'tde:string', svgstr: stringSvgString }),
+      color: DATATYPE_ICON.colorLight,
+      ...DATATYPE_ICON.position
+    },
+    integer: {
+      icon: new LabIcon({ name: 'tde:number', svgstr: numberSvgStr }),
+      color: DATATYPE_ICON.colorLight,
+      ...DATATYPE_ICON.position
+    },
+    boolean: {
+      icon: new LabIcon({ name: 'tde:checkbox', svgstr: checkboxSvgStr }),
+      color: DATATYPE_ICON.colorLight,
+      ...DATATYPE_ICON.position
+    },
+    date: {
+      icon: new LabIcon({ name: 'tde:date', svgstr: calendarSvgStr }),
+      color: DATATYPE_ICON.colorLight,
+      ...DATATYPE_ICON.position
+    }
+  }
+};
+/**
+ *
+ */
+export const DARK_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
+  ghostRowColor: 'rgba(0, 0, 0, 0.65)',
+  ghostColumnColor: 'rgba(0, 0, 0, 0.65)',
+  icons: {
+    'ghost-column': {
+      icon: addIcon,
+      color: '#616161',
+      size: 18,
+      left: 63 /* set to columnWidth / 2 - size / 2 to make centered */,
+      top: 9 /* set to columnHeaderHeight / 2 - size / 2 to make centered */
+    },
+    'ghost-row': {
+      icon: addIcon,
+      color: '#bdbdbd',
+      size: 12,
+      left: 26 /* set to rowHeaderWidth / 2 - size / 2 to make centered */,
+      top: 6 /* set to rowHeight / 2 - size / 2 to make centered. */
+    },
+    string: {
+      icon: new LabIcon({ name: 'tde:string', svgstr: stringSvgString }),
+      color: DATATYPE_ICON.colorDark,
+      ...DATATYPE_ICON.position
+    },
+    integer: {
+      icon: new LabIcon({ name: 'tde:number', svgstr: numberSvgStr }),
+      color: DATATYPE_ICON.colorDark,
+      ...DATATYPE_ICON.position
+    },
+    boolean: {
+      icon: new LabIcon({ name: 'tde:checkbox', svgstr: checkboxSvgStr }),
+      color: DATATYPE_ICON.colorDark,
+      ...DATATYPE_ICON.position
+    },
+    date: {
+      icon: new LabIcon({ name: 'tde:date', svgstr: calendarSvgStr }),
+      color: DATATYPE_ICON.colorDark,
+      ...DATATYPE_ICON.position
+    }
+  }
+};
+
 /**
  * A namespace for private data.
  */
@@ -533,48 +630,6 @@ namespace Private {
     headerGridLineColor: 'rgba(235, 235, 235, 0.25)',
     headerSelectionFillColor: 'rgba(20, 20, 20, 0.25)'
     //rowBackgroundColor: i => (i % 2 === 0 ? '#212121' : '#111111')
-  };
-
-  export const LIGHT_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
-    ghostRowColor: 'rgba(243, 243, 243, 0.80)',
-    ghostColumnColor: 'rgba(243, 243, 243, 0.80)',
-    icons: {
-      'ghost-column': {
-        icon: addIcon,
-        color: '#616161',
-        height: 1 / 2,
-        left: 1 / 2,
-        top: 1 / 2
-      },
-      'ghost-row': {
-        icon: addIcon,
-        color: '#616161',
-        height: 1 / 2,
-        left: 1 / 2,
-        top: 1 / 2
-      }
-    }
-  };
-
-  export const DARK_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
-    ghostRowColor: 'rgba(0, 0, 0, 0.65)',
-    ghostColumnColor: 'rgba(0, 0, 0, 0.65)',
-    icons: {
-      'ghost-column': {
-        icon: addIcon,
-        color: '#bdbdbd',
-        height: 1 / 2,
-        left: 1 / 2,
-        top: 1 / 2
-      },
-      'ghost-row': {
-        icon: addIcon,
-        color: '#bdbdbd',
-        height: 1 / 2,
-        left: 1 / 2,
-        top: 1 / 2
-      }
-    }
   };
 
   /**

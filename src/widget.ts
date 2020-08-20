@@ -18,7 +18,8 @@ import {
   DataGrid,
   TextRenderer,
   SelectionModel,
-  DataModel
+  DataModel,
+  CellRenderer
 } from 'tde-datagrid';
 import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget, LayoutItem } from '@lumino/widgets';
@@ -27,7 +28,7 @@ import { RichMouseHandler } from './handler';
 import { numberToCharacter } from './_helper';
 import { toArray, range } from '@lumino/algorithm';
 import { CommandRegistry } from '@lumino/commands';
-import { CommandIDs } from './index';
+import { CommandIDs, LIGHT_EXTRA_STYLE, DARK_EXTRA_STYLE } from './index';
 import { VirtualDOM, h } from '@lumino/virtualdom';
 import { GridSearchService } from './searchservice';
 import { Litestore } from './litestore';
@@ -36,6 +37,7 @@ import { Fields } from 'tde-datastore';
 import { ListField, MapField } from 'tde-datastore';
 import { unsaveDialog } from './dialog';
 import { PaintedGrid } from './grid';
+import { HeaderTextRenderer } from './headercelleditor';
 
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
@@ -91,6 +93,7 @@ export class DSVEditor extends Widget {
 
     // Connect to the mouse handler signals.
     handler.mouseUpSignal.connect(this._onMouseUp, this);
+    handler.hoverSignal.connect(this._onMouseHover, this);
 
     // init search service to search for matches with the data grid
     this._searchService = new GridSearchService(this._grid);
@@ -213,10 +216,6 @@ export class DSVEditor extends Widget {
     this._grid.extraStyle = value;
   }
 
-  get coords(): Array<number | null> {
-    return [this._row, this._column];
-  }
-
   /**
    * The config used to create text renderer.
    */
@@ -232,7 +231,7 @@ export class DSVEditor extends Widget {
     return this._searchService;
   }
 
-  get grid(): DataGrid {
+  get grid(): PaintedGrid {
     return this._grid;
   }
 
@@ -429,7 +428,12 @@ export class DSVEditor extends Widget {
       // set inital status of litestore
       this.updateModel(update);
       dataModel.onChangedSignal.connect(this._onModelSignal, this);
+      dataModel.isDataDetectionChanged.connect(this._updateRenderer, this);
       // dataModel.cancelEditingSignal.connect(this._cancelEditing, this);
+      // Add a Column 1 header if this is a blank csv.
+      if (!data) {
+        this.dataModel.setData('column-header', 0, 0, 'Column 1');
+      }
     }
 
     // Update the div elements of the grid.
@@ -443,20 +447,45 @@ export class DSVEditor extends Widget {
     if (this._baseRenderer === null) {
       return;
     }
+    const isDataDetection = this.dataModel && this.dataModel.isDataDetection;
     const rendererConfig = this._baseRenderer;
     const renderer = new TextRenderer({
       textColor: rendererConfig.textColor,
-      horizontalAlignment: rendererConfig.horizontalAlignment,
+      horizontalAlignment: isDataDetection
+        ? this.cellHorizontalAlignmentRendererFunc()
+        : rendererConfig.horizontalAlignment,
       backgroundColor: this._searchService.cellBackgroundColorRendererFunc(
         rendererConfig
       )
     });
+    const headerRenderer = new HeaderTextRenderer({
+      textColor: rendererConfig.textColor,
+      horizontalAlignment: isDataDetection ? 'left' : 'center',
+      backgroundColor: this._searchService.cellBackgroundColorRendererFunc(
+        rendererConfig
+      ),
+      indent: 25,
+      dataDetection: isDataDetection
+    });
+
     this._grid.cellRenderers.update({
       body: renderer,
-      'column-header': renderer,
+      'column-header': headerRenderer,
       'corner-header': renderer,
       'row-header': renderer
     });
+  }
+
+  cellHorizontalAlignmentRendererFunc(): CellRenderer.ConfigOption<
+    TextRenderer.HorizontalAlignment
+  > {
+    return ({ region, row, column }) => {
+      const { type } = this.dataModel.metadata(region, row, column);
+      if (region !== 'body' || type === 'boolean') {
+        return 'center';
+      }
+      return type === 'number' || type === 'integer' ? 'right' : 'left';
+    };
   }
 
   /**
@@ -525,17 +554,11 @@ export class DSVEditor extends Widget {
 
     switch (command) {
       case 'insert-rows-above': {
-        update = this.dataModel.addRows(this._region, r1, rowSpan);
-
-        // Add the type property so we can differentiate an insert above from an insert below.
-        update.type = command;
+        update = this.dataModel.addRows('body', r1, rowSpan);
         break;
       }
       case 'insert-rows-below': {
-        update = this.dataModel.addRows(this._region, r2 + 1, rowSpan);
-
-        // Add the command to the grid state.
-        update.gridStateUpdate.nextCommand = command;
+        update = this.dataModel.addRows('body', r2 + 1, rowSpan);
 
         // move the selection down a row to account for the new row being inserted
         newSelection.r1 += rowSpan;
@@ -543,12 +566,11 @@ export class DSVEditor extends Widget {
         break;
       }
       case 'insert-columns-left': {
-        update = this.dataModel.addColumns(this._region, c1, colSpan);
+        update = this.dataModel.addColumns('body', c1, colSpan);
         break;
       }
       case 'insert-columns-right': {
-        update = this.dataModel.addColumns(this._region, c2 + 1, colSpan);
-        update.type = command;
+        update = this.dataModel.addColumns('body', c2 + 1, colSpan);
 
         // move the selection right a column to account for the new column being inserted
         newSelection.c1 += colSpan;
@@ -556,11 +578,11 @@ export class DSVEditor extends Widget {
         break;
       }
       case 'remove-rows': {
-        update = this.dataModel.removeRows(this._region, r1, rowSpan);
+        update = this.dataModel.removeRows('body', r1, rowSpan);
         break;
       }
       case 'remove-columns': {
-        update = this.dataModel.removeColumns(this._region, c1, colSpan);
+        update = this.dataModel.removeColumns('body', c1, colSpan);
         break;
       }
       case 'cut-cells':
@@ -588,17 +610,17 @@ export class DSVEditor extends Widget {
         break;
       }
       case 'clear-cells': {
-        update = this.dataModel.clearCells(this._region, { r1, r2, c1, c2 });
+        update = this.dataModel.clearCells('body', { r1, r2, c1, c2 });
         break;
       }
       case 'clear-rows': {
         const rowSpan = Math.abs(r1 - r2) + 1;
-        update = this.dataModel.clearRows(this._region, r1, rowSpan);
+        update = this.dataModel.clearRows('body', r1, rowSpan);
         break;
       }
       case 'clear-columns': {
         const columnSpan = Math.abs(c1 - c2) + 1;
-        update = this.dataModel.clearColumns(this._region, c1, columnSpan);
+        update = this.dataModel.clearColumns('body', c1, columnSpan);
         break;
       }
       case 'undo': {
@@ -615,7 +637,7 @@ export class DSVEditor extends Widget {
         this._litestore.undo();
 
         // Have the model emit the opposite change to the Grid.
-        this.dataModel.emitOppositeChange(gridState.nextChange);
+        this.dataModel.emitOppositeChange(gridState);
 
         if (!selection) {
           break;
@@ -780,7 +802,7 @@ export class DSVEditor extends Widget {
     const { r1, r2, c1, c2 } = this.getSelectedRange();
     const row = Math.min(r1, r2);
     const column = Math.min(c1, c2);
-    const update = this.dataModel.paste(this._region, row, column, copiedText);
+    const update = this.dataModel.paste('body', row, column, copiedText);
     this._cancelEditing();
     this.updateModel(update);
   }
@@ -793,9 +815,18 @@ export class DSVEditor extends Widget {
    * Updates the context menu elements.
    */
   private _updateContextElements(): void {
+    // calculate dimensions for the ghost row/column
+    const ghostRow = this._grid.rowSize(
+      'body',
+      this._grid.rowCount('body') - 1
+    );
+    const ghostColumn = this._grid.columnSize(
+      'body',
+      this._grid.columnCount('body') - 1
+    );
     // Update the column header, row header, and background elements.
-    this._background.style.width = `${this._grid.bodyWidth}px`;
-    this._background.style.height = `${this._grid.bodyHeight}px`;
+    this._background.style.width = `${this._grid.bodyWidth - ghostColumn}px`;
+    this._background.style.height = `${this._grid.bodyHeight - ghostRow}px`;
     this._background.style.left = `${this._grid.headerWidth}px`;
     this._background.style.top = `${this._grid.headerHeight}px`;
     this._columnHeader.style.left = `${this._grid.headerWidth}px`;
@@ -815,18 +846,41 @@ export class DSVEditor extends Widget {
   ): void {
     // Update the context menu elements as they may have moved.
     this._updateContextElements();
-
-    // Record where the hit took place.
-    if (hit.region !== 'void') {
-      this._region = hit.region;
-    }
-    this._row = hit.row;
-    this._column = hit.column;
   }
 
-  private _region: DataModel.CellRegion;
-  private _row: number;
-  private _column: number;
+  /**
+   * A handler for the on mouse up signal
+   */
+  private _onMouseHover(
+    emitter: RichMouseHandler,
+    hoverRegion: 'ghost-row' | 'ghost-column' | null
+  ): void {
+    // Switch both to non-hovered state.
+    const style = { ...this._grid.extraStyle } as PaintedGrid.ExtraStyle;
+    if (this.grid.style.voidColor === '#F3F3F3') {
+      style.ghostColumnColor = LIGHT_EXTRA_STYLE.ghostColumnColor;
+      style.ghostRowColor = LIGHT_EXTRA_STYLE.ghostRowColor;
+    } else {
+      style.ghostColumnColor = DARK_EXTRA_STYLE.ghostColumnColor;
+      style.ghostRowColor = DARK_EXTRA_STYLE.ghostRowColor;
+    }
+    switch (hoverRegion) {
+      case null: {
+        break;
+      }
+      case 'ghost-row': {
+        style.ghostRowColor = 'rgba(0, 0, 0, 0)';
+        break;
+      }
+      case 'ghost-column': {
+        style.ghostColumnColor = 'rgba(0, 0, 0, 0)';
+        break;
+      }
+    }
+    // Schedule a repaint of the grid.
+    this._grid.extraStyle = style;
+  }
+
   private _context: DocumentRegistry.Context;
   private _grid: PaintedGrid;
   private _searchService: GridSearchService;
@@ -979,7 +1033,7 @@ export class EditableCSVDocumentWidget extends DocumentWidget<DSVEditor> {
     );
   }
 
-  toggleDataDetection() {
+  toggleDataDetection(): void {
     const isDataDetection = this.content.dataModel.isDataDetection;
     if (!isDataDetection) {
       this.node.setAttribute('isDataDetection', 'true');
