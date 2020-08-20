@@ -1,4 +1,11 @@
-import { TextCellEditor, CellEditor, DataGrid } from 'tde-datagrid';
+import {
+  TextCellEditor,
+  CellEditor,
+  DataGrid,
+  TextRenderer,
+  CellRenderer,
+  GraphicsContext
+} from 'tde-datagrid';
 
 export class HeaderCellEditor extends TextCellEditor {
   /**
@@ -54,6 +61,19 @@ export class HeaderCellEditor extends TextCellEditor {
   }
 }
 
+export class HeaderTextRenderer extends TextRenderer {
+  constructor(options: HeaderTextRenderer.IOptions) {
+    super();
+    this._headerIndent = options.indent;
+  }
+  paint(gc: GraphicsContext, config: CellRenderer.CellConfig): void {
+    let x = config.x;
+    x += this._headerIndent;
+    super.paint(gc, { ...config, x });
+  }
+  private _headerIndent: number;
+}
+
 /**
  * A type alias for cell properties.
  */
@@ -67,3 +87,12 @@ export type ICellInfo = {
   width: number;
   height: number;
 };
+
+/**
+ * HeaderRenderer statics.
+ */
+export namespace HeaderTextRenderer {
+  export interface IOptions extends TextRenderer.IOptions {
+    indent: number;
+  }
+}
