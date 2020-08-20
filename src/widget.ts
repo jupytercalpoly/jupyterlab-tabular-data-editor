@@ -215,10 +215,6 @@ export class DSVEditor extends Widget {
     this._grid.extraStyle = value;
   }
 
-  get coords(): Array<number | null> {
-    return [this._row, this._column];
-  }
-
   /**
    * The config used to create text renderer.
    */
@@ -547,17 +543,11 @@ export class DSVEditor extends Widget {
 
     switch (command) {
       case 'insert-rows-above': {
-        update = this.dataModel.addRows(this._region, r1, rowSpan);
-
-        // Add the type property so we can differentiate an insert above from an insert below.
-        update.type = command;
+        update = this.dataModel.addRows('body', r1, rowSpan);
         break;
       }
       case 'insert-rows-below': {
-        update = this.dataModel.addRows(this._region, r2 + 1, rowSpan);
-
-        // Add the command to the grid state.
-        update.gridStateUpdate.nextCommand = command;
+        update = this.dataModel.addRows('body', r2 + 1, rowSpan);
 
         // move the selection down a row to account for the new row being inserted
         newSelection.r1 += rowSpan;
@@ -565,12 +555,11 @@ export class DSVEditor extends Widget {
         break;
       }
       case 'insert-columns-left': {
-        update = this.dataModel.addColumns(this._region, c1, colSpan);
+        update = this.dataModel.addColumns('body', c1, colSpan);
         break;
       }
       case 'insert-columns-right': {
-        update = this.dataModel.addColumns(this._region, c2 + 1, colSpan);
-        update.type = command;
+        update = this.dataModel.addColumns('body', c2 + 1, colSpan);
 
         // move the selection right a column to account for the new column being inserted
         newSelection.c1 += colSpan;
@@ -578,11 +567,11 @@ export class DSVEditor extends Widget {
         break;
       }
       case 'remove-rows': {
-        update = this.dataModel.removeRows(this._region, r1, rowSpan);
+        update = this.dataModel.removeRows('body', r1, rowSpan);
         break;
       }
       case 'remove-columns': {
-        update = this.dataModel.removeColumns(this._region, c1, colSpan);
+        update = this.dataModel.removeColumns('body', c1, colSpan);
         break;
       }
       case 'cut-cells':
@@ -610,17 +599,17 @@ export class DSVEditor extends Widget {
         break;
       }
       case 'clear-cells': {
-        update = this.dataModel.clearCells(this._region, { r1, r2, c1, c2 });
+        update = this.dataModel.clearCells('body', { r1, r2, c1, c2 });
         break;
       }
       case 'clear-rows': {
         const rowSpan = Math.abs(r1 - r2) + 1;
-        update = this.dataModel.clearRows(this._region, r1, rowSpan);
+        update = this.dataModel.clearRows('body', r1, rowSpan);
         break;
       }
       case 'clear-columns': {
         const columnSpan = Math.abs(c1 - c2) + 1;
-        update = this.dataModel.clearColumns(this._region, c1, columnSpan);
+        update = this.dataModel.clearColumns('body', c1, columnSpan);
         break;
       }
       case 'undo': {
@@ -802,7 +791,7 @@ export class DSVEditor extends Widget {
     const { r1, r2, c1, c2 } = this.getSelectedRange();
     const row = Math.min(r1, r2);
     const column = Math.min(c1, c2);
-    const update = this.dataModel.paste(this._region, row, column, copiedText);
+    const update = this.dataModel.paste('body', row, column, copiedText);
     this._cancelEditing();
     this.updateModel(update);
   }
@@ -846,13 +835,6 @@ export class DSVEditor extends Widget {
   ): void {
     // Update the context menu elements as they may have moved.
     this._updateContextElements();
-
-    // Record where the hit took place.
-    if (hit.region !== 'void') {
-      this._region = hit.region;
-    }
-    this._row = hit.row;
-    this._column = hit.column;
   }
 
   /**
@@ -888,9 +870,6 @@ export class DSVEditor extends Widget {
     this._grid.extraStyle = style;
   }
 
-  private _region: DataModel.CellRegion;
-  private _row: number;
-  private _column: number;
   private _context: DocumentRegistry.Context;
   private _grid: PaintedGrid;
   private _searchService: GridSearchService;
