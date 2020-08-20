@@ -196,12 +196,38 @@ export class RichMouseHandler extends BasicMouseHandler {
 
     // if the event was a left click and the hover region isn't null
     if (event.type === 'mousedown' && this._currentHoverRegion) {
-      const update: DSVEditor.ModelChangedArgs =
-        // add a row/column based on currentHoverRegion, get update object
-        this._currentHoverRegion === 'ghost-row'
-          ? model.addRows('body', model.rowCount('body') - 1)
-          : model.addColumns('body', model.columnCount('body') - 1);
+      // Fetch the selection model.
+      const selectionModel = grid.selectionModel;
+
+      // Get the current selection.
+      const selection = selectionModel.currentSelection();
+      let update: DSVEditor.ModelChangedArgs;
+      // add a row/column based on currentHoverRegion, get update object
+      switch (this._currentHoverRegion) {
+        case 'ghost-row': {
+          update = model.addRows('body', model.rowCount('body') - 1);
+          break;
+        }
+        case 'ghost-column': {
+          update = model.addColumns('body', model.columnCount('body') - 1);
+          break;
+        }
+      }
+      update.selection = selection;
       model.onChangedSignal.emit(update);
+      // Unpack the selection args.
+      const { r1, r2, c1, c2 } = selection;
+      // Remake the selection.
+      selectionModel.select({
+        r1,
+        r2,
+        c1,
+        c2,
+        cursorRow: c1,
+        cursorColumn: c2,
+        clear: 'all'
+      });
+
       return;
     }
     super.onMouseDown(grid, event);
