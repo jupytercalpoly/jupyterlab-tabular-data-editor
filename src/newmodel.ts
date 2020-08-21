@@ -246,12 +246,9 @@ export class EditorModel extends MutableDataModel {
     // check if a new value has been stored at this cell.
     if (valueMap[`${row},${column}`] !== undefined) {
       const data = valueMap[`${row},${column}`];
-      if (data === 'true') {
-        return true;
-      }
-      if (data === 'false') {
-        return false;
-      }
+
+      // Parse to bool if text is of form 'yes', 'no', 'true', etc.
+      data = Private.parseBool(data);
       return data;
     }
 
