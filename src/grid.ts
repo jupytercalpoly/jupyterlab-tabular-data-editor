@@ -42,7 +42,7 @@ export class PaintedGrid extends DataGrid {
    * methods should not be invoked directly. This method dispatches
    * to the drawing methods in the correct order.
    */
-  protected paintContent(rx: number, ry: number, rw: number, rh: number): void {
+  paintContent(rx: number, ry: number, rw: number, rh: number): void {
     // Paint in the background, rows, columns, and cells first.
     super.paintContent(rx, ry, rw, rh);
 
@@ -522,7 +522,7 @@ export class PaintedGrid extends DataGrid {
       const model = this.dataModel as EditorModel;
 
       // Fetch the data type for the column.
-      const metadata = model.metadata('body', 0, rgn.column + i);
+      const metadata = model.dataTypes[rgn.column + i];
 
       // Fetch the icon spec from the type
       const iconArgs = this._extraStyle.icons[metadata.type];
