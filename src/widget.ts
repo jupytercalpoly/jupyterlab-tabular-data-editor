@@ -480,7 +480,7 @@ export class DSVEditor extends Widget {
     TextRenderer.HorizontalAlignment
   > {
     return ({ region, row, column }) => {
-      const { type } = this.dataModel.metadata(region, row, column);
+      const { type } = this.dataModel.dataTypes[column];
       if (region !== 'body' || type === 'boolean') {
         return 'center';
       }
@@ -760,7 +760,17 @@ export class DSVEditor extends Widget {
         gridState: update.gridStateUpdate || null
       }
     );
+    if (this.dataModel.isDataDetection) {
+      this._updateRenderer();
+    }
     this._litestore.endTransaction();
+
+    // Recompute all of the metadata.
+    // TODO: integrate the metadata with the rest of the model.
+    if (this.dataModel.isDataDetection) {
+      this.dataModel.dataTypes = this.dataModel.resetMetadata();
+      this._updateRenderer();
+    }
   }
 
   /**
