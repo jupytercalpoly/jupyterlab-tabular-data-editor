@@ -1033,12 +1033,12 @@ export class EditableCSVDocumentWidget extends DocumentWidget<DSVEditor> {
 
     this.toolbar.addItem('spacer', Toolbar.createSpacerItem());
     this.toolbar.addItem(
-      'date-detection',
+      'format-data',
       new ToolbarButton({
-        label: 'Data Detection',
+        label: 'Format Data',
         iconClass: 'jp-ToggleSwitch',
-        tooltip: 'Enable / Disable Data Detection',
-        onClick: () => this.toggleDataDetection()
+        tooltip: 'Click to format the data based on the column type',
+        onClick: (): void => this.toggleDataDetection()
       })
     );
   }
