@@ -335,7 +335,15 @@ describe('Large string tests (isolated)', () => {
       const update: DSVEditor.ModelChangedArgs = {};
 
       // Apply the change to the update object
-      bigModel.setData('body', 900, 0, 'hello', 1, 1, update);
+      bigModel.setData(
+        'body',
+        dataMatrix.length - 1,
+        dataMatrix.length[0] - 1,
+        'hello',
+        1,
+        1,
+        update
+      );
 
       // Update the litestore.
       bigModel.litestore.beginTransaction();
@@ -343,7 +351,7 @@ describe('Large string tests (isolated)', () => {
       bigModel.litestore.endTransaction();
 
       // Update the data matrix.
-      dataMatrix[900][0] = 'hello';
+      dataMatrix[dataMatrix.length - 1][dataMatrix.length[0] - 1] = 'hello';
 
       // Serialize
       const string = bigModel.updateString();
@@ -521,9 +529,16 @@ describe('Large string tests (isolated)', () => {
       updateLitestore(bigModel, update);
       bigModel.litestore.endTransaction();
 
+      // Fetch the map to get the right index.
+      const { columnMap } = bigModel.litestore.getRecord({
+        schema: DSVEditor.DATAMODEL_SCHEMA,
+        record: DSVEditor.RECORD_ID
+      });
+      const column = columnMap[700];
+
       // Update the data matrix.
       dataMatrix.forEach((elem, index) => {
-        dataMatrix[index][700] = '';
+        dataMatrix[index][column] = '';
       });
 
       // Serialize
@@ -543,8 +558,19 @@ describe('Large string tests (isolated)', () => {
       updateLitestore(bigModel, update);
       bigModel.litestore.endTransaction();
 
+      // Fetch the map to get the right indices.
+      const { rowMap } = bigModel.litestore.getRecord({
+        schema: DSVEditor.DATAMODEL_SCHEMA,
+        record: DSVEditor.RECORD_ID
+      });
+      const start = rowMap[900];
+      const end = rowMap[950];
+
       // Update the data matrix.
-      [dataMatrix[900], dataMatrix[950]] = [dataMatrix[950], dataMatrix[900]];
+      [dataMatrix[start], dataMatrix[end]] = [
+        dataMatrix[end],
+        dataMatrix[start]
+      ];
 
       // Serialize
       const string = bigModel.updateString();
@@ -563,9 +589,17 @@ describe('Large string tests (isolated)', () => {
       updateLitestore(bigModel, update);
       bigModel.litestore.endTransaction();
 
+      // Fetch the map to get the right indices.
+      const { columnMap } = bigModel.litestore.getRecord({
+        schema: DSVEditor.DATAMODEL_SCHEMA,
+        record: DSVEditor.RECORD_ID
+      });
+      const start = columnMap[5];
+      const end = columnMap[2];
+
       // Update the data matrix.
       dataMatrix.forEach(row => {
-        [row[2], row[5]] = [row[5], row[2]];
+        [row[end], row[start]] = [row[start], row[end]];
       });
 
       // Serialize
@@ -576,12 +610,28 @@ describe('Large string tests (isolated)', () => {
       expect(same).toBe(true);
     });
   });
-  // TODO: Add these tests
-  // it('Should remove a row', () => {
-  //   bigModel.model.ready.then(() => {
+  it('Should remove a row', () => {
+    bigModel.model.ready.then(() => {
+      const update = bigModel.removeColumns('body', dataMatrix[0].length - 1);
 
-  //   })
-  // })
+      // Update the litestore
+      bigModel.litestore.beginTransaction();
+      updateLitestore(bigModel, update);
+      bigModel.litestore.endTransaction();
+
+      // Fetch the map to get the right indices.
+      const { columnMap } = bigModel.litestore.getRecord({
+        schema: DSVEditor.DATAMODEL_SCHEMA,
+        record: DSVEditor.RECORD_ID
+      });
+      const column = columnMap[dataMatrix[0].length - 1];
+
+      // Update the data matrix.
+      dataMatrix.forEach(row => {
+        row.splice(column, 1);
+      });
+    });
+  });
   // it('Should remove a column', () => {
   //   bigModel.model.ready.then(() => {
 
