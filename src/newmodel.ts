@@ -135,26 +135,26 @@ export class EditorModel extends MutableDataModel {
     );
   }
 
-  get isDataDetection(): boolean {
-    return this._isDataDetection;
+  get isDataFormatted(): boolean {
+    return this._isDataFormatted;
   }
 
-  set isDataDetection(bool: boolean) {
-    if (this._isDataDetection === bool) {
+  set isDataFormatted(bool: boolean) {
+    if (this._isDataFormatted === bool) {
       return;
     }
     // Set the boolean.
-    this._isDataDetection = bool;
+    this._isDataFormatted = bool;
 
     // Reset the metadata.
     this._dataTypes = this.resetMetadata();
 
     // Emit the change.
-    this._isDataDetectionChanged.emit(null);
+    this._isDataFormattedChanged.emit(null);
   }
 
-  get isDataDetectionChanged(): Signal<this, null> {
-    return this._isDataDetectionChanged;
+  get isDataFormattedChanged(): Signal<this, null> {
+    return this._isDataFormattedChanged;
   }
 
   /**
@@ -177,7 +177,7 @@ export class EditorModel extends MutableDataModel {
     const metadata = new Array(this.totalColumns);
 
     // Return string if we aren't detecting data.
-    if (!this._isDataDetection) {
+    if (!this._isDataFormatted) {
       metadata.fill({ type: 'string' });
       return metadata;
     }
@@ -1855,8 +1855,8 @@ export class EditorModel extends MutableDataModel {
   private _columnsRemoved: number;
   private _saving = false;
   private _ghostsRevealed = true;
-  private _isDataDetection = false;
-  private _isDataDetectionChanged = new Signal<this, null>(this);
+  private _isDataFormatted = false;
+  private _isDataFormattedChanged = new Signal<this, null>(this);
   private _dataTypes: Array<DataModel.Metadata>;
 }
 
