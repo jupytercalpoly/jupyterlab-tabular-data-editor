@@ -997,7 +997,14 @@ describe('Large string tests (integrated)', () => {
         'number'
       ];
 
-      // Turn data
+      // Turn data formatting on.
+      bigModel.isDataFormatted = true;
+
+      // Generate an array with just the types.
+      const types = bigModel.dataTypes.map(elem => elem.type);
+
+      // Compare.
+      expect(types).toBe(correctTypes);
     });
   });
   it('Should undo to the original state', () => {
