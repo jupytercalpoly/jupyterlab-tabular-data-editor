@@ -1867,8 +1867,8 @@ export type SlicePattern = {
 
 namespace Private {
   export function boolyCheck(input: string): string | boolean {
-    const trueBools = ['1', 'true', 'yes', 'done', 'complete'];
-    const falseBools = ['0', 'false', 'no', 'not done', 'incomplete', 'to-do'];
+    const trueBools = ['true', 'yes', 'done', 'complete'];
+    const falseBools = ['false', 'no', 'not done', 'incomplete', 'to-do'];
     if (trueBools.includes(input.toLowerCase())) {
       return true;
     }
