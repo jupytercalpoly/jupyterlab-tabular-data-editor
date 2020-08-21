@@ -204,6 +204,12 @@ export class RichMouseHandler extends BasicMouseHandler {
       }
       update.selection = selection;
       model.onChangedSignal.emit(update);
+
+      // Bail if there's no selection
+      if (!selection) {
+        return;
+      }
+
       // Unpack the selection args.
       const { r1, r2, c1, c2 } = selection;
       // Remake the selection.
@@ -562,6 +568,7 @@ export class RichMouseHandler extends BasicMouseHandler {
         grid.editorController.edit(cell, { editor, onCommit });
       }
     }
+
     super.onMouseDoubleClick(grid, event);
   }
 
