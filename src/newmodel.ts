@@ -192,14 +192,18 @@ export class EditorModel extends MutableDataModel {
     for (let column = 0; column < this.totalColumns; column++) {
       rowLoop: {
         for (let row = 0; row < rows; row++) {
-          values[row] = this.data('body', row, column);
+          let value = this.data('body', row, column);
+
+          // If the value passes our booly check, set the value to the bool.
+          value = Private.boolyCheck(value.toString());
 
           // If on of the values is an empty string, then the type is string.
-          if (values[row] === '') {
+          if (value === '') {
             const type = 'string';
             metadata[column] = { type };
             break rowLoop;
           }
+          values[row] = value;
         }
         const type = inferType(values);
         metadata[column] = { type };
@@ -246,9 +250,6 @@ export class EditorModel extends MutableDataModel {
     // check if a new value has been stored at this cell.
     if (valueMap[`${row},${column}`] !== undefined) {
       const data = valueMap[`${row},${column}`];
-
-      // Parse to bool if text is of form 'yes', 'no', 'true', etc.
-      data = Private.parseBool(data);
       return data;
     }
 
@@ -1863,3 +1864,17 @@ export type SlicePattern = {
   buffers: Array<string>;
   slices: Array<Array<number>>;
 };
+
+namespace Private {
+  export function boolyCheck(input: string): string | boolean {
+    const trueBools = ['1', 'true', 'yes', 'done', 'complete'];
+    const falseBools = ['0', 'false', 'no', 'not done', 'incomplete', 'to-do'];
+    if (trueBools.includes(input.toLowerCase())) {
+      return true;
+    }
+    if (falseBools.includes(input.toLowerCase())) {
+      return false;
+    }
+    return input;
+  }
+}
