@@ -1,0 +1,9 @@
+Mixed,String,Date,Number,Boolean
+JL9123,Elliot,2020-12-22,1,true
+23,Noel,2020-12-22,2000,false
+true,Robert,2020-12-22,2,true
+2020-02-12,Addison,2020-12-22,3,false
+false,Bobby,2020-12-22,32,false
+,Gordon,2020-12-22,3,false
+,Guy,2020-12-22,3,true
+,Abed,2020-12-22,3,true

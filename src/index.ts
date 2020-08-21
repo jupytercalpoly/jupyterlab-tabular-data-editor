@@ -526,7 +526,7 @@ export const LIGHT_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
     },
     'ghost-row': {
       icon: addIcon,
-      color: '#bdbdbd',
+      color: '#616161',
       size: 12,
       left: 26 /* set to rowHeaderWidth / 2 - size / 2 to make centered */,
       top: 6 /* set to rowHeight / 2 - size / 2 to make centered. */
@@ -537,6 +537,11 @@ export const LIGHT_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
       ...DATATYPE_ICON.position
     },
     integer: {
+      icon: new LabIcon({ name: 'tde:number', svgstr: numberSvgStr }),
+      color: DATATYPE_ICON.colorLight,
+      ...DATATYPE_ICON.position
+    },
+    number: {
       icon: new LabIcon({ name: 'tde:number', svgstr: numberSvgStr }),
       color: DATATYPE_ICON.colorLight,
       ...DATATYPE_ICON.position
@@ -562,7 +567,7 @@ export const DARK_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
   icons: {
     'ghost-column': {
       icon: addIcon,
-      color: '#616161',
+      color: '#bdbdbd',
       size: 18,
       left: 63 /* set to columnWidth / 2 - size / 2 to make centered */,
       top: 9 /* set to columnHeaderHeight / 2 - size / 2 to make centered */
@@ -582,6 +587,11 @@ export const DARK_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
     integer: {
       icon: new LabIcon({ name: 'tde:number', svgstr: numberSvgStr }),
       color: DATATYPE_ICON.colorDark,
+      ...DATATYPE_ICON.position
+    },
+    number: {
+      icon: new LabIcon({ name: 'tde:number', svgstr: numberSvgStr }),
+      color: DATATYPE_ICON.colorLight,
       ...DATATYPE_ICON.position
     },
     boolean: {
