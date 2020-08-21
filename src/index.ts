@@ -589,6 +589,11 @@ export const DARK_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
       color: DATATYPE_ICON.colorDark,
       ...DATATYPE_ICON.position
     },
+    number: {
+      icon: new LabIcon({ name: 'tde:number', svgstr: numberSvgStr }),
+      color: DATATYPE_ICON.colorLight,
+      ...DATATYPE_ICON.position
+    },
     boolean: {
       icon: new LabIcon({ name: 'tde:checkbox', svgstr: checkboxSvgStr }),
       color: DATATYPE_ICON.colorDark,
