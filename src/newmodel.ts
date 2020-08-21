@@ -1,4 +1,4 @@
-import { DSVModel } from 'tde-csvviewer';
+import { DSVModel } from '@jupyterlab/csvviewer';
 import { MutableDataModel, DataModel, SelectionModel } from 'tde-datagrid';
 import { Litestore } from './litestore';
 // import { toArray, range } from '@lumino/algorithm';
@@ -16,6 +16,10 @@ export class EditorModel extends MutableDataModel {
 
   constructor(options: DSVModel.IOptions) {
     super();
+    // If the string is empty, add a Column 1 label.
+    if (options.data === '') {
+      options.data = 'Column 1';
+    }
     // Define our model.
     this._model = new DSVModel(options);
 
