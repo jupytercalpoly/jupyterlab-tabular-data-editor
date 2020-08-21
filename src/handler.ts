@@ -429,8 +429,8 @@ export class RichMouseHandler extends BasicMouseHandler {
       case 'row-header': {
         const offset =
           row < currentRow
-            ? this._grid.rowOffset('body', currentRow + 1)
-            : this._grid.rowOffset('body', currentRow);
+            ? this._grid.rowOffset('body', currentRow + 1) - this._grid.scrollY
+            : this._grid.rowOffset('body', currentRow) - this._grid.scrollY;
         this._moveLine.manualPositionUpdate(null, offset + top - 1.5);
         this._selectionIndex = currentRow;
         break;
@@ -438,8 +438,10 @@ export class RichMouseHandler extends BasicMouseHandler {
       case 'column-header': {
         const offset =
           column < currentColumn
-            ? this._grid.columnOffset('body', currentColumn + 1)
-            : this._grid.columnOffset('body', currentColumn);
+            ? this._grid.columnOffset('body', currentColumn + 1) -
+              this._grid.scrollX
+            : this._grid.columnOffset('body', currentColumn) -
+              this._grid.scrollX;
         this._moveLine.manualPositionUpdate(offset + left - 1.5, null);
         this._selectionIndex = currentColumn;
         break;
