@@ -441,10 +441,10 @@ describe('Large string tests (isolated)', () => {
           dataMatrix.unshift(new Array(dataMatrix[0].length).fill(''));
         }
 
-        // Serialize
+        // Serialize.
         const string = bigModel.updateString();
 
-        // Compare
+        // Compare.
         const same = string === dataMatrix.map(row => row.join(',')).join('\n');
         expect(same).toBe(true);
       });
@@ -464,10 +464,10 @@ describe('Large string tests (isolated)', () => {
           dataMatrix.push(new Array(dataMatrix[0].length).fill(''));
         }
 
-        // Serialize
+        // Serialize.
         const string = bigModel.updateString();
 
-        // Compare
+        // Compare.
         const same = string === dataMatrix.map(row => row.join(',')).join('\n');
         expect(same).toBe(true);
       });
@@ -490,10 +490,10 @@ describe('Large string tests (isolated)', () => {
           });
         }
 
-        // Serialize
+        // Serialize.
         const string = bigModel.updateString();
 
-        // Compare
+        // Compare.
         const same = string === dataMatrix.map(row => row.join(',')).join('\n');
         expect(same).toBe(true);
       });
@@ -512,10 +512,10 @@ describe('Large string tests (isolated)', () => {
       // Update the data matrix.
       dataMatrix[800] = new Array(dataMatrix.length[0]).fill('');
 
-      // Serialize
+      // Serialize.
       const string = bigModel.updateString();
 
-      // Compare
+      // Compare.
       const same = string === dataMatrix.map(row => row.join(',')).join('\n');
       expect(same).toBe(true);
     });
@@ -524,7 +524,7 @@ describe('Large string tests (isolated)', () => {
     bigModel.model.ready.then(() => {
       const update = bigModel.clearColumns('body', 700);
 
-      // Update the litestore
+      // Update the litestore.
       bigModel.litestore.beginTransaction();
       updateLitestore(bigModel, update);
       bigModel.litestore.endTransaction();
@@ -541,10 +541,10 @@ describe('Large string tests (isolated)', () => {
         dataMatrix[index][column] = '';
       });
 
-      // Serialize
+      // Serialize.
       const string = bigModel.updateString();
 
-      // Compare
+      // Compare.
       const same = string === dataMatrix.map(row => row.join(',')).join('\n');
       expect(same).toBe(true);
     });
@@ -553,7 +553,7 @@ describe('Large string tests (isolated)', () => {
     bigModel.model.ready.then(() => {
       const update = bigModel.moveRows('body', 900, 950, 1);
 
-      // Update the litestore
+      // Update the litestore.
       bigModel.litestore.beginTransaction();
       updateLitestore(bigModel, update);
       bigModel.litestore.endTransaction();
@@ -572,10 +572,10 @@ describe('Large string tests (isolated)', () => {
         dataMatrix[start]
       ];
 
-      // Serialize
+      // Serialize.
       const string = bigModel.updateString();
 
-      // Compare
+      // Compare.
       const same = string === dataMatrix.map(row => row.join(',')).join('\n');
       expect(same).toBe(true);
     });
@@ -584,7 +584,7 @@ describe('Large string tests (isolated)', () => {
     bigModel.model.ready.then(() => {
       const update = bigModel.moveColumns('body', 5, 2, 1);
 
-      // Update the litestore
+      // Update the litestore.
       bigModel.litestore.beginTransaction();
       updateLitestore(bigModel, update);
       bigModel.litestore.endTransaction();
@@ -602,36 +602,19 @@ describe('Large string tests (isolated)', () => {
         [row[end], row[start]] = [row[start], row[end]];
       });
 
-      // Serialize
+      // Serialize.
       const string = bigModel.updateString();
 
-      // Compare
+      // Compare.
       const same = string === dataMatrix.map(row => row.join(',')).join('\n');
       expect(same).toBe(true);
     });
   });
-  it('Should remove a row', () => {
-    bigModel.model.ready.then(() => {
-      const update = bigModel.removeColumns('body', dataMatrix[0].length - 1);
+  // it('Should remove a row', () => {
+  //   bigModel.model.ready.then(() => {
 
-      // Update the litestore
-      bigModel.litestore.beginTransaction();
-      updateLitestore(bigModel, update);
-      bigModel.litestore.endTransaction();
-
-      // Fetch the map to get the right indices.
-      const { columnMap } = bigModel.litestore.getRecord({
-        schema: DSVEditor.DATAMODEL_SCHEMA,
-        record: DSVEditor.RECORD_ID
-      });
-      const column = columnMap[dataMatrix[0].length - 1];
-
-      // Update the data matrix.
-      dataMatrix.forEach(row => {
-        row.splice(column, 1);
-      });
-    });
-  });
+  //   });
+  // });
   // it('Should remove a column', () => {
   //   bigModel.model.ready.then(() => {
 
@@ -831,10 +814,36 @@ describe('Large string tests (integrated)', () => {
 
   //   })
   // })
-  // it('Should remove a column', () => {
-  //   bigModel.model.ready.then(() => {
+  it('Should remove a column', () => {
+    bigModel.model.ready.then(() => {
+      const update = bigModel.removeColumns('body', dataMatrix[0].length - 1);
 
-  //   })
+      // Update the litestore
+      bigModel.litestore.beginTransaction();
+      updateLitestore(bigModel, update);
+      bigModel.litestore.endTransaction();
+
+      // Fetch the map to get the right indices.
+      const { columnMap } = bigModel.litestore.getRecord({
+        schema: DSVEditor.DATAMODEL_SCHEMA,
+        record: DSVEditor.RECORD_ID
+      });
+      const column = columnMap[dataMatrix[0].length - 1];
+
+      // Update the data matrix.
+      dataMatrix.forEach(row => {
+        row.splice(column, 1);
+      });
+
+      // Serialize.
+      const string = bigModel.updateString();
+
+      // Compare.
+      const same = string === dataMatrix.map(row => row.join(',')).join('\n');
+      expect(same).toBe(true);
+    });
+  });
+
   // })
   // })
   // })
@@ -845,16 +854,23 @@ describe('Large string tests (integrated)', () => {
   // });
   it('Should add multiple rows to the end', () => {
     bigModel.model.ready.then(() => {
-      const update = bigModel.addRows('body', 1000, 2);
+      const update = bigModel.addRows('body', dataMatrix.length - 1, 2);
 
       // Update the litestore.
       bigModel.litestore.beginTransaction();
       updateLitestore(bigModel, update);
       bigModel.litestore.endTransaction();
 
+      // Fetch the map to get the right indices.
+      const { rowMap } = bigModel.litestore.getRecord({
+        schema: DSVEditor.DATAMODEL_SCHEMA,
+        record: DSVEditor.RECORD_ID
+      });
+      const row = rowMap[dataMatrix.length - 1];
+
       // Update the data matrix.
-      dataMatrix.push(new Array(dataMatrix[0].length).fill(''));
-      dataMatrix.push(new Array(dataMatrix[0].length).fill(''));
+      dataMatrix.splice(row, 0, new Array(dataMatrix[0].length).fill(''));
+      dataMatrix.splice(row, 0, new Array(dataMatrix[0].length).fill(''));
 
       // Serialize
       const string = bigModel.updateString();
@@ -864,26 +880,164 @@ describe('Large string tests (integrated)', () => {
       expect(same).toBe(true);
     });
   });
-  // it('Should add multiple columns', () => {
-  //   bigModel.model.ready.then(() => {
+  it('Should add multiple columns to the end', () => {
+    bigModel.model.ready.then(() => {
+      const update = bigModel.addColumns('body', dataMatrix.length - 1, 2);
 
-  //   })
-  // });
-  // it('Should cut a region', () => {
-  //   bigModel.model.ready.then(() => {
+      // Update the litestore.
+      bigModel.litestore.beginTransaction();
+      updateLitestore(bigModel, update);
+      bigModel.litestore.endTransaction();
 
-  //   })
-  // });
-  // it('Should it should paste a region', () => {
-  //   bigModel.model.ready.then(() => {
+      // Fetch the map to get the right indices.
+      const { columnMap } = bigModel.litestore.getRecord({
+        schema: DSVEditor.DATAMODEL_SCHEMA,
+        record: DSVEditor.RECORD_ID
+      });
+      const column = columnMap[dataMatrix.length - 1];
 
-  //   })
-  // });
-  // it('Should undo', () => {
-  //   bigModel.model.ready.then(() => {
+      // Update the data matrix.
+      dataMatrix.forEach(elem => {
+        elem.splice(column, 0, '', '');
+      });
 
-  //   })
-  // });
-  // it('Should redo', () => {
-  //   bigModel.model.ready.then(() => {
+      // Serialize.
+      const string = bigModel.updateString();
+
+      // Compare.
+      const same = string === dataMatrix.map(row => row.join(',')).join('\n');
+      expect(same).toBe(true);
+    });
+  });
+  it('Should cut a region and paste to another region', () => {
+    bigModel.model.ready.then(() => {
+      let update = bigModel.cut('body', 500, 3, 550, 5);
+
+      // Update the litestore.
+      bigModel.litestore.beginTransaction();
+      updateLitestore(bigModel, update);
+      bigModel.litestore.endTransaction();
+
+      // Fetch the map to get the right indices.
+      const { columnMap, rowMap } = bigModel.litestore.getRecord({
+        schema: DSVEditor.DATAMODEL_SCHEMA,
+        record: DSVEditor.RECORD_ID
+      });
+
+      // Initialize an array to hold copied data.
+      const copyData = [];
+
+      // Update the data matrix.
+      for (let row = 500; row <= 550; row++) {
+        row = rowMap[row];
+        // Initialize the row data.
+        const rowData = [];
+        for (let column = 3; column <= 5; column++) {
+          column = columnMap[column];
+          rowData.push(dataMatrix[row][column]);
+          dataMatrix[row][column] = '';
+        }
+        copyData.push(rowData);
+      }
+
+      // Serialize.
+      let string = bigModel.updateString();
+
+      // Compare.
+      let same = string === dataMatrix.map(row => row.join(',')).join('\n');
+      expect(same).toBe(true);
+
+      update = bigModel.paste('body', 600, 600);
+
+      // Update the litestore.
+      bigModel.litestore.beginTransaction();
+      updateLitestore(bigModel, update);
+      bigModel.litestore.endTransaction();
+
+      // Initialize variables to iterate on the copy data.
+      let i = 0;
+      let j = 0;
+
+      // Update the data matrix.
+      for (let row = 500; row <= 550; row++) {
+        row = rowMap[row];
+        for (let column = 3; column <= 5; column++) {
+          column = columnMap[column];
+          dataMatrix[row][column] = copyData[i][j];
+          j++;
+        }
+        i++;
+        j = 0;
+      }
+
+      // Serialize.
+      string = bigModel.updateString();
+
+      // Compare.
+      same = string === dataMatrix.map(row => row.join(',')).join('\n');
+      expect(same).toBe(true);
+    });
+  });
+  it('Should compute the correct data types', () => {
+    bigModel.model.ready.then(() => {
+      const correctTypes = [
+        'string',
+        'string',
+        'string',
+        'string',
+        'string',
+        'date',
+        'integer',
+        'date',
+        'integer',
+        'number',
+        'number',
+        'number',
+        'number',
+        'number'
+      ];
+
+      // Turn data
+    });
+  });
+  it('Should undo to the original state', () => {
+    bigModel.model.ready.then(() => {
+      // Recreate the original matrix.
+      const originalMatrix = DATA.split('\n').map(row => row.split(','));
+
+      // Fetch the undo stack.
+      const undoStack = bigModel.litestore.transactionStore.undoStack;
+
+      // Undo to the original state.
+      while (undoStack.length > 0) {
+        bigModel.litestore.undo();
+      }
+
+      // Serialize.
+      const string = bigModel.updateString();
+
+      // Compare.
+      const same =
+        string === originalMatrix.map(row => row.join(',')).join('\n');
+      expect(same).toBe(true);
+    });
+  });
+  it('Should redo to the last state', () => {
+    bigModel.model.ready.then(() => {
+      // Fetch the redo stack.
+      const redoStack = bigModel.litestore.transactionStore.undoStack;
+
+      // Redo to the last state.
+      while (redoStack.length > 0) {
+        bigModel.litestore.redo();
+      }
+
+      // Serialize.
+      const string = bigModel.updateString();
+
+      // Compare.
+      const same = string === dataMatrix.map(row => row.join(',')).join('\n');
+      expect(same).toBe(true);
+    });
+  });
 });
