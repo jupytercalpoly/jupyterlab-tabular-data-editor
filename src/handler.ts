@@ -533,11 +533,12 @@ export class RichMouseHandler extends BasicMouseHandler {
   onMouseDoubleClick(grid: DataGrid, event: MouseEvent): void {
     const { region, row, column } = grid.hitTest(event.clientX, event.clientY);
 
-    // need to subtract by 3 (1 for the actual ghost row/column, 2 for the double click)
-    const clickedGhostRow: boolean = row === grid.rowCount('body') - 3;
-    const clickedGhostColumn: boolean = column === grid.columnCount('body') - 3;
+    const clickedGhostRow: boolean =
+      row === grid.dataModel.rowCount('body') - 1;
+    const clickedGhostColumn: boolean =
+      column === grid.dataModel.columnCount('body') - 1;
 
-    // Bail if the user tried to double clicked inside of a ghost row/column
+    // Bail if the user tried to double click inside of a ghost row/column
     if (clickedGhostRow || clickedGhostColumn) {
       return;
     }

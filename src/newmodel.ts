@@ -10,20 +10,6 @@ import { inferType } from 'vega';
 // import { SplitPanel } from '@lumino/widgets';
 
 export class EditorModel extends MutableDataModel {
-  private _clipboard: Array<Array<string>>;
-  private _litestore: Litestore | null;
-  private _model: DSVModel;
-  private _rowsAdded: number;
-  private _columnsAdded: number;
-  private _onChangeSignal = new Signal<this, DSVEditor.ModelChangedArgs | null>(
-    this
-  );
-  private _rowsRemoved: number;
-  private _columnsRemoved: number;
-  private _saving = false;
-  private _ghostsRevealed = true;
-  private _isDataDetection = false;
-  private _isDataDetectionChanged = new Signal<this, null>(this);
   // private _onChangeSignal: Signal<this, string> = new Signal<this, string>(
   //   this
   // );
@@ -76,6 +62,16 @@ export class EditorModel extends MutableDataModel {
    */
   set litestore(value: Litestore) {
     this._litestore = value;
+  }
+
+  get dataTypes(): Array<DataModel.Metadata> {
+    if (this._dataTypes) {
+      return this._dataTypes;
+    }
+    return Array(this.totalColumns).fill({ type: 'string' });
+  }
+  set dataTypes(value: Array<DataModel.Metadata>) {
+    this._dataTypes = value;
   }
 
   /**
@@ -139,44 +135,77 @@ export class EditorModel extends MutableDataModel {
     );
   }
 
-  get isDataDetection(): boolean {
-    return this._isDataDetection;
+  get isDataFormatted(): boolean {
+    return this._isDataFormatted;
   }
 
-  set isDataDetection(bool: boolean) {
-    if (this._isDataDetection === bool) {
+  set isDataFormatted(bool: boolean) {
+    if (this._isDataFormatted === bool) {
       return;
     }
-    this._isDataDetection = bool;
-    this._isDataDetectionChanged.emit(null);
+    // Set the boolean.
+    this._isDataFormatted = bool;
+
+    // Reset the metadata.
+    this._dataTypes = this.resetMetadata();
+
+    // Emit the change.
+    this._isDataFormattedChanged.emit(null);
   }
 
-  get isDataDetectionChanged(): Signal<this, null> {
-    return this._isDataDetectionChanged;
+  get isDataFormattedChanged(): Signal<this, null> {
+    return this._isDataFormattedChanged;
   }
 
+  /**
+   * Computes the metadata at a location.
+   */
   metadata(
     region: DataModel.CellRegion,
     row: number,
     column: number
   ): DataModel.Metadata {
     // use text editor if data detection is off, region is not the body, or data is empty
-    if (
-      !this._isDataDetection ||
-      region !== 'body' ||
-      this.data(region, row, column) === ''
-    ) {
-      return { type: 'string' };
+    return this.dataTypes[column];
+  }
+
+  /**
+   * Computes the metadata of the entire data grid.
+   */
+  resetMetadata(): Array<DataModel.Metadata> {
+    // Initialize an array of of the number of columns.
+    const metadata = new Array(this.totalColumns);
+
+    // Return string if we aren't detecting data.
+    if (!this._isDataFormatted) {
+      metadata.fill({ type: 'string' });
+      return metadata;
     }
 
-    const arr = [];
-    for (let i = 0; i < this.totalRows - 1; i++) {
-      arr.push(this.data(region, i, column));
+    // Infer based on the first 500 rows.
+    const rows = Math.min(this.totalRows - 1, 500);
+
+    // Allocate an array to fill with each column.
+    const values = new Array(rows);
+
+    // Iterate through each column and infer the type.
+    for (let column = 0; column < this.totalColumns; column++) {
+      rowLoop: {
+        for (let row = 0; row < rows; row++) {
+          values[row] = this.data('body', row, column);
+
+          // If on of the values is an empty string, then the type is string.
+          if (values[row] === '') {
+            const type = 'string';
+            metadata[column] = { type };
+            break rowLoop;
+          }
+        }
+        const type = inferType(values);
+        metadata[column] = { type };
+      }
     }
-
-    const type = inferType(arr);
-
-    return { type };
+    return metadata;
   }
 
   /**
@@ -1814,6 +1843,21 @@ export class EditorModel extends MutableDataModel {
     const lastValue = valueMap[valueKeys[valueKeys.length - 1]];
     return startBuffer + mapArray.map(mapper).join('') + lastValue + endBuffer;
   }
+  private _clipboard: Array<Array<string>>;
+  private _litestore: Litestore | null;
+  private _model: DSVModel;
+  private _rowsAdded: number;
+  private _columnsAdded: number;
+  private _onChangeSignal = new Signal<this, DSVEditor.ModelChangedArgs | null>(
+    this
+  );
+  private _rowsRemoved: number;
+  private _columnsRemoved: number;
+  private _saving = false;
+  private _ghostsRevealed = true;
+  private _isDataFormatted = false;
+  private _isDataFormattedChanged = new Signal<this, null>(this);
+  private _dataTypes: Array<DataModel.Metadata>;
 }
 
 export type MapUpdate = 'add' | 'remove' | 'move' | 'clear';

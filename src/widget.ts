@@ -428,7 +428,7 @@ export class DSVEditor extends Widget {
       // set inital status of litestore
       this.updateModel(update);
       dataModel.onChangedSignal.connect(this._onModelSignal, this);
-      dataModel.isDataDetectionChanged.connect(this._updateRenderer, this);
+      dataModel.isDataFormattedChanged.connect(this._updateRenderer, this);
       // dataModel.cancelEditingSignal.connect(this._cancelEditing, this);
       // Add a Column 1 header if this is a blank csv.
       if (!data) {
@@ -447,11 +447,11 @@ export class DSVEditor extends Widget {
     if (this._baseRenderer === null) {
       return;
     }
-    const isDataDetection = this.dataModel && this.dataModel.isDataDetection;
+    const isDataFormatted = this.dataModel && this.dataModel.isDataFormatted;
     const rendererConfig = this._baseRenderer;
     const renderer = new TextRenderer({
       textColor: rendererConfig.textColor,
-      horizontalAlignment: isDataDetection
+      horizontalAlignment: isDataFormatted
         ? this.cellHorizontalAlignmentRendererFunc()
         : rendererConfig.horizontalAlignment,
       backgroundColor: this._searchService.cellBackgroundColorRendererFunc(
@@ -460,12 +460,12 @@ export class DSVEditor extends Widget {
     });
     const headerRenderer = new HeaderTextRenderer({
       textColor: rendererConfig.textColor,
-      horizontalAlignment: isDataDetection ? 'left' : 'center',
+      horizontalAlignment: isDataFormatted ? 'left' : 'center',
       backgroundColor: this._searchService.cellBackgroundColorRendererFunc(
         rendererConfig
       ),
       indent: 25,
-      dataDetection: isDataDetection
+      dataDetection: isDataFormatted
     });
 
     this._grid.cellRenderers.update({
@@ -480,7 +480,7 @@ export class DSVEditor extends Widget {
     TextRenderer.HorizontalAlignment
   > {
     return ({ region, row, column }) => {
-      const { type } = this.dataModel.metadata(region, row, column);
+      const { type } = this.dataModel.dataTypes[column];
       if (region !== 'body' || type === 'boolean') {
         return 'center';
       }
@@ -760,7 +760,17 @@ export class DSVEditor extends Widget {
         gridState: update.gridStateUpdate || null
       }
     );
+    if (this.dataModel.isDataFormatted) {
+      this._updateRenderer();
+    }
     this._litestore.endTransaction();
+
+    // Recompute all of the metadata.
+    // TODO: integrate the metadata with the rest of the model.
+    if (this.dataModel.isDataFormatted) {
+      this.dataModel.dataTypes = this.dataModel.resetMetadata();
+      this._updateRenderer();
+    }
   }
 
   /**
@@ -1023,24 +1033,24 @@ export class EditableCSVDocumentWidget extends DocumentWidget<DSVEditor> {
 
     this.toolbar.addItem('spacer', Toolbar.createSpacerItem());
     this.toolbar.addItem(
-      'date-detection',
+      'format-data',
       new ToolbarButton({
-        label: 'Data Detection',
+        label: 'Format Data',
         iconClass: 'jp-ToggleSwitch',
-        tooltip: 'Enable / Disable Data Detection',
-        onClick: () => this.toggleDataDetection()
+        tooltip: 'Click to format the data based on the column type',
+        onClick: (): void => this.toggleDataDetection()
       })
     );
   }
 
   toggleDataDetection(): void {
-    const isDataDetection = this.content.dataModel.isDataDetection;
-    if (!isDataDetection) {
-      this.node.setAttribute('isDataDetection', 'true');
+    const isDataFormatted = this.content.dataModel.isDataFormatted;
+    if (!isDataFormatted) {
+      this.node.setAttribute('isDataFormatted', 'true');
     } else {
-      this.node.removeAttribute('isDataDetection');
+      this.node.removeAttribute('isDataFormatted');
     }
-    this.content.dataModel.isDataDetection = !isDataDetection;
+    this.content.dataModel.isDataFormatted = !isDataFormatted;
   }
 
   /**
