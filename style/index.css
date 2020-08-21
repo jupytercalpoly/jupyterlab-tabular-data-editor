@@ -155,12 +155,12 @@ input[type='checkbox'] {
 }
 
 /* Toggle switch on */
-[isDataDetection='true'] .jp-Toolbar-item .jp-ToggleSwitch {
+[isDataFormatted='true'] .jp-Toolbar-item .jp-ToggleSwitch {
   background-color: #1976d2;
 }
 
 /* Toggle switch on */
-[isDataDetection='true']
+[isDataFormatted='true']
   .jp-Toolbar-item
   .bp3-button-text
   .jp-ToolbarButtonComponent-label {
@@ -168,7 +168,7 @@ input[type='checkbox'] {
 }
 
 /* Toggle switch on */
-[isDataDetection='true'] .jp-Toolbar-item .jp-ToggleSwitch::before {
+[isDataFormatted='true'] .jp-Toolbar-item .jp-ToggleSwitch::before {
   margin-left: 60%;
   margin-right: 5px;
 }
