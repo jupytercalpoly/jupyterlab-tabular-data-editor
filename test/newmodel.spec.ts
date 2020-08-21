@@ -31,7 +31,7 @@ function updateLitestore(
   );
 }
 
-function initModel() {
+function initModel(): void {
   const data = [
     'column 0,column 1,column 2',
     'r0c0,r0c1:randomvalue,r1c2',
@@ -70,7 +70,7 @@ function initModel() {
   model.litestore.endTransaction();
 }
 
-function initBigModel() {
+function initBigModel(): void {
   // Parse the data matrix once.
   dataMatrix = DATA.split('\n').map(row => row.split(','));
 
