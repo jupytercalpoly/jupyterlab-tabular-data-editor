@@ -102,18 +102,16 @@ export class BoundedDrag extends Drag {
       rightBound
     } = this._boundingRegion;
 
-    // We always measure horizontal distance from the left,
-    // so we need to ensure left <= x <= right.
-    // Force left <= x.
-    x = Math.max(leftBound, x);
-    // Force x <= right.
-    x = Math.min(x, rightBound);
-    // We always measure vertical distance from the top,
-    // so we need to ensure top <= y <= bottom.
-    // Force top <= y.
-    y = Math.max(topBound, y);
-    // Force y <= bottom.
-    y = Math.min(y, bottomBound);
+    // Fetch the style.
+    const style = this.dragImage.style;
+
+    // Fetch the image dimensions.
+    const width = parseFloat(style.width);
+    const height = parseFloat(style.height);
+
+    // Bound
+    x = Math.max(leftBound, Math.min(x, rightBound - width));
+    y = Math.max(topBound, Math.min(y, bottomBound - height));
     return [x, y];
   }
 

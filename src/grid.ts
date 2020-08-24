@@ -31,6 +31,18 @@ export class PaintedGrid extends DataGrid {
     // Schedule a repaint of the overlay.
     this.repaintOverlay();
   }
+  /**
+   * Get the ghost row height.
+   */
+  get ghostRowHeight(): number {
+    return this.defaultSizes.rowHeight;
+  }
+  /**
+   * Get the ghost column width.
+   */
+  get ghostColumnWidth(): number {
+    return this.defaultSizes.columnWidth;
+  }
 
   /**
    * @override paints on the ghost row and column as well after painting the other regions.
