@@ -14,6 +14,7 @@ import { renderSelection, IBoundingRegion, BoundedDrag } from './drag';
 import { EditorModel } from './newmodel';
 import { DSVEditor } from './widget';
 import { HeaderCellEditor } from './headercelleditor';
+import { PaintedGrid } from './grid';
 // import { BasicKeyHandler } from 'tde-datagrid';
 
 export class RichMouseHandler extends BasicMouseHandler {
@@ -42,49 +43,30 @@ export class RichMouseHandler extends BasicMouseHandler {
     region: DataModel.CellRegion | 'void',
     shadowRegion: RichMouseHandler.IRegion
   ): IBoundingRegion {
-    // Unpack the parameters of the shadow region.
-    const { topSide, bottomSide, leftSide, rightSide } = shadowRegion;
+    // Fetch the grid.
+    const grid = this._grid as PaintedGrid;
 
     // get the left and top offsets of the grid viewport
     const { left, top } = this._grid.viewport.node.getBoundingClientRect();
 
-    // Set up bounding variables.
-    let topBound: number;
-    let bottomBound: number;
-    let leftBound: number;
-    let rightBound: number;
+    // Get the horizontal bounds measured from the left.
+    const leftBound = left + grid.headerWidth;
+    const rightBound =
+      leftBound +
+      Math.min(
+        grid.pageWidth,
+        grid.bodyWidth - grid.ghostColumnWidth - grid.scrollX
+      );
 
-    if (region === 'column-header') {
-      // No vertical movement. Fix to the top of the grid body.
-      bottomBound = topBound = topSide;
+    // Get the vertical bounds measured from the top.
+    const topBound = top + grid.headerHeight;
+    const bottomBound =
+      topBound +
+      Math.min(
+        grid.pageHeight,
+        grid.bodyHeight - grid.ghostRowHeight - grid.scrollY
+      );
 
-      // Get the bounds for horizontal movement (measured from the left).
-      const shadowWidth = Math.abs(leftSide - rightSide);
-      const ghostColumnIndex = this._grid.dataModel.columnCount('body') - 1;
-      leftBound = left + this._grid.headerWidth;
-      rightBound =
-        leftBound +
-        Math.min(
-          this._grid.pageWidth,
-          this._grid.columnOffset('body', ghostColumnIndex)
-        ) -
-        shadowWidth;
-    } else if (region === 'row-header') {
-      // x-axis bounds are the same
-      leftBound = rightBound = leftSide;
-
-      // Get the vertical bounds (measured from the top).
-      const shadowHeight = Math.abs(topSide - bottomSide);
-      const ghostRowIndex = this._grid.dataModel.rowCount('body') - 1;
-      topBound = top + this._grid.headerHeight;
-      bottomBound =
-        topBound +
-        Math.min(
-          this._grid.pageHeight,
-          this._grid.rowOffset('body', ghostRowIndex)
-        ) -
-        shadowHeight;
-    }
     return {
       topBound,
       bottomBound,
