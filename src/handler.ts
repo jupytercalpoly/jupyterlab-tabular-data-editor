@@ -204,7 +204,7 @@ export class RichMouseHandler extends BasicMouseHandler {
       return;
     }
     super.onMouseDown(grid, event);
-    if (this._cursor === 'grab') {
+    if (event.type === 'mousedown' && this._cursor === 'grab') {
       this._cursor = 'grabbing';
       this.handleGrabbing();
     }
