@@ -22,13 +22,13 @@ See our progress as of 08/07/2020 from these [slides](https://docs.google.com/pr
 <details>
 <summary>View Extension Highlights</summary>
 <br>
-  <h3>Launch a new file and quickly add rows and columns</h3>
+  <h3>Launch new files and quickly add rows and columns</h3>
   <img src="design/gifs/csvlauncher.gif" alt="gif of launching a new csv file within JupyterLab">
   
   <br>
   <br>
   
-  <h3>Seamlessly rearrange rows and columns</h3>
+  <h3>Seamlessly rearrange your data table</h3>
   <img src="design/gifs/moving.gif" alt="gif of moving rows and columns within JupyterLab">
   
    <br>
