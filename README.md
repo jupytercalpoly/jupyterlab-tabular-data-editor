@@ -6,7 +6,7 @@
 
 ### EXPERIMENTAL: This extension is still in alpha. The API is subject to frequent changes.
 
-### Please contact [Kalen](https://github.com/kgoo124), [Logan](https://github.com/lmcnichols), or [Ryan](https://github.com/ryuntalan) if you would like to contribute!
+![](design/gifs/showcase.gif)
 
 Try our extension [here](https://mybinder.org/v2/gh/jupytercalpoly/jupyterlab-tabular-data-editor/master?urlpath=lab)!
 
@@ -17,6 +17,38 @@ Read more about the Jupyter Tabular Data Editor Extension in our [press release]
 Check out our [current progress and future plans](https://github.com/jupytercalpoly/jupyterlab-tabular-data-editor/blob/master/PROGRESS.md)!
 
 See our progress as of 08/07/2020 from these [slides](https://docs.google.com/presentation/d/1ZGjFb3RkoR5Cc39DDdtU-AYAoYMNVMyUM9g80qgNzos/edit?usp=sharing)!
+
+## Feature Showcase
+<details>
+<summary>View Extension Highlights</summary>
+<br>
+  <h3>Launch new files and quickly add rows and columns</h3>
+  <img src="design/gifs/csvlauncher.gif" alt="gif of launching a new csv file within JupyterLab">
+  
+  <br>
+  <br>
+  
+  <h3>Seamlessly rearrange your data table</h3>
+  <img src="design/gifs/moving.gif" alt="gif of moving rows and columns within JupyterLab">
+  
+   <br>
+   <br>
+   
+  <h3>Insert and remove multiple rows and columns</h3>
+  <img src="design/gifs/multiremoveandinsert.gif" alt="gif of removing and inserting multiple rows and columns within JupyterLab">
+  
+   <br>
+   <br>
+   
+  <h3>Format your data with a click of a button</h3>
+  <img src="design/gifs/auto-format.gif" alt="gif of toggling on a mode that formats data based on data types within JupyterLab">
+  
+   <br>
+   <br>
+   
+  <h3>Search and replace with ease</h3>
+  <img src="design/gifs/searchandreplace.gif" alt="gif of searching and replacing a word within a large file within JupyterLab">
+</details>
 
 ## Requirements
 
