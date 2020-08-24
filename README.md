@@ -18,7 +18,7 @@ Check out our [current progress and future plans](https://github.com/jupytercalp
 
 See our progress as of 08/07/2020 from these [slides](https://docs.google.com/presentation/d/1ZGjFb3RkoR5Cc39DDdtU-AYAoYMNVMyUM9g80qgNzos/edit?usp=sharing)!
 
-## Showcase
+## Feature Showcase
 <details>
 <summary>View Extension Highlights</summary>
 <br>
