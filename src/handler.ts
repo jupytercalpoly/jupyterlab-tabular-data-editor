@@ -39,10 +39,7 @@ export class RichMouseHandler extends BasicMouseHandler {
    * @param region The current region
    * @param shadowRegion The indexes for the rows/columns of the shadow region
    */
-  computeGridBoundingRegion(
-    region: DataModel.CellRegion | 'void',
-    shadowRegion: RichMouseHandler.IRegion
-  ): IBoundingRegion {
+  computeGridBoundingRegion(): IBoundingRegion {
     // Fetch the grid.
     const grid = this._grid as PaintedGrid;
 
@@ -250,7 +247,7 @@ export class RichMouseHandler extends BasicMouseHandler {
     );
     let { topSide, bottomSide, leftSide, rightSide } = shadowRegion;
 
-    const boundingRegion = this.computeGridBoundingRegion(region, shadowRegion);
+    const boundingRegion = this.computeGridBoundingRegion();
     renderSelection(
       topSide,
       bottomSide,
