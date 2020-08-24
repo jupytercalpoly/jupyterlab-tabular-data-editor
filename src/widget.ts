@@ -12,7 +12,7 @@ import {
 } from '@jupyterlab/docregistry';
 import { PromiseDelegate } from '@lumino/coreutils';
 import { Signal } from '@lumino/signaling';
-import { TextRenderConfig } from '@jupyterlab/csvviewer';
+import { TextRenderConfig } from 'tde-csvviewer';
 import {
   BasicKeyHandler,
   DataGrid,

@@ -1,4 +1,4 @@
-import { DSVModel } from '@jupyterlab/csvviewer';
+import { DSVModel } from 'tde-csvviewer';
 import { MutableDataModel, DataModel, SelectionModel } from 'tde-datagrid';
 import { Litestore } from './litestore';
 // import { toArray, range } from '@lumino/algorithm';
