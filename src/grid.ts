@@ -31,6 +31,7 @@ export class PaintedGrid extends DataGrid {
     // Schedule a repaint of the overlay.
     this.repaintOverlay();
   }
+
   /**
    * Get the ghost row height.
    */

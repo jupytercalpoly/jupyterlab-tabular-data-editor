@@ -42,7 +42,6 @@ export class RichMouseHandler extends BasicMouseHandler {
   computeGridBoundingRegion(): IBoundingRegion {
     // Fetch the grid.
     const grid = this._grid as PaintedGrid;
-
     // get the left and top offsets of the grid viewport
     const { left, top } = this._grid.viewport.node.getBoundingClientRect();
 
@@ -346,7 +345,6 @@ export class RichMouseHandler extends BasicMouseHandler {
     topSide = Math.max(top, topSide);
     rightSide = Math.min(left + grid.pageWidth, rightSide);
     bottomSide = Math.min(top + grid.pageHeight, bottomSide);
-
     return { topSide, bottomSide, leftSide, rightSide };
   }
 
