@@ -54,7 +54,10 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
     this._query = query;
 
     // when changes are made to the datamodel, rerun the search
-    searchTarget.content.dataModel.changed.connect(this.rerunSearch, this);
+    searchTarget.content.dataModel.onChangedSignal.connect(
+      this.rerunSearch,
+      this
+    );
 
     // query for the matches in the model data
     searchTarget.content.searchService.find(query);
@@ -62,7 +65,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
     // update match variables in CSVSearchProvider
     this._matches = searchTarget.content.searchService.matches;
     this._currentMatch = searchTarget.content.searchService.currentMatch;
-    this.selectSingleCell();
+    this.moveToCell();
     return this._matches;
   }
 
@@ -101,7 +104,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
     this._currentMatch = this._target.content.searchService.highlightNext(
       false
     );
-    this.selectSingleCell();
+    this.moveToCell();
     return this._currentMatch;
   }
 
@@ -112,7 +115,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
    */
   async highlightPrevious(): Promise<ISearchMatch | undefined> {
     this._currentMatch = this._target.content.searchService.highlightNext(true);
-    this.selectSingleCell();
+    this.moveToCell();
     return this._currentMatch;
   }
 
@@ -126,7 +129,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
     update?: DSVEditor.ModelChangedArgs
   ): Promise<boolean> {
     const { line, column } = this._target.content.searchService.currentMatch;
-    await this._target.content.dataModel.setData(
+    this._target.content.dataModel.setData(
       'body',
       line,
       column,
@@ -135,7 +138,6 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
       1,
       update
     );
-    this.selectSingleCell();
     return true;
   }
 
@@ -146,10 +148,7 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
    * @returns A promise that resolves once the action has completed.
    */
   async replaceAllMatches(newText: string): Promise<boolean> {
-    const searchService = this._target.content.searchService;
-    const startRow = searchService.currentMatch.line;
-    const startColumn = searchService.currentMatch.column;
-    let endRow, endColumn: number;
+    const model = this._target.content.dataModel;
 
     const rows: number[] = [];
     const columns: number[] = [];
@@ -157,26 +156,14 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
     // replace every match individually
     let i = 0;
     while (i < this.matches.length) {
-      // when we have one match left, get the last row and column being edited
-      if (i + 1 === this.matches.length) {
-        endRow = this.matches[i].line;
-        endColumn = this.matches[i].column;
-      }
       const { line, column } = this.matches[i];
       rows.push(line);
       columns.push(column);
       i++;
     }
-    this.selectSingleCell();
-    this._target.content.dataModel.bulkSetData(
-      rows,
-      columns,
-      newText,
-      startRow,
-      startColumn,
-      endRow,
-      endColumn
-    );
+    this.moveToCell();
+    const update = model.bulkSetData(rows, columns, newText);
+    model.onChangedSignal.emit(update);
     return true;
   }
 
@@ -188,17 +175,25 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
     this.endQuery();
     this.startQuery(this._query, this._target);
     this._changed.emit(undefined);
-    this.selectSingleCell();
+    this.moveToCell();
     return true;
   }
 
   /**
-   * Selects the cell that is the current match
+   * Moves and selects the cell that is the current match
    */
-  protected selectSingleCell(): void {
-    if (this._target) {
+  protected moveToCell(): void {
+    if (this._target && this._currentMatch) {
       const { line, column } = this._currentMatch;
       this._target.content.selectSingleCell(line, column);
+
+      // calculate the offsets and then scroll to that cell
+      const rowOffset = this._target.content.grid.rowOffset('body', line);
+      const columnOffset = this._target.content.grid.columnOffset(
+        'body',
+        column
+      );
+      this._target.content.grid.scrollTo(columnOffset, rowOffset);
     }
   }
 

@@ -1,5 +1,5 @@
 import { Signal } from '@lumino/signaling';
-import { TextRenderConfig } from 'tde-csvviewer';
+import { TextRenderConfig } from '@jupyterlab/csvviewer';
 import { DataGrid, CellRenderer } from 'tde-datagrid';
 import { ISignal } from '@lumino/signaling';
 import { ISearchMatch } from '@jupyterlab/documentsearch';
@@ -50,8 +50,8 @@ export class GridSearchService {
   cellBackgroundColorRendererFunc(
     config: TextRenderConfig
   ): CellRenderer.ConfigFunc<string> {
-    return ({ value, row, column }) => {
-      if (this._query) {
+    return ({ value, row, column }): string => {
+      if (this._query && value) {
         if ((value as string).match(this._query)) {
           if (
             this._currentMatch.line === row &&

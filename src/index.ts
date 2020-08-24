@@ -6,7 +6,7 @@ import {
 import {
   TextRenderConfig
   // TSVViewerFactory
-} from 'tde-csvviewer';
+} from '@jupyterlab/csvviewer';
 import {
   WidgetTracker,
   IThemeManager
@@ -20,24 +20,30 @@ import { ILauncher } from '@jupyterlab/launcher';
 import { /*IEditMenu,*/ IMainMenu } from '@jupyterlab/mainmenu';
 import { Contents } from '@jupyterlab/services';
 import {
+  addIcon,
   undoIcon,
   redoIcon,
   cutIcon,
   copyIcon,
   pasteIcon,
   saveIcon,
-  spreadsheetIcon
+  spreadsheetIcon,
+  LabIcon
 } from '@jupyterlab/ui-components';
 import { DataGrid } from '@lumino/datagrid';
 import { DSVEditor, EditableCSVViewerFactory } from './widget';
 import { CSVSearchProvider } from './searchprovider';
+import { PaintedGrid } from './grid';
+import calendarSvgStr from '../style/icons/calendar.svg';
+import checkboxSvgStr from '../style/icons/checkbox.svg';
+import numberSvgStr from '../style/icons/number.svg';
+import stringSvgString from '../style/icons/string.svg';
 
 /**
  * The name of the factories that creates widgets.
  */
 const FACTORY_CSV = 'Tabular Data Editor';
 // const FACTORY_TSV = 'TSVTable';
-
 /**
  * Initialization data for the jupyterlab-tabular-data-editor extension.
  */
@@ -79,6 +85,7 @@ function activateCsv(
 
   // The current styles for the data grids.
   let style: DataGrid.Style = Private.LIGHT_STYLE;
+  const extraStyle: PaintedGrid.ExtraStyle = LIGHT_EXTRA_STYLE;
   let rendererConfig: TextRenderConfig = Private.LIGHT_TEXT_CONFIG;
 
   if (restorer) {
@@ -107,7 +114,10 @@ function activateCsv(
     }
     // Set the theme for the new widget.
     widget.content.style = style;
+
     widget.content.rendererConfig = rendererConfig;
+
+    widget.content.extraStyle = extraStyle;
   });
 
   // Keep the themes up-to-date.
@@ -117,11 +127,13 @@ function activateCsv(
         ? themeManager.isLight(themeManager.theme)
         : true;
     style = isLight ? Private.LIGHT_STYLE : Private.DARK_STYLE;
+    const extraStyle = isLight ? LIGHT_EXTRA_STYLE : DARK_EXTRA_STYLE;
     rendererConfig = isLight
       ? Private.LIGHT_TEXT_CONFIG
       : Private.DARK_TEXT_CONFIG;
     tracker.forEach(grid => {
       grid.content.style = style;
+      grid.content.extraStyle = extraStyle;
       grid.content.rendererConfig = rendererConfig;
     });
   };
@@ -189,60 +201,80 @@ function addCommands(
   });
 
   commands.addCommand(CommandIDs.insertRowsAbove, {
-    label: 'Insert Row Above',
+    label: () => {
+      const numRows = tracker.currentWidget.content.rowsSelected;
+      return numRows === 1
+        ? 'Insert Row Above'
+        : `Insert ${numRows} Rows Above`;
+    },
     execute: () => {
       // emit a signal to the EditableDSVModel
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit(
-          'insert-rows-above'
-        );
+        tracker.currentWidget.content.commandSignal.emit('insert-rows-above');
     }
   });
 
   commands.addCommand(CommandIDs.insertRowsBelow, {
-    label: 'Insert Row Below',
+    label: () => {
+      const numRows = tracker.currentWidget.content.rowsSelected;
+      return numRows === 1
+        ? 'Insert Row Below'
+        : `Insert ${numRows} Rows Below`;
+    },
     execute: () => {
       // emit a signal to the EditableDSVModel
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit(
-          'insert-rows-below'
-        );
+        tracker.currentWidget.content.commandSignal.emit('insert-rows-below');
     }
   });
 
   commands.addCommand(CommandIDs.removeRows, {
-    label: 'Remove Row',
+    label: () => {
+      const numRows = tracker.currentWidget.content.rowsSelected;
+      return numRows === 1 ? 'Remove Row' : `Remove ${numRows} Rows`;
+    },
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('remove-rows');
+        tracker.currentWidget.content.commandSignal.emit('remove-rows');
     }
   });
 
   commands.addCommand(CommandIDs.insertColumnsLeft, {
-    label: 'Insert Column Left',
+    label: () => {
+      const numCols = tracker.currentWidget.content.columnsSelected;
+      return numCols === 1
+        ? 'Insert Column Left'
+        : `Insert ${numCols} Columns Left`;
+    },
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit(
-          'insert-columns-left'
-        );
+        tracker.currentWidget.content.commandSignal.emit('insert-columns-left');
     }
   });
 
   commands.addCommand(CommandIDs.insertColumnsRight, {
-    label: 'Insert Column Right',
+    label: () => {
+      const numCols = tracker.currentWidget.content.columnsSelected;
+      return numCols === 1
+        ? 'Insert Column Right'
+        : `Insert ${numCols} Columns Right`;
+    },
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit(
+        tracker.currentWidget.content.commandSignal.emit(
           'insert-columns-right'
         );
     }
   });
 
   commands.addCommand(CommandIDs.removeColumns, {
-    label: 'Remove Column',
+    label: () => {
+      const numCols = tracker.currentWidget.content.columnsSelected;
+      return numCols === 1 ? 'Remove Column' : `Remove ${numCols} Columns`;
+    },
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('remove-columns');
+        tracker.currentWidget.content.commandSignal.emit('remove-columns');
     }
   });
 
@@ -253,7 +285,7 @@ function addCommands(
     caption: 'Copy',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('copy-cells');
+        tracker.currentWidget.content.commandSignal.emit('copy-cells');
     }
   });
 
@@ -264,7 +296,7 @@ function addCommands(
     caption: 'Cut',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('cut-cells');
+        tracker.currentWidget.content.commandSignal.emit('cut-cells');
     }
   });
 
@@ -275,7 +307,7 @@ function addCommands(
     caption: 'Paste',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('paste-cells');
+        tracker.currentWidget.content.commandSignal.emit('paste-cells');
     }
   });
 
@@ -283,7 +315,7 @@ function addCommands(
     label: 'Copy',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('copy-cells');
+        tracker.currentWidget.content.commandSignal.emit('copy-cells');
     }
   });
 
@@ -291,7 +323,7 @@ function addCommands(
     label: 'Cut',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('cut-cells');
+        tracker.currentWidget.content.commandSignal.emit('cut-cells');
     }
   });
 
@@ -299,7 +331,7 @@ function addCommands(
     label: 'Paste',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('paste-cells');
+        tracker.currentWidget.content.commandSignal.emit('paste-cells');
     }
   });
 
@@ -310,7 +342,7 @@ function addCommands(
     caption: 'Undo',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('undo');
+        tracker.currentWidget.content.commandSignal.emit('undo');
     }
   });
 
@@ -321,7 +353,7 @@ function addCommands(
     caption: 'Redo',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('redo');
+        tracker.currentWidget.content.commandSignal.emit('redo');
     }
   });
 
@@ -329,10 +361,10 @@ function addCommands(
     icon: saveIcon,
     iconLabel: 'Save',
     className: 'jp-toolbar-save',
-    caption: 'Redo',
+    caption: 'Save',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('save');
+        tracker.currentWidget.content.commandSignal.emit('save');
     }
   });
 
@@ -340,7 +372,7 @@ function addCommands(
     label: 'Clear Contents',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('clear-cells');
+        tracker.currentWidget.content.commandSignal.emit('clear-cells');
     }
   });
 
@@ -348,7 +380,7 @@ function addCommands(
     label: 'Clear Columns',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('clear-columns');
+        tracker.currentWidget.content.commandSignal.emit('clear-columns');
     }
   });
 
@@ -356,7 +388,7 @@ function addCommands(
     label: 'Clear Rows',
     execute: () => {
       tracker.currentWidget &&
-        tracker.currentWidget.content.changeModelSignal.emit('clear-rows');
+        tracker.currentWidget.content.commandSignal.emit('clear-rows');
     }
   });
 
@@ -471,6 +503,110 @@ function buildContextMenu(
 
 export default [extension];
 
+const DATATYPE_ICON = {
+  colorLight: '#1e88e5',
+  colorDark: '#2196f3',
+  position: {
+    size: 16,
+    left: 2,
+    top: 10
+  }
+};
+
+export const LIGHT_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
+  ghostRowColor: 'rgba(243, 243, 243, 0.80)',
+  ghostColumnColor: 'rgba(243, 243, 243, 0.80)',
+  icons: {
+    'ghost-column': {
+      icon: addIcon,
+      color: '#616161',
+      size: 18,
+      left: 63 /* set to columnWidth / 2 - size / 2 to make centered */,
+      top: 9 /* set to columnHeaderHeight / 2 - size / 2 to make centered */
+    },
+    'ghost-row': {
+      icon: addIcon,
+      color: '#616161',
+      size: 12,
+      left: 26 /* set to rowHeaderWidth / 2 - size / 2 to make centered */,
+      top: 6 /* set to rowHeight / 2 - size / 2 to make centered. */
+    },
+    string: {
+      icon: new LabIcon({ name: 'tde:string', svgstr: stringSvgString }),
+      color: DATATYPE_ICON.colorLight,
+      ...DATATYPE_ICON.position
+    },
+    integer: {
+      icon: new LabIcon({ name: 'tde:number', svgstr: numberSvgStr }),
+      color: DATATYPE_ICON.colorLight,
+      ...DATATYPE_ICON.position
+    },
+    number: {
+      icon: new LabIcon({ name: 'tde:number', svgstr: numberSvgStr }),
+      color: DATATYPE_ICON.colorLight,
+      ...DATATYPE_ICON.position
+    },
+    boolean: {
+      icon: new LabIcon({ name: 'tde:checkbox', svgstr: checkboxSvgStr }),
+      color: DATATYPE_ICON.colorLight,
+      ...DATATYPE_ICON.position
+    },
+    date: {
+      icon: new LabIcon({ name: 'tde:date', svgstr: calendarSvgStr }),
+      color: DATATYPE_ICON.colorLight,
+      ...DATATYPE_ICON.position
+    }
+  }
+};
+/**
+ *
+ */
+export const DARK_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
+  ghostRowColor: 'rgba(0, 0, 0, 0.65)',
+  ghostColumnColor: 'rgba(0, 0, 0, 0.65)',
+  icons: {
+    'ghost-column': {
+      icon: addIcon,
+      color: '#bdbdbd',
+      size: 18,
+      left: 63 /* set to columnWidth / 2 - size / 2 to make centered */,
+      top: 9 /* set to columnHeaderHeight / 2 - size / 2 to make centered */
+    },
+    'ghost-row': {
+      icon: addIcon,
+      color: '#bdbdbd',
+      size: 12,
+      left: 26 /* set to rowHeaderWidth / 2 - size / 2 to make centered */,
+      top: 6 /* set to rowHeight / 2 - size / 2 to make centered. */
+    },
+    string: {
+      icon: new LabIcon({ name: 'tde:string', svgstr: stringSvgString }),
+      color: DATATYPE_ICON.colorDark,
+      ...DATATYPE_ICON.position
+    },
+    integer: {
+      icon: new LabIcon({ name: 'tde:number', svgstr: numberSvgStr }),
+      color: DATATYPE_ICON.colorDark,
+      ...DATATYPE_ICON.position
+    },
+    number: {
+      icon: new LabIcon({ name: 'tde:number', svgstr: numberSvgStr }),
+      color: DATATYPE_ICON.colorLight,
+      ...DATATYPE_ICON.position
+    },
+    boolean: {
+      icon: new LabIcon({ name: 'tde:checkbox', svgstr: checkboxSvgStr }),
+      color: DATATYPE_ICON.colorDark,
+      ...DATATYPE_ICON.position
+    },
+    date: {
+      icon: new LabIcon({ name: 'tde:date', svgstr: calendarSvgStr }),
+      color: DATATYPE_ICON.colorDark,
+      ...DATATYPE_ICON.position
+    }
+  }
+};
+
 /**
  * A namespace for private data.
  */
@@ -521,8 +657,8 @@ namespace Private {
    */
   export const DARK_TEXT_CONFIG: TextRenderConfig = {
     textColor: '#F5F5F5',
-    matchBackgroundColor: '#F99C3D',
-    currentMatchBackgroundColor: '#F57C00',
+    matchBackgroundColor: 'rgba(0, 84, 168, 0.5)',
+    currentMatchBackgroundColor: '#0055AA',
     horizontalAlignment: 'center'
   };
 }

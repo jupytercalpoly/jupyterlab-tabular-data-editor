@@ -1,4 +1,4 @@
-import { DSVModel } from 'tde-csvviewer';
+import { DSVModel } from '@jupyterlab/csvviewer';
 import { MutableDataModel, DataModel, SelectionModel } from 'tde-datagrid';
 import { Litestore } from './litestore';
 // import { toArray, range } from '@lumino/algorithm';
@@ -6,27 +6,20 @@ import { DSVEditor } from './widget';
 import { Signal } from '@lumino/signaling';
 import { ListField, MapField, RegisterField } from 'tde-datastore';
 import { toArray, range } from '@lumino/algorithm';
+import { inferType } from 'vega';
 // import { SplitPanel } from '@lumino/widgets';
 
 export class EditorModel extends MutableDataModel {
-  private _clipboard: Array<Array<string>>;
-  private _litestore: Litestore | null;
-  private _model: DSVModel;
-  private _rowsAdded: number;
-  private _columnsAdded: number;
-  private _onChangeSignal: Signal<
-    this,
-    DSVEditor.ModelChangedArgs
-  > = new Signal<this, DSVEditor.ModelChangedArgs>(this);
-  private _rowsRemoved: number;
-  private _columnsRemoved: number;
-  private _saving = false;
   // private _onChangeSignal: Signal<this, string> = new Signal<this, string>(
   //   this
   // );
 
   constructor(options: DSVModel.IOptions) {
     super();
+    // If the string is empty, add a Column 1 label.
+    if (options.data === '') {
+      options.data = 'Column 1';
+    }
     // Define our model.
     this._model = new DSVModel(options);
 
@@ -38,6 +31,15 @@ export class EditorModel extends MutableDataModel {
     this._columnsRemoved = 0;
 
     this._litestore = null;
+  }
+  /**
+   * A boolean that determins whether the ghosts are visible to the grid.
+   */
+  get ghostsRevealed(): boolean {
+    return this._ghostsRevealed;
+  }
+  set ghostsRevealed(value: boolean) {
+    this._ghostsRevealed = value;
   }
   /**
    * The model which holds the string containing the contents of the file.
@@ -66,13 +68,30 @@ export class EditorModel extends MutableDataModel {
     this._litestore = value;
   }
 
+  get dataTypes(): Array<DataModel.Metadata> {
+    if (this._dataTypes) {
+      return this._dataTypes;
+    }
+    return Array(this.totalColumns).fill({ type: 'string' });
+  }
+  set dataTypes(value: Array<DataModel.Metadata>) {
+    this._dataTypes = value;
+  }
+
   /**
    * The grid's current number of rows by region.
+   * NOTE: we add one so that a ghost row appears.
    *
    */
   rowCount(region: DataModel.RowRegion): number {
+    const ghostRow = this._ghostsRevealed ? 1 : 0;
     if (region === 'body') {
-      return this._model.rowCount('body') + this._rowsAdded - this._rowsRemoved;
+      return (
+        this._model.rowCount('body') +
+        this._rowsAdded -
+        this._rowsRemoved +
+        ghostRow
+      );
     }
     return 1;
   }
@@ -82,13 +101,16 @@ export class EditorModel extends MutableDataModel {
    *
    * Note: the UI components use this method to get the column count
    * so it should reflect the grid's columns.
+   * NOTE: we add 1 so that a ghost column appears.
    */
   columnCount(region: DataModel.ColumnRegion): number {
+    const ghostColumn = this._ghostsRevealed ? 1 : 0;
     if (region === 'body') {
       return (
         this._model.columnCount('body') +
         this._columnsAdded -
-        this._columnsRemoved
+        this._columnsRemoved +
+        ghostColumn
       );
     }
     return 1;
@@ -97,7 +119,7 @@ export class EditorModel extends MutableDataModel {
   /**
    * The grid's current number of rows. TOTAL, NOT BY REGION.
    */
-  totalRows(): number {
+  get totalRows(): number {
     return (
       this._model.rowCount('body') + this._rowsAdded - this._rowsRemoved + 1
     );
@@ -109,12 +131,89 @@ export class EditorModel extends MutableDataModel {
    * Notes: This is equivalent to columnCount('body')
    */
 
-  totalColumns(): number {
+  get totalColumns(): number {
     return (
       this._model.columnCount('body') +
       this._columnsAdded -
       this._columnsRemoved
     );
+  }
+
+  get isDataFormatted(): boolean {
+    return this._isDataFormatted;
+  }
+
+  set isDataFormatted(bool: boolean) {
+    if (this._isDataFormatted === bool) {
+      return;
+    }
+    // Set the boolean.
+    this._isDataFormatted = bool;
+
+    // Reset the metadata.
+    this._dataTypes = this.resetMetadata();
+
+    // Emit the change.
+    this._isDataFormattedChanged.emit(null);
+  }
+
+  get isDataFormattedChanged(): Signal<this, null> {
+    return this._isDataFormattedChanged;
+  }
+
+  /**
+   * Computes the metadata at a location.
+   */
+  metadata(
+    region: DataModel.CellRegion,
+    row: number,
+    column: number
+  ): DataModel.Metadata {
+    // use text editor if data detection is off, region is not the body, or data is empty
+    return this.dataTypes[column];
+  }
+
+  /**
+   * Computes the metadata of the entire data grid.
+   */
+  resetMetadata(): Array<DataModel.Metadata> {
+    // Initialize an array of of the number of columns.
+    const metadata = new Array(this.totalColumns);
+
+    // Return string if we aren't detecting data.
+    if (!this._isDataFormatted) {
+      metadata.fill({ type: 'string' });
+      return metadata;
+    }
+
+    // Infer based on the first 500 rows.
+    const rows = Math.min(this.totalRows - 1, 500);
+
+    // Allocate an array to fill with each column.
+    const values = new Array(rows);
+
+    // Iterate through each column and infer the type.
+    for (let column = 0; column < this.totalColumns; column++) {
+      rowLoop: {
+        for (let row = 0; row < rows; row++) {
+          let value = this.data('body', row, column);
+
+          // If the value passes our booly check, set the value to the bool.
+          value = Private.boolyCheck(value.toString());
+
+          // If on of the values is an empty string, then the type is string.
+          if (value === '') {
+            const type = 'string';
+            metadata[column] = { type };
+            break rowLoop;
+          }
+          values[row] = value;
+        }
+        const type = inferType(values);
+        metadata[column] = { type };
+      }
+    }
+    return metadata;
   }
 
   /**
@@ -124,11 +223,14 @@ export class EditorModel extends MutableDataModel {
   data(region: DataModel.CellRegion, row: number, column: number): any {
     // The model is defered to if the region is a row header.
     if (region === 'row-header') {
+      if (row + 1 === this.rowCount('body')) {
+        return '';
+      }
       return this._model.data(region, row, column);
     }
 
     if (region === 'corner-header') {
-      return '';
+      return;
     }
 
     // The row comes to us as an index on a particular region. We need the
@@ -145,9 +247,14 @@ export class EditorModel extends MutableDataModel {
     row = rowMap[row];
     column = columnMap[column];
 
+    if (row === undefined || column === undefined) {
+      return '';
+    }
+
     // check if a new value has been stored at this cell.
     if (valueMap[`${row},${column}`] !== undefined) {
-      return valueMap[`${row},${column}`];
+      const data = valueMap[`${row},${column}`];
+      return data;
     }
 
     if (row < 0 || column < 0) {
@@ -160,7 +267,15 @@ export class EditorModel extends MutableDataModel {
     row = this._regionIndex(row, region);
 
     // fetch the value from the data
-    return this._model.data(region, row, column);
+    const data = this._model.data(region, row, column);
+
+    if (data === 'true') {
+      return true;
+    }
+    if (data === 'false') {
+      return false;
+    }
+    return data;
   }
 
   /**
@@ -285,12 +400,8 @@ export class EditorModel extends MutableDataModel {
   bulkSetData(
     rowArray: Array<number>,
     columnArray: Array<number>,
-    value: string,
-    startRow: number,
-    startColumn: number,
-    endRow: number,
-    endColumn: number
-  ) {
+    value: string
+  ): DSVEditor.ModelChangedArgs {
     // Set up an udate object for the litestore.
     const update: DSVEditor.ModelChangedArgs = {};
 
@@ -316,14 +427,7 @@ export class EditorModel extends MutableDataModel {
     update.valueUpdate = valueUpdate;
 
     // Define the next change to the data model.
-    const nextChange: DataModel.ChangedArgs = {
-      type: 'cells-changed',
-      region: 'body',
-      row: startRow,
-      column: startColumn,
-      rowSpan: endRow - startRow + 1,
-      columnSpan: endColumn - startColumn + 1
-    };
+    const nextChange: DataModel.ChangedArgs = { type: 'model-reset' };
 
     // Get a snapshot of the current state of the grid.
     const gridState = {
@@ -337,6 +441,9 @@ export class EditorModel extends MutableDataModel {
 
     // Emit the model change to the datagrid.
     this.emitChanged(nextChange);
+
+    // Return the update object.
+    return update;
   }
 
   /**
@@ -366,7 +473,7 @@ export class EditorModel extends MutableDataModel {
     const values = [];
     let i = 0;
     while (i < span) {
-      values.push(-(this.totalRows() + this._rowsRemoved));
+      values.push(-(this.totalRows + this._rowsRemoved));
       i++;
       this._rowsAdded++;
     }
@@ -432,7 +539,7 @@ export class EditorModel extends MutableDataModel {
     let i = 0;
     let nextKey: number;
     while (i < span) {
-      nextKey = -(this.totalColumns() + this._columnsRemoved);
+      nextKey = -(this.totalColumns + this._columnsRemoved);
       values.push(nextKey);
       columnHeaders[`0,${nextKey}`] = `Column ${start + i + 1}`;
       i++;
@@ -606,9 +713,10 @@ export class EditorModel extends MutableDataModel {
     region: DataModel.CellRegion,
     start: number,
     end: number,
-    span: number,
-    update: DSVEditor.ModelChangedArgs
+    span: number
   ): DSVEditor.ModelChangedArgs {
+    // Set up an udate object for the litestore.
+    const update: DSVEditor.ModelChangedArgs = {};
     // Start and end come to us as an index on a particular region. We need the
     // absolute index (ie index 0 is the first row of data).
     start = this._absoluteIndex(start, region);
@@ -626,7 +734,6 @@ export class EditorModel extends MutableDataModel {
     });
     const currentRows = rowMap.length;
     const currentColumns = columnMap.length;
-    const nextCommand: DSVEditor.Commands = 'move-rows';
 
     const rowUpdate = this.rowMapSplice(rowMap, start, end, span);
 
@@ -650,8 +757,7 @@ export class EditorModel extends MutableDataModel {
     const gridState = {
       currentRows,
       currentColumns,
-      nextChange,
-      nextCommand
+      nextChange
     };
 
     // Set the grid state update to the current state of the grid.
@@ -660,10 +766,7 @@ export class EditorModel extends MutableDataModel {
     // Emit the model change to the datagrid.
     this.emitChanged(nextChange);
 
-    // Emit the change to the Editor
-    // TODO: I think it would be better if we refactored so that we were returning
-    // an update object.
-    this._onChangeSignal.emit(update);
+    return update;
   }
 
   /**
@@ -712,9 +815,11 @@ export class EditorModel extends MutableDataModel {
     region: DataModel.CellRegion,
     start: number,
     end: number,
-    span: number,
-    update: DSVEditor.ModelChangedArgs
+    span: number
   ): DSVEditor.ModelChangedArgs {
+    // Set up an udate object for the litestore.
+    const update: DSVEditor.ModelChangedArgs = {};
+
     // bail early if we are moving no distance
     if (start === end) {
       return;
@@ -727,7 +832,6 @@ export class EditorModel extends MutableDataModel {
     });
     const currentRows = rowMap.length;
     const currentColumns = columnMap.length;
-    const nextCommand: DSVEditor.Commands = 'move-columns';
 
     const columnUpdate = this.columnMapSplice(columnMap, start, end, span);
 
@@ -747,8 +851,7 @@ export class EditorModel extends MutableDataModel {
     const gridState = {
       currentRows,
       currentColumns,
-      nextChange,
-      nextCommand
+      nextChange
     };
 
     // Set the grid state update to the current state of the grid.
@@ -757,9 +860,7 @@ export class EditorModel extends MutableDataModel {
     // Emit the model change to the datagrid.
     this.emitChanged(nextChange);
 
-    // TODO: I think it would be better if we refactored so that we were returning
-    // an update object.
-    this._onChangeSignal.emit(update);
+    return update;
   }
 
   /**
@@ -857,7 +958,7 @@ export class EditorModel extends MutableDataModel {
     const values = [];
     let i = 0;
     while (i < span) {
-      values.push(-(this.totalRows() + this._rowsRemoved));
+      values.push(-(this.totalRows + this._rowsRemoved));
       i++;
       this._rowsAdded++;
     }
@@ -932,7 +1033,7 @@ export class EditorModel extends MutableDataModel {
     const values = [];
     let i = 0;
     while (i < span) {
-      values.push(-(this.totalColumns() + this._columnsAdded));
+      values.push(-(this.totalColumns + this._columnsAdded));
       i++;
       this._columnsAdded++;
     }
@@ -984,8 +1085,6 @@ export class EditorModel extends MutableDataModel {
    * Cut a selection of cells.
    * NOTE: this method both copies the cells to the _clipboard property and clears them
    * from the region.
-   *
-   * TODO: refactor so that cut uses the already existing method clearCells.
    */
   cut(
     region: DataModel.CellRegion,
@@ -994,32 +1093,14 @@ export class EditorModel extends MutableDataModel {
     endRow: number,
     endColumn: number
   ): DSVEditor.ModelChangedArgs {
-    // Set up the update object for the litestore.
-    const update: DSVEditor.ModelChangedArgs = {};
-    // we use the value map to redefine values within the cut as ''. Need to map
-    // to the static values.
-    // copy the values
     this.copy('body', startRow, startColumn, endRow, endColumn);
-    const rowSpan = Math.abs(startRow - endRow) + 1;
-    const columnSpan = Math.abs(startColumn - endColumn) + 1;
 
-    // Fill in the new blank values.
-    const values = new Array(rowSpan)
-      .fill('')
-      .map(elem => new Array(columnSpan).fill(''));
-
-    // set the new data.
-    this.setData(
-      'body',
-      startRow,
-      startColumn,
-      values,
-      rowSpan,
-      columnSpan,
-      update
-    );
-
-    return update;
+    return this.clearCells('body', {
+      r1: startRow,
+      r2: endRow,
+      c1: startColumn,
+      c2: endColumn
+    });
   }
 
   /**
@@ -1072,8 +1153,8 @@ export class EditorModel extends MutableDataModel {
     row = this._absoluteIndex(row, region);
 
     // see how much space we have
-    const rowsBelow = this.totalRows() - row;
-    const columnsRight = this.totalColumns() - column;
+    const rowsBelow = this.totalRows - row;
+    const columnsRight = this.totalColumns - column;
 
     // clamp the values we are adding at the bounds of the grid
     const rowSpan = Math.min(rowsBelow, this._clipboard.length);
@@ -1098,7 +1179,8 @@ export class EditorModel extends MutableDataModel {
   /**
    * Emits the change which undoes the change passed in.
    */
-  emitOppositeChange(change: DataModel.ChangedArgs): void {
+  emitOppositeChange(update: DSVEditor.GridState): void {
+    const change = update.nextChange;
     // Bail early if there is no change.
     if (!change) {
       return;
@@ -1114,14 +1196,23 @@ export class EditorModel extends MutableDataModel {
         break;
       }
       case 'cells-changed':
-        gridUpdate = {
-          type: 'cells-changed',
-          region: 'body',
-          row: change.row,
-          column: change.column,
-          rowSpan: change.rowSpan,
-          columnSpan: change.columnSpan
-        };
+        if (
+          update.nextCommand === 'clear-rows' ||
+          update.nextCommand === 'clear-columns'
+        ) {
+          gridUpdate = {
+            type: 'model-reset'
+          };
+        } else {
+          gridUpdate = {
+            type: 'cells-changed',
+            region: change.region,
+            row: change.row,
+            column: change.column,
+            rowSpan: change.rowSpan,
+            columnSpan: change.columnSpan
+          };
+        }
         break;
       case 'rows-inserted':
         gridUpdate = {
@@ -1179,6 +1270,8 @@ export class EditorModel extends MutableDataModel {
         break;
     }
     this.emitChanged(gridUpdate);
+
+    this.onChangedSignal.emit(null);
   }
 
   /**
@@ -1203,6 +1296,8 @@ export class EditorModel extends MutableDataModel {
       }
     }
     this.emitChanged(change);
+
+    this.onChangedSignal.emit(null);
   }
 
   /**
@@ -1233,8 +1328,7 @@ export class EditorModel extends MutableDataModel {
       columnMap,
       valueMap,
       inverseRowMap,
-      inverseColumnMap,
-      this.model
+      inverseColumnMap
     );
     this._model.rawData = originalString;
 
@@ -1392,7 +1486,7 @@ export class EditorModel extends MutableDataModel {
   /**
    * translate from the Grid's row IDs to our own standard
    */
-  private _absoluteIndex(row: number, region: DataModel.CellRegion) {
+  private _absoluteIndex(row: number, region: DataModel.CellRegion): number {
     return region === 'column-header' || region === 'corner-header'
       ? 0
       : row + 1;
@@ -1401,7 +1495,7 @@ export class EditorModel extends MutableDataModel {
   /**
    * translate from our unique row ID to the Grid's standard
    */
-  private _regionIndex(row: number, region: DataModel.CellRegion) {
+  private _regionIndex(row: number, region: DataModel.CellRegion): number {
     return region === 'column-header' ? 0 : row - 1;
   }
 
@@ -1431,7 +1525,7 @@ export class EditorModel extends MutableDataModel {
   /**
    * Adds new rows coming in from the asynchronous parsing of string by the DSVModel.
    */
-  private _assimilateNewRows(start: number, span: number) {
+  private _assimilateNewRows(start: number, span: number): void {
     // Set up an udate object for the litestore.
     const update: DSVEditor.ModelChangedArgs = {};
 
@@ -1465,10 +1559,11 @@ export class EditorModel extends MutableDataModel {
     };
 
     // Get a snapshot of the current state of the grid.
-    const gridState = {
+    const gridState: DSVEditor.GridState = {
       currentRows,
       currentColumns,
-      nextChange
+      nextChange,
+      nextCommand: 'init'
     };
 
     update.gridStateUpdate = gridState;
@@ -1483,52 +1578,64 @@ export class EditorModel extends MutableDataModel {
   /**
    * The total rows currently stored in the DSVModel.
    */
-  private _modelRows(model: DSVModel): number {
-    return model.rowCount('body') + 1;
+  private _stringRows(): number {
+    if (!this.model.doneParsing) {
+      console.log(
+        `The rows of the string have been requested while 
+        the model is still parsing which will likely produce undesired behavior.`
+      );
+    }
+    return this._model.rowCount('body') + 1;
   }
 
   /**
    * The total columns currently stored in the DSVModel.
    */
-  private _modelColumns(model: DSVModel): number {
-    return model.columnCount('body');
+  private _stringColumns(): number {
+    if (!this.model.doneParsing) {
+      console.log(
+        `The columns of the string have been requested while 
+      the model is still parsing which will likely produce undesired behavior.`
+      );
+    }
+    return this._model.columnCount('body');
   }
 
   /**
    * Computes the offset index at the end of a given row (note: row delimeter not included).
+   * NOTE: For the purposes of this function we care about the number of rows in the raw string.
    */
-  private _rowEnd(model: DSVModel, row: number): number {
-    const rows = this._modelRows(model);
-    const rowTrim = model.rowDelimiter.length;
+  private _rowEnd(row: number): number {
+    const rows = this._stringRows();
+    const rowTrim = this._model.rowDelimiter.length;
     // See if we are on any row but the last.
     if (row + 1 < rows) {
-      return model.getOffsetIndex(row + 1, 0) - rowTrim;
+      return this._model.getOffsetIndex(row + 1, 0) - rowTrim;
     }
-    return model.rawData.length;
+    return this._model.rawData.length;
   }
 
-  private _openSlice(
-    model: DSVModel,
-    row: number,
-    start: number,
-    end: number
-  ): string {
-    if (end + 1 < this._modelColumns(model)) {
-      const trimRight = model.delimiter.length;
-      return model.rawData.slice(
-        model.getOffsetIndex(row, start),
-        model.getOffsetIndex(row, end + 1) - trimRight
+  private _openSlice(row: number, start: number, end: number): string {
+    if (end + 1 < this._stringColumns()) {
+      const trimRight = this._model.delimiter.length;
+      return this._model.rawData.slice(
+        this._model.getOffsetIndex(row, start),
+        this._model.getOffsetIndex(row, end + 1) - trimRight
       );
     }
-    return model.rawData.slice(
-      model.getOffsetIndex(row, start),
-      this._rowEnd(model, row)
+    return this._model.rawData.slice(
+      this._model.getOffsetIndex(row, start),
+      this._rowEnd(row)
     );
   }
 
+  /**
+   * Builds the slicing pattern that needs to be applied to every row in the model
+   * @param columnMap
+   * @returns The SlicePattern containing a list of buffers (arrays of delimiters) and slices (indexes to slice the original string on)
+   */
   private _columnSlicePattern(
-    columnMap: ListField.Value<number>,
-    model: DSVModel
+    columnMap: ListField.Value<number>
   ): SlicePattern {
     let i = 0;
     const buffers: string[] = [];
@@ -1536,12 +1643,21 @@ export class EditorModel extends MutableDataModel {
     let nextSlice: number[] = [];
     let delimiterReps = 0;
     while (i < columnMap.length) {
+      // add another delimeter and move to the next index if the value is negative (new column)
       while (columnMap[i] < 0) {
         i++;
         delimiterReps++;
       }
-      buffers.push(model.delimiter.repeat(delimiterReps));
+
+      // remove a delimiter of the last column is involved
+      if (i === columnMap.length) {
+        delimiterReps--;
+      }
+
+      buffers.push(this._model.delimiter.repeat(delimiterReps));
       delimiterReps = 0;
+
+      // break if we reached the end of the column map
       if (i >= columnMap.length) {
         break;
       }
@@ -1560,7 +1676,6 @@ export class EditorModel extends MutableDataModel {
   }
 
   private _performMacroSlice(
-    model: DSVModel,
     slicePattern: SlicePattern,
     rowMap: ListField.Value<number>,
     columnMap: ListField.Value<number>
@@ -1569,20 +1684,19 @@ export class EditorModel extends MutableDataModel {
     const mapArray: Array<string | 0> = new Array(rowMap.length).fill(0);
     const { buffers, slices } = slicePattern;
     // initialize a callback for the map method.
-    const mapper = (elem: any, index: number) => {
+    const mapper = (elem: any, index: number): string => {
       const row = rowMap[index];
       if (row < 0) {
-        return this._blankRow(rowMap, columnMap, index, model);
+        return this._blankRow(columnMap);
       }
       let str = buffers[0];
       for (let i = 0; i < slices.length; i++) {
         str +=
-          this._openSlice(model, row, slices[i][0], slices[i][1]) +
-          buffers[i + 1];
+          this._openSlice(row, slices[i][0], slices[i][1]) + buffers[i + 1];
       }
       return str;
     };
-    return mapArray.map(mapper).join(model.rowDelimiter);
+    return mapArray.map(mapper).join(this._model.rowDelimiter);
   }
 
   private _serializer(
@@ -1590,26 +1704,36 @@ export class EditorModel extends MutableDataModel {
     columnMap: ListField.Value<number>,
     valueMap: MapField.Value<string>,
     inverseRowMap: Array<number>,
-    inverseColumnMap: Array<number>,
-    model: DSVModel
+    inverseColumnMap: Array<number>
   ): string {
-    const slicePattern = this._columnSlicePattern(columnMap, model);
-    model.rawData = this._performMacroSlice(
-      model,
+    const slicePattern = this._columnSlicePattern(columnMap);
+    this._model.rawData = this._performMacroSlice(
       slicePattern,
       rowMap,
       columnMap
     );
-    model.parseAsync();
-    model.rawData = this._peformMicroSlice(
+    // Get the default initial rows.
+    const initialRows = this.model.initialRows;
+
+    // Set the initial rows to be the total row count,
+    // so that parsing happens synchronously.
+    this.model.initialRows = rowMap.length;
+
+    // Parse the string.
+    this._model.parseAsync();
+
+    // Restore the initial rows to their default.
+    this._model.initialRows = initialRows;
+
+    // Insert the value map values.
+    this._model.rawData = this._peformMicroSlice(
       valueMap,
       rowMap,
       columnMap,
       inverseRowMap,
-      inverseColumnMap,
-      model.rawData
+      inverseColumnMap
     );
-    return model.rawData;
+    return this._model.rawData;
   }
 
   /**
@@ -1617,13 +1741,8 @@ export class EditorModel extends MutableDataModel {
    * @param model The DSV model being used
    * @param row The index of the row being inserted (determines whether to add a row delimiter or not)
    */
-  private _blankRow(
-    rowMap: ListField.Value<number>,
-    columnMap: ListField.Value<number>,
-    row: number,
-    model: DSVModel
-  ): string {
-    return model.delimiter.repeat(columnMap.length - 1);
+  private _blankRow(columnMap: ListField.Value<number>): string {
+    return this._model.delimiter.repeat(columnMap.length - 1);
   }
 
   private _peformMicroSlice(
@@ -1631,8 +1750,7 @@ export class EditorModel extends MutableDataModel {
     rowMap: ListField.Value<number>,
     columnMap: ListField.Value<number>,
     inverseRowMap: ListField.Value<number>,
-    inverseColumnMap: ListField.Value<number>,
-    data: string
+    inverseColumnMap: ListField.Value<number>
   ): string {
     // Get the keys of the value map into an array of row/column arrays.
     let keys = Object.keys(valueMap).map(elem =>
@@ -1653,9 +1771,9 @@ export class EditorModel extends MutableDataModel {
     // Sort the keys according to where they appear in the string.
     keys = keys.sort((elem1, elem2) => {
       return (
-        elem1[0] * this._modelColumns(this.model) +
+        elem1[0] * columnMap.length +
         elem1[1] -
-        (elem2[0] * this._modelColumns(this.model) + elem2[1])
+        (elem2[0] * columnMap.length + elem2[1])
       );
     });
 
@@ -1663,6 +1781,11 @@ export class EditorModel extends MutableDataModel {
     keys = keys.filter(elem => {
       return elem[0] < rowMap.length && elem[1] < columnMap.length;
     });
+
+    // Bail early if the keys are empty. This can happen if you insert and remove the same column
+    if (keys.length === 0) {
+      return this._model.rawData;
+    }
 
     // Now revert the keys to their corresponding map keys.
     const valueKeys = keys.map(key => `${rowMap[key[0]]},${columnMap[key[1]]}`);
@@ -1675,13 +1798,13 @@ export class EditorModel extends MutableDataModel {
     const dl = this.model.delimiter.length;
 
     // Create the map function.
-    const mapper = (elem: any, index: number) => {
+    const mapper = (elem: any, index: number): string => {
       let sliceStart: number;
       const startKey = keys[index];
       const endKey = keys[index + 1];
 
       // Check if the previous key is at the last column
-      if (startKey[1] + 1 === this._modelColumns(this.model)) {
+      if (startKey[1] + 1 === columnMap.length) {
         sliceStart = this.model.getOffsetIndex(startKey[0] + 1, 0) - rdl;
       } else {
         sliceStart =
@@ -1722,6 +1845,21 @@ export class EditorModel extends MutableDataModel {
     const lastValue = valueMap[valueKeys[valueKeys.length - 1]];
     return startBuffer + mapArray.map(mapper).join('') + lastValue + endBuffer;
   }
+  private _clipboard: Array<Array<string>>;
+  private _litestore: Litestore | null;
+  private _model: DSVModel;
+  private _rowsAdded: number;
+  private _columnsAdded: number;
+  private _onChangeSignal = new Signal<this, DSVEditor.ModelChangedArgs | null>(
+    this
+  );
+  private _rowsRemoved: number;
+  private _columnsRemoved: number;
+  private _saving = false;
+  private _ghostsRevealed = true;
+  private _isDataFormatted = false;
+  private _isDataFormattedChanged = new Signal<this, null>(this);
+  private _dataTypes: Array<DataModel.Metadata>;
 }
 
 export type MapUpdate = 'add' | 'remove' | 'move' | 'clear';
@@ -1730,3 +1868,17 @@ export type SlicePattern = {
   buffers: Array<string>;
   slices: Array<Array<number>>;
 };
+
+namespace Private {
+  export function boolyCheck(input: string): string | boolean {
+    const trueBools = ['true', 'yes', 'done', 'complete'];
+    const falseBools = ['false', 'no', 'not done', 'incomplete', 'to-do'];
+    if (trueBools.includes(input.toLowerCase())) {
+      return true;
+    }
+    if (falseBools.includes(input.toLowerCase())) {
+      return false;
+    }
+    return input;
+  }
+}
