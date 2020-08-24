@@ -384,53 +384,54 @@ export class DSVEditor extends Widget {
    * TODO: is there a reason we can't just do this once in the constructor?
    */
   protected _updateGrid(): void {
-    const delimiter = this.delimiter;
-    const model = this._grid.dataModel as EditorModel;
-    let data: string;
-
-    if (!model) {
-      data = this._context.model.toString();
-      const dataModel = (this._grid.dataModel = new EditorModel({
-        data,
-        delimiter
-      }));
-      const selectionModel = new GhostSelectionModel({ dataModel });
-      this._grid.selectionModel = selectionModel;
-
-      // create litestore
-      this._litestore = new Litestore({
-        id: 0,
-        schemas: [DSVEditor.DATAMODEL_SCHEMA]
-      });
-
-      // Give the litestore as a property of the model for it to read from.
-      this.dataModel.litestore = this._litestore;
-
-      // Define the initial update object for the litestore.
-      const update: DSVEditor.ModelChangedArgs = {};
-
-      // Define the initial state of the row and column map.
-      const rowUpdate = {
-        index: 0,
-        remove: 0,
-        values: toArray(range(0, this.dataModel.totalRows))
-      };
-      const columnUpdate = {
-        index: 0,
-        remove: 0,
-        values: toArray(range(0, this.dataModel.totalColumns))
-      };
-
-      // Add the map updates to the update object.
-      update.rowUpdate = rowUpdate;
-      update.columnUpdate = columnUpdate;
-
-      // set inital status of litestore
-      this.updateModel(update);
-      dataModel.onChangedSignal.connect(this._onModelSignal, this);
-      dataModel.isDataFormattedChanged.connect(this._updateRenderer, this);
-      // dataModel.cancelEditingSignal.connect(this._cancelEditing, this);
+    // Bail early if we already have a data model installed.
+    if (this.dataModel) {
+      return;
     }
+
+    const delimiter = this.delimiter;
+    const data = this._context.model.toString();
+    const dataModel = (this._grid.dataModel = new EditorModel({
+      data,
+      delimiter
+    }));
+
+    this._grid.selectionModel = new GhostSelectionModel({ dataModel });
+
+    // create litestore
+    this._litestore = new Litestore({
+      id: 0,
+      schemas: [DSVEditor.DATAMODEL_SCHEMA]
+    });
+
+    // Give the litestore as a property of the model for it to read from.
+    dataModel.litestore = this._litestore;
+
+    // Define the initial update object for the litestore.
+    const update: DSVEditor.ModelChangedArgs = {};
+
+    // Define the initial state of the row and column map.
+    const rowUpdate = {
+      index: 0,
+      remove: 0,
+      values: toArray(range(0, this.dataModel.totalRows))
+    };
+    const columnUpdate = {
+      index: 0,
+      remove: 0,
+      values: toArray(range(0, this.dataModel.totalColumns))
+    };
+
+    // Add the map updates to the update object.
+    update.rowUpdate = rowUpdate;
+    update.columnUpdate = columnUpdate;
+
+    // set inital status of litestore
+    this.updateModel(update);
+
+    // Connect to the the model signals.
+    dataModel.onChangedSignal.connect(this._onModelSignal, this);
+    dataModel.isDataFormattedChanged.connect(this._updateRenderer, this);
 
     // Update the div elements of the grid.
     this._updateContextElements();
