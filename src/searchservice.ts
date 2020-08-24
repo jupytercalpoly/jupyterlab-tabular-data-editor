@@ -51,8 +51,9 @@ export class GridSearchService {
     config: TextRenderConfig
   ): CellRenderer.ConfigFunc<string> {
     return ({ value, row, column }): string => {
+      value = String(value);
       if (this._query && value) {
-        if ((value as string).match(this._query)) {
+        if (value.match(this._query)) {
           if (
             this._currentMatch.line === row &&
             this._currentMatch.column === column
@@ -80,6 +81,11 @@ export class GridSearchService {
    * incrementally look for searchText.
    */
   find(query: RegExp, reverse = false): ISearchMatch[] | boolean {
+    // Bail on no query.
+    if (!query) {
+      return false;
+    }
+
     const model = this._grid.dataModel;
     const rowCount = model.rowCount('body');
     const columnCount = model.columnCount('body');
@@ -123,7 +129,7 @@ export class GridSearchService {
         reverse ? col >= 0 : col < columnCount;
         col += increment
       ) {
-        const cellData = model.data('body', row, col) as string;
+        const cellData = String(model.data('body', row, col));
         if (cellData.match(query)) {
           // to update the background of matching cells.
 
