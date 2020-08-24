@@ -1,5 +1,5 @@
 import { MutableDataModel, DataModel, SelectionModel } from 'tde-datagrid';
-import { DSVModel } from '@jupyterlab/csvviewer';
+import { DSVModel } from 'tde-csvviewer';
 import { Signal } from '@lumino/signaling';
 import { numberToCharacter } from './_helper';
 import { DSVEditor } from './widget';
