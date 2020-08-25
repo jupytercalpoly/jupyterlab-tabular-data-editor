@@ -3,7 +3,7 @@ import { getKeyboardLayout } from '@lumino/keyboard';
 import { EditorModel } from './newmodel';
 
 export class RichKeyHandler extends BasicKeyHandler {
-  onKeyDown(grid: DataGrid, event: KeyboardEvent) {
+  onKeyDown(grid: DataGrid, event: KeyboardEvent): void {
     const key = getKeyboardLayout().keyForKeydownEvent(event);
     if (key === 'Backspace' || key === 'Delete') {
       event.stopPropagation();
@@ -13,7 +13,7 @@ export class RichKeyHandler extends BasicKeyHandler {
     }
     super.onKeyDown(grid, event);
   }
-  onDelete(grid: DataGrid, event: KeyboardEvent) {
+  onDelete(grid: DataGrid, event: KeyboardEvent): void {
     // Fetch the selection.
     const selection = grid.selectionModel.currentSelection();
 
