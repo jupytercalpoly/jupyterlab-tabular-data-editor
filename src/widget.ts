@@ -724,9 +724,9 @@ export class DSVEditor extends Widget {
       update.selection = selection;
       // Add the command to the grid state.
       update.gridStateUpdate.nextCommand = command;
-      this.updateModel(update);
       this._grid.selectionModel.select(newSelection);
     }
+    this.updateModel(update);
   }
 
   /**
