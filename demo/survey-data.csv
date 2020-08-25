@@ -1,0 +1,23 @@
+Date,Name,Likely to Recommend,Met Expectations,Customer Satisfaction,Age
+2020-08-14,Test1,10,true,Very satisfied,18-24 years old
+2020-08-14,Test2,1,false,Very dissatisfied,25-34 years old
+2020-08-14,Test3,5,true,Neither satisfied or dissatisfied,35-44 years old
+2020-08-17,Elliot King,8,true,Very satisfied,35-44 years old
+2020-08-17,Noel Hall,7,false,Somewhat satisfied,18-24 years old
+2020-07-17,My name is Robert Wright,8,true,Very satisfied,45-54 years old
+2020-08-18,Addison Lee,9,true,Very satisfied,35-44 years old
+2020-08-18,Abed Glover,7,true,Somewhat satisfied,25-34 years old
+2020-08-18,Avery Malone,6,false,Somewhat satisfied,18-24 years old
+2020-08-18,Taylor Zhou,8,true,Very satisfied,25-34 years old
+2020-08-18,Sydney Jones,9,true,Very satisfied,45-54 years old
+2020-08-18,Oakley Smith,8,true,Very satisfied,45-54 years old
+2020-08-19,Skylar Lennon,7,true,Somewhat satisfied,25-34 years old
+2020-08-19,Parker Holmes,7,false,Neither satisfied or dissatisfied,18-24 years old
+2020-08-19,Brooklyn Serrano,9,true,Very satisfied,35-44 years old
+2020-08-19,Kyler Flores,7,false,Neither satisfied or dissatisfied,18-24 years old
+2020-08-19,Denver Anderson,5,false,Somewhat dissatisfied,18-24 years old
+2020-08-19,Jules Young,7,true,Somewhat satisfied,35-44 years old
+2020-08-20,Blake Ochoa,9,true,Very satisfied,25-34 years old
+2020-08-20,Drew Donaldson,9,true,Very satisfied,45-54 years old
+2020-08-20,Robin Lee,8,true,Very satisfied,45-54 years old
+2020-08-20,Madison Posey,9,true,Very satisfied,35-44 years old

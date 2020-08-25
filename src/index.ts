@@ -6,7 +6,7 @@ import {
 import {
   TextRenderConfig
   // TSVViewerFactory
-} from 'tde-csvviewer';
+} from '@jupyterlab/csvviewer';
 import {
   WidgetTracker,
   IThemeManager
@@ -30,7 +30,7 @@ import {
   spreadsheetIcon,
   LabIcon
 } from '@jupyterlab/ui-components';
-import { DataGrid } from '@lumino/datagrid';
+import { DataGrid } from 'tde-datagrid';
 import { DSVEditor, EditableCSVViewerFactory } from './widget';
 import { CSVSearchProvider } from './searchprovider';
 import { PaintedGrid } from './grid';

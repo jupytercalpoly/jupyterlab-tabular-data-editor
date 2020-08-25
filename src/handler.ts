@@ -14,6 +14,7 @@ import { renderSelection, IBoundingRegion, BoundedDrag } from './drag';
 import { EditorModel } from './newmodel';
 import { DSVEditor } from './widget';
 import { HeaderCellEditor } from './headercelleditor';
+import { PaintedGrid } from './grid';
 // import { BasicKeyHandler } from 'tde-datagrid';
 
 export class RichMouseHandler extends BasicMouseHandler {
@@ -38,53 +39,30 @@ export class RichMouseHandler extends BasicMouseHandler {
    * @param region The current region
    * @param shadowRegion The indexes for the rows/columns of the shadow region
    */
-  computeGridBoundingRegion(
-    region: DataModel.CellRegion | 'void',
-    shadowRegion: RichMouseHandler.IRegion
-  ): IBoundingRegion {
-    // Unpack the parameters of the shadow region.
-    const { topSide, bottomSide, leftSide, rightSide } = shadowRegion;
-
+  computeGridBoundingRegion(): IBoundingRegion {
+    // Fetch the grid.
+    const grid = this._grid as PaintedGrid;
     // get the left and top offsets of the grid viewport
     const { left, top } = this._grid.viewport.node.getBoundingClientRect();
 
-    // Set up bounding variables.
-    let topBound: number;
-    let bottomBound: number;
-    let leftBound: number;
-    let rightBound: number;
+    // Get the horizontal bounds measured from the left.
+    const leftBound = left + grid.headerWidth;
+    const rightBound =
+      leftBound +
+      Math.min(
+        grid.pageWidth,
+        grid.bodyWidth - grid.ghostColumnWidth - grid.scrollX
+      );
 
-    if (region === 'column-header') {
-      // No vertical movement. Fix to the top of the grid body.
-      bottomBound = topBound = topSide;
+    // Get the vertical bounds measured from the top.
+    const topBound = top + grid.headerHeight;
+    const bottomBound =
+      topBound +
+      Math.min(
+        grid.pageHeight,
+        grid.bodyHeight - grid.ghostRowHeight - grid.scrollY
+      );
 
-      // Get the bounds for horizontal movement (measured from the left).
-      const shadowWidth = Math.abs(leftSide - rightSide);
-      const ghostColumnIndex = this._grid.dataModel.columnCount('body') - 1;
-      leftBound = left + this._grid.headerWidth;
-      rightBound =
-        leftBound +
-        Math.min(
-          this._grid.pageWidth,
-          this._grid.columnOffset('body', ghostColumnIndex)
-        ) -
-        shadowWidth;
-    } else if (region === 'row-header') {
-      // x-axis bounds are the same
-      leftBound = rightBound = leftSide;
-
-      // Get the vertical bounds (measured from the top).
-      const shadowHeight = Math.abs(topSide - bottomSide);
-      const ghostRowIndex = this._grid.dataModel.rowCount('body') - 1;
-      topBound = top + this._grid.headerHeight;
-      bottomBound =
-        topBound +
-        Math.min(
-          this._grid.pageHeight,
-          this._grid.rowOffset('body', ghostRowIndex)
-        ) -
-        shadowHeight;
-    }
     return {
       topBound,
       bottomBound,
@@ -226,7 +204,7 @@ export class RichMouseHandler extends BasicMouseHandler {
       return;
     }
     super.onMouseDown(grid, event);
-    if (this._cursor === 'grab') {
+    if (event.type === 'mousedown' && this._cursor === 'grab') {
       this._cursor = 'grabbing';
       this.handleGrabbing();
     }
@@ -268,7 +246,7 @@ export class RichMouseHandler extends BasicMouseHandler {
     );
     let { topSide, bottomSide, leftSide, rightSide } = shadowRegion;
 
-    const boundingRegion = this.computeGridBoundingRegion(region, shadowRegion);
+    const boundingRegion = this.computeGridBoundingRegion();
     renderSelection(
       topSide,
       bottomSide,
@@ -328,51 +306,45 @@ export class RichMouseHandler extends BasicMouseHandler {
     region: DataModel.CellRegion | 'void',
     index: number
   ): RichMouseHandler.IRegion {
-    let topSide: number;
-    let bottomSide: number;
-    let leftSide: number;
-    let rightSide: number;
+    // Fetch the grid.
+    const grid = this._grid;
 
-    // get the left and top offsets of the grid viewport
-    const { left, top } = this._grid.viewport.node.getBoundingClientRect();
-    if (region === 'column-header') {
-      // Get the index of the ghost row.
-      const ghostRowIndex = this._grid.dataModel.rowCount('body') - 1;
+    // Fetch the left and top offsets of the grid viewport
+    let { left, top } = grid.viewport.node.getBoundingClientRect();
 
-      topSide = top + this._grid.headerHeight;
-      // Add on to the topSide the distance to the ghost row, or the distance
-      // to the bottom of the page if the full grid isn't in view.
-      bottomSide =
-        topSide +
-        Math.min(
-          this._grid.pageHeight,
-          this._grid.rowOffset('body', ghostRowIndex)
-        );
-      leftSide =
-        left +
-        this._grid.headerWidth +
-        this._grid.columnOffset('body', index) -
-        this._grid.scrollX;
-      rightSide = leftSide + this._grid.columnSize('body', index);
-    } else if (region === 'row-header') {
-      // Get the index of the ghost column.
-      const ghostColumnIndex = this._grid.dataModel.columnCount('body') - 1;
-      topSide =
-        top +
-        this._grid.headerHeight +
-        this._grid.rowOffset('body', index) -
-        this._grid.scrollY;
-      bottomSide = topSide + this._grid.rowSize('body', index);
-      leftSide = left + this._grid.headerWidth;
-      // Add on to the leftSide the distance to the ghost column, or the distance
-      // to the right of the page if the full grid isn't in view.
-      rightSide =
-        leftSide +
-        Math.min(
-          this._grid.pageWidth,
-          this._grid.columnOffset('body', ghostColumnIndex)
-        );
+    // Compute the body origin.
+    left += grid.headerWidth;
+    top += grid.headerHeight;
+
+    // Compute the virtual body origin.
+    const vLeft = left - grid.scrollX;
+    const vTop = top - grid.scrollY;
+
+    // Fetch the selection.
+    const selection = this._grid.selectionModel.currentSelection();
+
+    // Unpack the selection.
+    let { r1, c1, r2, c2 } = selection;
+
+    // Ensure selection params are well-ordered.
+    if (r1 > r2) {
+      [r1, r2] = [r2, r1];
     }
+    if (c1 > c2) {
+      [c1, c2] = [c2, c1];
+    }
+
+    // Get the coordinates from the selection.
+    let leftSide = vLeft + grid.columnOffset('body', c1);
+    let topSide = vTop + grid.rowOffset('body', r1);
+    let rightSide = vLeft + grid.columnOffset('body', c2 + 1);
+    let bottomSide = vTop + grid.rowOffset('body', r2 + 1);
+
+    // Bound the coordinates to the page.
+    leftSide = Math.max(left, leftSide);
+    topSide = Math.max(top, topSide);
+    rightSide = Math.min(left + grid.pageWidth, rightSide);
+    bottomSide = Math.min(top + grid.pageHeight, bottomSide);
     return { topSide, bottomSide, leftSide, rightSide };
   }
 
@@ -429,8 +401,8 @@ export class RichMouseHandler extends BasicMouseHandler {
       case 'row-header': {
         const offset =
           row < currentRow
-            ? this._grid.rowOffset('body', currentRow + 1)
-            : this._grid.rowOffset('body', currentRow);
+            ? this._grid.rowOffset('body', currentRow + 1) - this._grid.scrollY
+            : this._grid.rowOffset('body', currentRow) - this._grid.scrollY;
         this._moveLine.manualPositionUpdate(null, offset + top - 1.5);
         this._selectionIndex = currentRow;
         break;
@@ -438,8 +410,10 @@ export class RichMouseHandler extends BasicMouseHandler {
       case 'column-header': {
         const offset =
           column < currentColumn
-            ? this._grid.columnOffset('body', currentColumn + 1)
-            : this._grid.columnOffset('body', currentColumn);
+            ? this._grid.columnOffset('body', currentColumn + 1) -
+              this._grid.scrollX
+            : this._grid.columnOffset('body', currentColumn) -
+              this._grid.scrollX;
         this._moveLine.manualPositionUpdate(offset + left - 1.5, null);
         this._selectionIndex = currentColumn;
         break;
