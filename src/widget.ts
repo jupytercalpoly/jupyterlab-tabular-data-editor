@@ -734,13 +734,7 @@ export class DSVEditor extends Widget {
    * @param update The modelChanged args for the Datagrid (may be null)
    */
   public updateModel(update?: DSVEditor.ModelChangedArgs): void {
-    // if not selection was passed through, take the current selection
-    // Bail early if there is no update.
-    if (!update) {
-      return;
-    }
     // If no selection property was passed in, record the current selection.
-    // grab current selection if none exists
     if (!update.selection) {
       update.selection = this._grid.selectionModel.currentSelection();
     }
@@ -751,21 +745,24 @@ export class DSVEditor extends Widget {
       update.gridStateUpdate.nextCommand === 'init'
         ? false
         : true;
-    // Update the litestore.
-    this._litestore.beginTransaction();
-    this._litestore.updateRecord(
-      {
-        schema: DSVEditor.DATAMODEL_SCHEMA,
-        record: DSVEditor.RECORD_ID
-      },
-      {
-        rowMap: update.rowUpdate || DSVEditor.NULL_NUM_SPLICE,
-        columnMap: update.columnUpdate || DSVEditor.NULL_NUM_SPLICE,
-        valueMap: update.valueUpdate || null,
-        selection: update.selection || null,
-        gridState: update.gridStateUpdate || null
-      }
-    );
+    if (update) {
+      // Update the litestore.
+      this._litestore.beginTransaction();
+      this._litestore.updateRecord(
+        {
+          schema: DSVEditor.DATAMODEL_SCHEMA,
+          record: DSVEditor.RECORD_ID
+        },
+        {
+          rowMap: update.rowUpdate || DSVEditor.NULL_NUM_SPLICE,
+          columnMap: update.columnUpdate || DSVEditor.NULL_NUM_SPLICE,
+          valueMap: update.valueUpdate || null,
+          selection: update.selection || null,
+          gridState: update.gridStateUpdate || null
+        }
+      );
+    }
+
     if (this.dataModel.isDataFormatted) {
       this._updateRenderer();
     }
