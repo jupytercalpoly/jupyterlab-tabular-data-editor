@@ -503,13 +503,48 @@ function buildContextMenu(
 
 export default [extension];
 
+export const SIZES = {
+  rowHeight: 21,
+  columnWidth: 100,
+  rowHeaderWidth: 60,
+  columnHeaderHeight: 24
+};
+
+const DATATYPE_ICON_SIZE = 15;
+
 const DATATYPE_ICON = {
   colorLight: '#1e88e5',
   colorDark: '#2196f3',
   position: {
-    size: 16,
+    size: DATATYPE_ICON_SIZE,
     left: 2,
-    top: 10
+    top: SIZES.columnHeaderHeight / 2 - DATATYPE_ICON_SIZE / 2 + 1 / 2
+  }
+};
+
+const GHOST_COLUMN_ICON_SIZE = 16;
+
+const GHOST_COLUMN_ICON = {
+  colorLight: '#616161',
+  colorDark: '#bdbdbd',
+  position: {
+    size: GHOST_COLUMN_ICON_SIZE,
+    // To center.
+    left: SIZES.columnWidth / 2 - GHOST_COLUMN_ICON_SIZE / 2,
+    top: SIZES.columnHeaderHeight / 2 - GHOST_COLUMN_ICON_SIZE / 2
+  }
+};
+
+const GHOST_ROW_ICON_SIZE = 12;
+
+const GHOST_ROW_ICON = {
+  colorLight: '#616161',
+  colorDark: '#bdbdbd',
+  position: {
+    size: GHOST_ROW_ICON_SIZE,
+    // To center.
+    left: SIZES.rowHeaderWidth / 2 - GHOST_ROW_ICON_SIZE / 2,
+    top: SIZES.rowHeight / 2 - GHOST_ROW_ICON_SIZE / 2
   }
 };
 
@@ -519,17 +554,13 @@ export const LIGHT_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
   icons: {
     'ghost-column': {
       icon: addIcon,
-      color: '#616161',
-      size: 18,
-      left: 63 /* set to columnWidth / 2 - size / 2 to make centered */,
-      top: 9 /* set to columnHeaderHeight / 2 - size / 2 to make centered */
+      color: GHOST_COLUMN_ICON.colorLight,
+      ...GHOST_COLUMN_ICON.position
     },
     'ghost-row': {
       icon: addIcon,
-      color: '#616161',
-      size: 12,
-      left: 26 /* set to rowHeaderWidth / 2 - size / 2 to make centered */,
-      top: 6 /* set to rowHeight / 2 - size / 2 to make centered. */
+      color: GHOST_ROW_ICON.colorLight,
+      ...GHOST_ROW_ICON.position
     },
     string: {
       icon: new LabIcon({ name: 'tde:string', svgstr: stringSvgString }),
@@ -567,17 +598,13 @@ export const DARK_EXTRA_STYLE: PaintedGrid.ExtraStyle = {
   icons: {
     'ghost-column': {
       icon: addIcon,
-      color: '#bdbdbd',
-      size: 18,
-      left: 63 /* set to columnWidth / 2 - size / 2 to make centered */,
-      top: 9 /* set to columnHeaderHeight / 2 - size / 2 to make centered */
+      color: GHOST_COLUMN_ICON.colorDark,
+      ...GHOST_COLUMN_ICON.position
     },
     'ghost-row': {
       icon: addIcon,
-      color: '#bdbdbd',
-      size: 12,
-      left: 26 /* set to rowHeaderWidth / 2 - size / 2 to make centered */,
-      top: 6 /* set to rowHeight / 2 - size / 2 to make centered. */
+      color: GHOST_ROW_ICON.colorDark,
+      ...GHOST_ROW_ICON.position
     },
     string: {
       icon: new LabIcon({ name: 'tde:string', svgstr: stringSvgString }),
@@ -649,7 +676,7 @@ namespace Private {
     textColor: '#111111',
     matchBackgroundColor: '#FAE480',
     currentMatchBackgroundColor: '#F5C800',
-    horizontalAlignment: 'center'
+    horizontalAlignment: 'left'
   };
 
   /**
@@ -659,7 +686,7 @@ namespace Private {
     textColor: '#F5F5F5',
     matchBackgroundColor: 'rgba(0, 84, 168, 0.5)',
     currentMatchBackgroundColor: '#0055AA',
-    horizontalAlignment: 'center'
+    horizontalAlignment: 'left'
   };
 }
 

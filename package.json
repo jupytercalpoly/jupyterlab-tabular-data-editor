@@ -1,6 +1,6 @@
 {
   "name": "jupyterlab-tabular-data-editor",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "description": "EXPERIMENTAL: JupyterLab Tabular Data Editor for CSV files",
   "keywords": [
     "jupyter",

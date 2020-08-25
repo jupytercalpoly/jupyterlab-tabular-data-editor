@@ -66,16 +66,15 @@ export class DSVEditor extends Widget {
     // Initialize the data grid.
     this._grid = new PaintedGrid({
       defaultSizes: {
-        rowHeight: 24,
-        columnWidth: 144,
-        rowHeaderWidth: 64,
-        columnHeaderHeight: 36
+        rowHeight: 21,
+        columnWidth: 100,
+        rowHeaderWidth: 60,
+        columnHeaderHeight: 24
       },
       headerVisibility: 'all'
     });
 
     this._grid.addClass(CSV_GRID_CLASS);
-    this._grid.headerVisibility = 'all';
     const keyHandler = new BasicKeyHandler();
     this._grid.keyHandler = keyHandler;
 
@@ -453,7 +452,16 @@ export class DSVEditor extends Widget {
         : rendererConfig.horizontalAlignment,
       backgroundColor: this._searchService.cellBackgroundColorRendererFunc(
         rendererConfig
-      )
+      ),
+      font: '11px sans-serif'
+    });
+    const rowHeaderRenderer = new TextRenderer({
+      textColor: rendererConfig.textColor,
+      horizontalAlignment: 'center',
+      backgroundColor: this._searchService.cellBackgroundColorRendererFunc(
+        rendererConfig
+      ),
+      font: '11px sans-serif'
     });
     const headerRenderer = new HeaderTextRenderer({
       textColor: rendererConfig.textColor,
@@ -461,6 +469,7 @@ export class DSVEditor extends Widget {
       backgroundColor: this._searchService.cellBackgroundColorRendererFunc(
         rendererConfig
       ),
+      font: '11px sans-serif',
       indent: 25,
       dataDetection: isDataFormatted
     });
@@ -469,7 +478,7 @@ export class DSVEditor extends Widget {
       body: renderer,
       'column-header': headerRenderer,
       'corner-header': renderer,
-      'row-header': renderer
+      'row-header': rowHeaderRenderer
     });
   }
 
