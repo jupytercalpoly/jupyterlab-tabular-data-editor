@@ -24,7 +24,7 @@ import {
 import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget, LayoutItem } from '@lumino/widgets';
 import { EditorModel } from './newmodel';
-import { RichMouseHandler } from './handler';
+import { RichMouseHandler } from './mousehandler';
 import { numberToCharacter } from './_helper';
 import { toArray, range } from '@lumino/algorithm';
 import { CommandRegistry } from '@lumino/commands';
