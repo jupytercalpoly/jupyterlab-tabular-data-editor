@@ -14,7 +14,6 @@ import { PromiseDelegate } from '@lumino/coreutils';
 import { Signal } from '@lumino/signaling';
 import { TextRenderConfig } from 'tde-csvviewer';
 import {
-  BasicKeyHandler,
   DataGrid,
   TextRenderer,
   SelectionModel,
@@ -24,7 +23,7 @@ import {
 import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget, LayoutItem } from '@lumino/widgets';
 import { EditorModel } from './newmodel';
-import { RichMouseHandler } from './handler';
+import { RichMouseHandler } from './mousehandler';
 import { numberToCharacter } from './_helper';
 import { toArray, range } from '@lumino/algorithm';
 import { CommandRegistry } from '@lumino/commands';
@@ -38,6 +37,7 @@ import { ListField, MapField } from 'tde-datastore';
 import { unsaveDialog } from './dialog';
 import { PaintedGrid } from './grid';
 import { HeaderTextRenderer } from './headercelleditor';
+import { RichKeyHandler } from './keyhandler';
 
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
@@ -75,7 +75,7 @@ export class DSVEditor extends Widget {
     });
 
     this._grid.addClass(CSV_GRID_CLASS);
-    const keyHandler = new BasicKeyHandler();
+    const keyHandler = new RichKeyHandler();
     this._grid.keyHandler = keyHandler;
 
     this._grid.copyConfig = {
