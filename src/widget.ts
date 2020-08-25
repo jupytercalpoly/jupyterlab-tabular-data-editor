@@ -734,18 +734,18 @@ export class DSVEditor extends Widget {
    * @param update The modelChanged args for the Datagrid (may be null)
    */
   public updateModel(update?: DSVEditor.ModelChangedArgs): void {
-    // If no selection property was passed in, record the current selection.
-    if (!update.selection) {
-      update.selection = this._grid.selectionModel.currentSelection();
-    }
-    // for every litestore change except the init, set the dirty boolean to true
-    this.dirty =
-      update &&
-      update.gridStateUpdate &&
-      update.gridStateUpdate.nextCommand === 'init'
-        ? false
-        : true;
     if (update) {
+      // If no selection property was passed in, record the current selection.
+      if (!update.selection) {
+        update.selection = this._grid.selectionModel.currentSelection();
+      }
+      // for every litestore change except the init, set the dirty boolean to true
+      this.dirty =
+        update &&
+        update.gridStateUpdate &&
+        update.gridStateUpdate.nextCommand === 'init'
+          ? false
+          : true;
       // Update the litestore.
       this._litestore.beginTransaction();
       this._litestore.updateRecord(
@@ -761,12 +761,12 @@ export class DSVEditor extends Widget {
           gridState: update.gridStateUpdate || null
         }
       );
+      this._litestore.endTransaction();
     }
 
     if (this.dataModel.isDataFormatted) {
       this._updateRenderer();
     }
-    this._litestore.endTransaction();
 
     // Recompute all of the metadata.
     // TODO: integrate the metadata with the rest of the model.
