@@ -127,6 +127,7 @@ input[type='checkbox'] {
 .jp-Toolbar-item .bp3-button-text .jp-ToolbarButtonComponent-label {
   color: var(--jp-ui-font-color3);
   padding-right: 10px;
+  font-size: var(--jp-ui-font-size1);
 }
 
 /* Default styles for the toggle switch */

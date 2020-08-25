@@ -649,7 +649,7 @@ namespace Private {
     textColor: '#111111',
     matchBackgroundColor: '#FAE480',
     currentMatchBackgroundColor: '#F5C800',
-    horizontalAlignment: 'center'
+    horizontalAlignment: 'left'
   };
 
   /**
@@ -659,7 +659,7 @@ namespace Private {
     textColor: '#F5F5F5',
     matchBackgroundColor: 'rgba(0, 84, 168, 0.5)',
     currentMatchBackgroundColor: '#0055AA',
-    horizontalAlignment: 'center'
+    horizontalAlignment: 'left'
   };
 }
 
