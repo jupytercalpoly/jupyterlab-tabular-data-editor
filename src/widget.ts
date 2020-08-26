@@ -724,9 +724,9 @@ export class DSVEditor extends Widget {
       update.selection = selection;
       // Add the command to the grid state.
       update.gridStateUpdate.nextCommand = command;
-      this.updateModel(update);
       this._grid.selectionModel.select(newSelection);
     }
+    this.updateModel(update);
   }
 
   /**
@@ -734,42 +734,35 @@ export class DSVEditor extends Widget {
    * @param update The modelChanged args for the Datagrid (may be null)
    */
   public updateModel(update?: DSVEditor.ModelChangedArgs): void {
-    // if not selection was passed through, take the current selection
-    // Bail early if there is no update.
-    if (!update) {
-      return;
-    }
-    // If no selection property was passed in, record the current selection.
-    // grab current selection if none exists
-    if (!update.selection) {
-      update.selection = this._grid.selectionModel.currentSelection();
-    }
-    // for every litestore change except the init, set the dirty boolean to true
-    this.dirty =
-      update &&
-      update.gridStateUpdate &&
-      update.gridStateUpdate.nextCommand === 'init'
-        ? false
-        : true;
-    // Update the litestore.
-    this._litestore.beginTransaction();
-    this._litestore.updateRecord(
-      {
-        schema: DSVEditor.DATAMODEL_SCHEMA,
-        record: DSVEditor.RECORD_ID
-      },
-      {
-        rowMap: update.rowUpdate || DSVEditor.NULL_NUM_SPLICE,
-        columnMap: update.columnUpdate || DSVEditor.NULL_NUM_SPLICE,
-        valueMap: update.valueUpdate || null,
-        selection: update.selection || null,
-        gridState: update.gridStateUpdate || null
+    if (update) {
+      // If no selection property was passed in, record the current selection.
+      if (!update.selection) {
+        update.selection = this._grid.selectionModel.currentSelection();
       }
-    );
-    if (this.dataModel.isDataFormatted) {
-      this._updateRenderer();
+      // for every litestore change except the init, set the dirty boolean to true
+      this.dirty =
+        update &&
+        update.gridStateUpdate &&
+        update.gridStateUpdate.nextCommand === 'init'
+          ? false
+          : true;
+      // Update the litestore.
+      this._litestore.beginTransaction();
+      this._litestore.updateRecord(
+        {
+          schema: DSVEditor.DATAMODEL_SCHEMA,
+          record: DSVEditor.RECORD_ID
+        },
+        {
+          rowMap: update.rowUpdate || DSVEditor.NULL_NUM_SPLICE,
+          columnMap: update.columnUpdate || DSVEditor.NULL_NUM_SPLICE,
+          valueMap: update.valueUpdate || null,
+          selection: update.selection || null,
+          gridState: update.gridStateUpdate || null
+        }
+      );
+      this._litestore.endTransaction();
     }
-    this._litestore.endTransaction();
 
     // Recompute all of the metadata.
     // TODO: integrate the metadata with the rest of the model.
