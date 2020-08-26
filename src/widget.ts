@@ -546,15 +546,6 @@ export class DSVEditor extends Widget {
       c2 = Math.max(selection.c1, selection.c2);
     }
 
-    const newSelection: SelectionModel.SelectArgs = {
-      r1,
-      r2,
-      c1,
-      c2,
-      cursorColumn: c1,
-      cursorRow: r1,
-      clear: 'all'
-    };
     // Set up the update object for the litestore.
     let update: DSVEditor.ModelChangedArgs | null = null;
 
@@ -567,8 +558,8 @@ export class DSVEditor extends Widget {
         update = this.dataModel.addRows('body', r2 + 1, rowSpan);
 
         // move the selection down a row to account for the new row being inserted
-        newSelection.r1 += rowSpan;
-        newSelection.r2 += rowSpan;
+        r1 += rowSpan;
+        r2 += rowSpan;
         break;
       }
       case 'insert-columns-left': {
@@ -579,8 +570,8 @@ export class DSVEditor extends Widget {
         update = this.dataModel.addColumns('body', c2 + 1, colSpan);
 
         // move the selection right a column to account for the new column being inserted
-        newSelection.c1 += colSpan;
-        newSelection.c2 += colSpan;
+        c1 += colSpan;
+        c2 += colSpan;
         break;
       }
       case 'remove-rows': {
@@ -645,21 +636,7 @@ export class DSVEditor extends Widget {
         // Have the model emit the opposite change to the Grid.
         this.dataModel.emitOppositeChange(gridState);
 
-        if (!selection) {
-          break;
-        }
-
-        // reselect the previous selection.
-        const { r1, r2, c1, c2 } = selection;
-        this._grid.selectionModel.select({
-          r1,
-          r2,
-          c1,
-          c2,
-          cursorRow: r1,
-          cursorColumn: c1,
-          clear: 'all'
-        });
+        this._grid.selectCells(selection);
 
         break;
       }
@@ -705,15 +682,7 @@ export class DSVEditor extends Widget {
         }
 
         // Make the new selection.
-        this._grid.selectionModel.select({
-          r1,
-          r2,
-          c1,
-          c2,
-          cursorRow: r1,
-          cursorColumn: c1,
-          clear: 'all'
-        });
+        this._grid.selectCells({ r1, r2, c1, c2 });
         break;
       }
       case 'save':
@@ -724,7 +693,7 @@ export class DSVEditor extends Widget {
       update.selection = selection;
       // Add the command to the grid state.
       update.gridStateUpdate.nextCommand = command;
-      this._grid.selectionModel.select(newSelection);
+      this._grid.selectCells({ r1, r2, c1, c2 });
     }
     this.updateModel(update);
   }
@@ -770,24 +739,6 @@ export class DSVEditor extends Widget {
       this.dataModel.dataTypes = this.dataModel.resetMetadata();
       this._updateRenderer();
     }
-  }
-
-  /**
-   * Selects a certain cell using the selection model
-   * @param row The row being selected
-   * @param column The column being selected
-   */
-  public selectSingleCell(row: number, column: number): void {
-    const select: SelectionModel.SelectArgs = {
-      r1: row,
-      r2: row,
-      c1: column,
-      c2: column,
-      cursorRow: row,
-      cursorColumn: column,
-      clear: 'all'
-    };
-    this._grid.selectionModel.select(select);
   }
 
   protected getSelectedRange(): SelectionModel.Selection {

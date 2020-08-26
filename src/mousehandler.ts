@@ -158,7 +158,7 @@ export class RichMouseHandler extends BasicMouseHandler {
    * @param grid - The data grid of interest.
    * @param event - The mouse down event of interest.
    */
-  onMouseDown(grid: DataGrid, event: MouseEvent): void {
+  onMouseDown(grid: PaintedGrid, event: MouseEvent): void {
     const model = grid.dataModel as EditorModel;
 
     // if the event was a left click and the hover region isn't null
@@ -183,24 +183,8 @@ export class RichMouseHandler extends BasicMouseHandler {
       update.selection = selection;
       model.onChangedSignal.emit(update);
 
-      // Bail if there's no selection
-      if (!selection) {
-        return;
-      }
-
-      // Unpack the selection args.
-      const { r1, r2, c1, c2 } = selection;
-      // Remake the selection.
-      selectionModel.select({
-        r1,
-        r2,
-        c1,
-        c2,
-        cursorRow: c1,
-        cursorColumn: c2,
-        clear: 'all'
-      });
-
+      // select cells
+      grid.selectCells(selection);
       return;
     }
     super.onMouseDown(grid, event);
@@ -426,7 +410,7 @@ export class RichMouseHandler extends BasicMouseHandler {
    * @param grid
    * @param event
    */
-  onMouseUp(grid: DataGrid, event: MouseEvent): void {
+  onMouseUp(grid: PaintedGrid, event: MouseEvent): void {
     this._event = event;
     const model = grid.dataModel as EditorModel;
     // emit the current mouse position to the Editor
@@ -442,31 +426,16 @@ export class RichMouseHandler extends BasicMouseHandler {
         const startColumn = this._moveData.column;
         const endColumn = this._selectionIndex;
         update = model.moveColumns('body', startColumn, endColumn, 1);
+
         // select the row that was just moved
-        selectionModel.select({
-          r1,
-          r2,
-          c1: endColumn,
-          c2: endColumn,
-          cursorRow: r1,
-          cursorColumn: c1,
-          clear: 'all'
-        });
+        grid.selectCells({ r1, r2, c1: endColumn, c2: endColumn });
       } else if (this._moveData.region === 'row-header') {
         const startRow = this._moveData.row;
         const endRow = this._selectionIndex;
         update = model.moveRows('body', startRow, endRow, 1);
 
         // select the row that was just moved
-        selectionModel.select({
-          r1: endRow,
-          r2: endRow,
-          c1,
-          c2,
-          cursorRow: r1,
-          cursorColumn: c1,
-          clear: 'all'
-        });
+        grid.selectCells({ r1: endRow, r2: endRow, c1, c2 });
       }
       if (update) {
         // Add the selection to the update.
@@ -485,7 +454,7 @@ export class RichMouseHandler extends BasicMouseHandler {
    * @param grid - The data grid of interest.
    * @param event - The context menu event of interest.
    */
-  onContextMenu(grid: DataGrid, event: MouseEvent): void {
+  onContextMenu(grid: PaintedGrid, event: MouseEvent): void {
     const { clientX, clientY } = event;
     const hit = grid.hitTest(clientX, clientY);
     this._mouseUpSignal.emit(hit);

@@ -185,7 +185,12 @@ export class CSVSearchProvider implements ISearchProvider<CSVDocumentWidget> {
   protected moveToCell(): void {
     if (this._target && this._currentMatch) {
       const { line, column } = this._currentMatch;
-      this._target.content.selectSingleCell(line, column);
+      this._target.content.grid.selectCells({
+        r1: line,
+        r2: line,
+        c1: column,
+        c2: column
+      });
 
       // calculate the offsets and then scroll to that cell
       const rowOffset = this._target.content.grid.rowOffset('body', line);
