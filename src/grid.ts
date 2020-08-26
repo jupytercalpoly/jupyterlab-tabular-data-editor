@@ -1,4 +1,4 @@
-import { DataGrid } from 'tde-datagrid';
+import { DataGrid, SelectionModel } from 'tde-datagrid';
 import { LabIcon, addIcon } from '@jupyterlab/ui-components';
 import { EditorModel } from './newmodel';
 
@@ -43,6 +43,30 @@ export class PaintedGrid extends DataGrid {
    */
   get ghostColumnWidth(): number {
     return this.defaultSizes.columnWidth;
+  }
+
+  /**
+   * Selects cells using the selection model
+   * @param row The row being selected
+   * @param column The column being selected
+   */
+  selectCells(selection: SelectionModel.Selection): void {
+    // Bail if no selection
+    if (!selection) {
+      return;
+    }
+
+    const { r1, r2, c1, c2 } = selection;
+    const select: SelectionModel.SelectArgs = {
+      r1,
+      r2,
+      c1,
+      c2,
+      cursorRow: r1,
+      cursorColumn: c1,
+      clear: 'all'
+    };
+    this.selectionModel.select(select);
   }
 
   /**
