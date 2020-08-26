@@ -110,7 +110,7 @@ export class PaintedGrid extends DataGrid {
     // Draw the icons.
     const model = this.dataModel as EditorModel;
     if (model && model.isDataFormatted) {
-      this._drawIcons(rx, ry, rw, rh);
+      this._paintDatatypeIcons(rx, ry, rw, rh);
       this.drawCornerHeaderRegion(0, 0, this.headerWidth, this.headerHeight);
     }
   }
@@ -250,7 +250,7 @@ export class PaintedGrid extends DataGrid {
     this.canvasGC.fillStyle = this._extraStyle.ghostRowColor;
     this.canvasGC.fillRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
 
-    this._drawGhostRowIcon();
+    this._paintGhostRowIcon();
   }
 
   private _drawGhostColumnHeader(
@@ -296,10 +296,10 @@ export class PaintedGrid extends DataGrid {
     // Fill the region with the specified color.
     this.canvasGC.fillStyle = this._extraStyle.ghostColumnColor;
     this.canvasGC.fillRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
-    this._drawColumnIcon();
+    this._paintGhostColumnIcon();
   }
 
-  private _drawGhostRowIcon(): void {
+  private _paintGhostRowIcon(): void {
     // Get the dimensions for the cell.
     const cellH = this.defaultSizes.rowHeight;
 
@@ -344,7 +344,7 @@ export class PaintedGrid extends DataGrid {
     this.canvasGC.setTransform(transform);
   }
 
-  private _drawColumnIcon(): void {
+  private _paintGhostColumnIcon(): void {
     // Get the dimensions for the cell.
     const cellW = this.defaultSizes.columnWidth;
 
@@ -436,7 +436,12 @@ export class PaintedGrid extends DataGrid {
     this.canvasGC.fillRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
   }
 
-  private _drawIcons(rx: number, ry: number, rw: number, rh: number): void {
+  private _paintDatatypeIcons(
+    rx: number,
+    ry: number,
+    rw: number,
+    rh: number
+  ): void {
     // Get the visible content dimensions.
     const contentW = this.bodyWidth - this.scrollX;
     const contentH = this.headerHeight;
