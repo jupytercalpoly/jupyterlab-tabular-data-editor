@@ -764,10 +764,6 @@ export class DSVEditor extends Widget {
       this._litestore.endTransaction();
     }
 
-    if (this.dataModel.isDataFormatted) {
-      this._updateRenderer();
-    }
-
     // Recompute all of the metadata.
     // TODO: integrate the metadata with the rest of the model.
     if (this.dataModel.isDataFormatted) {
