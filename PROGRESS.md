@@ -35,10 +35,12 @@ An account of tasks and features that are completed or planned
 ### 08/24/20 - 08/28/20
 #### [Final Presentation](https://docs.google.com/presentation/d/12M3riXxlj1GouMA5mIt6B1QbdA7MSt_KNf8h545I2oI/edit?usp=sharing)
 - Bug fixes and cleanup - Kalen/Logan
+- Project Documentation - Ryan
 
 ### 08/17/20 - 08/21/20
 - Format data mode - Kalen
 - Data type icons - Logan
+- README updates - Ryan
 
 ### 08/10/20 - 08/14/20
 - CSV launcher - Kalen
