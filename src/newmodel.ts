@@ -1518,14 +1518,14 @@ export class EditorModel extends MutableDataModel {
 
       const start = rowMap.length + this._rowsRemoved;
       const span = message.span;
-      this._assimilateNewRows(start, span);
+      this._parseNewRows(start, span);
     }
   }
 
   /**
    * Adds new rows coming in from the asynchronous parsing of string by the DSVModel.
    */
-  private _assimilateNewRows(start: number, span: number): void {
+  private _parseNewRows(start: number, span: number): void {
     // Set up an udate object for the litestore.
     const update: DSVEditor.ModelChangedArgs = {};
 
@@ -1562,11 +1562,13 @@ export class EditorModel extends MutableDataModel {
     const gridState: DSVEditor.GridState = {
       currentRows,
       currentColumns,
-      nextChange,
-      nextCommand: 'init'
+      nextChange
     };
 
     update.gridStateUpdate = gridState;
+
+    // Inidicate that this is an initialization step.
+    update.type = 'init';
 
     // Emit the update to the DSVEditor
     this._onChangeSignal.emit(update);
