@@ -110,13 +110,17 @@ export class PaintedGrid extends DataGrid {
     // Draw the icons.
     const model = this.dataModel as EditorModel;
     if (model && model.isDataFormatted) {
-      this._drawIcons(rx, ry, rw, rh);
+      this._paintDatatypeIcons(rx, ry, rw, rh);
       this.drawCornerHeaderRegion(0, 0, this.headerWidth, this.headerHeight);
     }
   }
 
   /**
    * Draw the ghost row.
+   * @param rx
+   * @param ry
+   * @param rw
+   * @param rh
    */
   private _drawGhostRow(rx: number, ry: number, rw: number, rh: number): void {
     // Get the visible content dimensions.
@@ -160,6 +164,10 @@ export class PaintedGrid extends DataGrid {
 
   /**
    * Draw the ghost column.
+   * @param rx
+   * @param ry
+   * @param rw
+   * @param rh
    */
   private _drawGhostColumn(
     rx: number,
@@ -206,6 +214,13 @@ export class PaintedGrid extends DataGrid {
     this.canvasGC.fillRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
   }
 
+  /**
+   * Draw the ghost row header
+   * @param rx
+   * @param ry
+   * @param rw
+   * @param rh
+   */
   private _drawGhostRowHeader(
     rx: number,
     ry: number,
@@ -250,9 +265,16 @@ export class PaintedGrid extends DataGrid {
     this.canvasGC.fillStyle = this._extraStyle.ghostRowColor;
     this.canvasGC.fillRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
 
-    this._drawGhostRowIcon();
+    this._paintGhostRowIcon();
   }
 
+  /**
+   * Draw the ghost column header
+   * @param rx
+   * @param ry
+   * @param rw
+   * @param rh
+   */
   private _drawGhostColumnHeader(
     rx: number,
     ry: number,
@@ -296,10 +318,13 @@ export class PaintedGrid extends DataGrid {
     // Fill the region with the specified color.
     this.canvasGC.fillStyle = this._extraStyle.ghostColumnColor;
     this.canvasGC.fillRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
-    this._drawColumnIcon();
+    this._paintGhostColumnIcon();
   }
 
-  private _drawGhostRowIcon(): void {
+  /**
+   * Paints the ghost row icon
+   */
+  private _paintGhostRowIcon(): void {
     // Get the dimensions for the cell.
     const cellH = this.defaultSizes.rowHeight;
 
@@ -310,41 +335,20 @@ export class PaintedGrid extends DataGrid {
     if (!iconArgs) {
       return;
     }
-    // Get the current transform state.
-    const transform = this.canvasGC.getTransform();
 
     // Unpack the icon arguments.
     const { icon, color, size, top, left } = iconArgs;
 
-    // Parse the icon path from the icon string.
-    const { defaultSize, path } = Private.parseSVG(icon.svgstr);
+    // Calculate the y position for the icon
+    const y = this.headerHeight + this.bodyHeight - cellH + top - this.scrollY;
 
-    // Create a path 2d object from the path string.
-    const canvasPath = new Path2D(path);
-
-    // Solve for the scaling factor using the provided width or the default.
-    const scale = size / defaultSize;
-
-    // Orient the canvas to the desired origin for the icon.
-    this.canvasGC.translate(
-      left,
-      this.headerHeight + this.bodyHeight - cellH + top - this.scrollY
-    );
-
-    // Scale the canvas.
-    this.canvasGC.scale(scale, scale);
-
-    // Set the canvas fill style.
-    this.canvasGC.fillStyle = color;
-
-    // Draw the icon.
-    this.canvasGC.fill(canvasPath, 'nonzero');
-
-    // Reset the canvas to it's default position.
-    this.canvasGC.setTransform(transform);
+    this._drawIcon(left, y, size, color, icon.svgstr);
   }
 
-  private _drawColumnIcon(): void {
+  /**
+   * Paints the ghost column icon
+   */
+  private _paintGhostColumnIcon(): void {
     // Get the dimensions for the cell.
     const cellW = this.defaultSizes.columnWidth;
 
@@ -356,38 +360,13 @@ export class PaintedGrid extends DataGrid {
       return;
     }
 
-    // Get the current transform state.
-    const transform = this.canvasGC.getTransform();
-
     // Unpack the icon arguments.
     const { icon, color, size, left, top } = iconArgs;
 
-    // Parse the icon path from the icon string.
-    const { defaultSize, path } = Private.parseSVG(icon.svgstr);
+    // Calculate x position for the icon
+    const x = this.headerWidth + this.bodyWidth - cellW + left - this.scrollX;
 
-    // Create a path 2d object from the path string.
-    const canvasPath = new Path2D(path);
-
-    // Solve for the scaling factor using the provided width or the default.
-    const scale = size / defaultSize;
-
-    // Orient to the desired origin for the icon.
-    this.canvasGC.translate(
-      this.headerWidth + this.bodyWidth - cellW + left - this.scrollX,
-      top
-    );
-
-    // Scale the canvas.
-    this.canvasGC.scale(scale, scale);
-
-    // Set the canvas fill style.
-    this.canvasGC.fillStyle = color;
-
-    // Draw the icon.
-    this.canvasGC.fill(canvasPath, 'nonzero');
-
-    // Reset the transform to the initial state
-    this.canvasGC.setTransform(transform);
+    this._drawIcon(x, top, size, color, icon.svgstr);
   }
 
   private _drawOverCorner(
@@ -436,7 +415,19 @@ export class PaintedGrid extends DataGrid {
     this.canvasGC.fillRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
   }
 
-  private _drawIcons(rx: number, ry: number, rw: number, rh: number): void {
+  /**
+   * Paints the datatype icons (string, number, boolean, date)
+   * @param rx
+   * @param ry
+   * @param rw
+   * @param rh
+   */
+  private _paintDatatypeIcons(
+    rx: number,
+    ry: number,
+    rw: number,
+    rh: number
+  ): void {
     // Get the visible content dimensions.
     const contentW = this.bodyWidth - this.scrollX;
     const contentH = this.headerHeight;
@@ -572,36 +563,54 @@ export class PaintedGrid extends DataGrid {
       // Unpack the icon arguments.
       const { icon, color, size, left, top } = iconArgs;
 
-      // Parse the icon path from the icon string.
-      const { defaultSize, path } = Private.parseSVG(icon.svgstr);
-
-      // Create a path 2d object from the path string.
-      const canvasPath = new Path2D(path);
-
-      // Get the default position of the canvas drawer.
-      const transform = this.canvasGC.getTransform();
-
-      // Orient to the desired origin for the icon.
-      this.canvasGC.translate(x + left, y + top);
-
-      // Solve for the scaling factor using the provided width or the default.
-      const scale = size / defaultSize;
-
-      // Scale the canvas.
-      this.canvasGC.scale(scale, scale);
-
-      // Set the canvas fill style.
-      this.canvasGC.fillStyle = color;
-
-      // Draw the icon.
-      this.canvasGC.fill(canvasPath, 'nonzero');
-
-      // Reset the transform to the initial state
-      this.canvasGC.setTransform(transform);
+      this._drawIcon(x + left, y + top, size, color, icon.svgstr);
 
       // Increment the running X coordinate.
       x += columnSize;
     }
+  }
+
+  /**
+   * Utilizes the canvas GC to draw the icon in the correct position with the correct styles
+   * @param x The horizontal position of the icon
+   * @param y The vertical position of the icon
+   * @param size The original size of the icon
+   * @param color The fill color for the icon
+   * @param svgstr A string containing the raw contents of the svg file
+   */
+  private _drawIcon(
+    x: number,
+    y: number,
+    size: number,
+    color: string,
+    svgstr: string
+  ): void {
+    // Parse the icon path from the icon string.
+    const { defaultSize, path } = Private.parseSVG(svgstr);
+
+    // Solve for the scaling factor using the provided width or the default.
+    const scale = size / defaultSize;
+
+    // Create a path 2d object from the path string.
+    const canvasPath = new Path2D(path);
+
+    // Get the current transform state.
+    const transform = this.canvasGC.getTransform();
+
+    // Orient to the desired origin for the icon.
+    this.canvasGC.translate(x, y);
+
+    // Scale the canvas.
+    this.canvasGC.scale(scale, scale);
+
+    // Set the canvas fill style.
+    this.canvasGC.fillStyle = color;
+
+    // Draw the icon.
+    this.canvasGC.fill(canvasPath, 'nonzero');
+
+    // Reset the transform to the initial state
+    this.canvasGC.setTransform(transform);
   }
 
   private _extraStyle: PaintedGrid.ExtraStyle;
