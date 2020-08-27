@@ -425,6 +425,9 @@ export class DSVEditor extends Widget {
     update.rowUpdate = rowUpdate;
     update.columnUpdate = columnUpdate;
 
+    // Set an indicator to show that this is the initial update.
+    update.type = 'init';
+
     // set inital status of litestore
     this.updateModel(update);
 
@@ -708,13 +711,7 @@ export class DSVEditor extends Widget {
       if (!update.selection) {
         update.selection = this._grid.selectionModel.currentSelection();
       }
-      // for every litestore change except the init, set the dirty boolean to true
-      this.dirty =
-        update &&
-        update.gridStateUpdate &&
-        update.gridStateUpdate.nextCommand === 'init'
-          ? false
-          : true;
+
       // Update the litestore.
       this._litestore.beginTransaction();
       this._litestore.updateRecord(
@@ -731,6 +728,12 @@ export class DSVEditor extends Widget {
         }
       );
       this._litestore.endTransaction();
+
+      // Bail before setting dirty if this is an init command.
+      if (update.type === 'init') {
+        return;
+      }
+      this.dirty = true;
     }
 
     // Recompute all of the metadata.
