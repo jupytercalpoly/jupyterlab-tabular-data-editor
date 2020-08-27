@@ -18,8 +18,6 @@ import { PaintedGrid } from './grid';
 // import { BasicKeyHandler } from 'tde-datagrid';
 
 export class RichMouseHandler extends BasicMouseHandler {
-  private _moveLine: BoundedDrag;
-  private _currentHoverRegion: 'ghost-row' | 'ghost-column' | null;
   constructor(options: RichMouseHandler.IOptions) {
     super();
     this._grid = options.grid;
@@ -224,10 +222,7 @@ export class RichMouseHandler extends BasicMouseHandler {
     }
 
     // get the rectangular region of the row/column our mouse clicked on
-    const shadowRegion = this.getRowOrColumnSection(
-      region,
-      this._selectionIndex
-    );
+    const shadowRegion = this.getRowOrColumnSection();
     let { topSide, bottomSide, leftSide, rightSide } = shadowRegion;
 
     const boundingRegion = this.computeGridBoundingRegion();
@@ -242,7 +237,7 @@ export class RichMouseHandler extends BasicMouseHandler {
       'shadow'
     );
 
-    // set r1, r2, c1, c2 to the bounds for the dark line
+    // Set r1, r2, c1, c2 to the bounds for the move line.
     switch (region) {
       case 'column-header': {
         leftSide = leftSide - 1;
@@ -286,10 +281,7 @@ export class RichMouseHandler extends BasicMouseHandler {
     return;
   }
 
-  getRowOrColumnSection(
-    region: DataModel.CellRegion | 'void',
-    index: number
-  ): RichMouseHandler.IRegion {
+  getRowOrColumnSection(): RichMouseHandler.IRegion {
     // Fetch the grid.
     const grid = this._grid;
 
@@ -343,9 +335,7 @@ export class RichMouseHandler extends BasicMouseHandler {
     if (this._moveData) {
       this.updateLinePosition(event);
     } else {
-      // model.ghostsRevealed = false;
       super.onMouseMove(grid, event);
-      // model.ghostsRevealed = true;
     }
     return;
   }
@@ -413,28 +403,36 @@ export class RichMouseHandler extends BasicMouseHandler {
   onMouseUp(grid: PaintedGrid, event: MouseEvent): void {
     this._event = event;
     const model = grid.dataModel as EditorModel;
-    // emit the current mouse position to the Editor
+
+    // Emit the current mouse position to the Editor.
     const hit = grid.hitTest(event.clientX, event.clientY);
     this._mouseUpSignal.emit(hit);
-    // if move data exists, handle the move first
+
+    // If move data exists, handle the move first.
     if (this._moveData) {
+      // Fetch the selection.
       const selectionModel = this._grid.selectionModel;
-      // we can assume there is a selection as it is necessary to move rows/columns
+
+      // Unpack the selection.
       const { r1, r2, c1, c2 } = selectionModel.currentSelection();
+
+      // Initialize an update variable.
       let update: DSVEditor.ModelChangedArgs;
+
+      // Determine the move axis based on the region.
       if (this._moveData.region === 'column-header') {
         const startColumn = this._moveData.column;
         const endColumn = this._selectionIndex;
         update = model.moveColumns('body', startColumn, endColumn, 1);
 
-        // select the row that was just moved
+        // Select the row that was just moved.
         grid.selectCells({ r1, r2, c1: endColumn, c2: endColumn });
       } else if (this._moveData.region === 'row-header') {
         const startRow = this._moveData.row;
         const endRow = this._selectionIndex;
         update = model.moveRows('body', startRow, endRow, 1);
 
-        // select the row that was just moved
+        // Select the row that was just moved.
         grid.selectCells({ r1: endRow, r2: endRow, c1, c2 });
       }
       if (update) {
@@ -526,6 +524,8 @@ export class RichMouseHandler extends BasicMouseHandler {
     super.onMouseDoubleClick(grid, event);
   }
 
+  private _moveLine: BoundedDrag;
+  private _currentHoverRegion: 'ghost-row' | 'ghost-column' | null;
   private _grid: DataGrid;
   private _event: MouseEvent;
   private _cursor: string | null;
