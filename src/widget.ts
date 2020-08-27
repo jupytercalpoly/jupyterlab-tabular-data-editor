@@ -22,7 +22,7 @@ import {
 } from 'tde-datagrid';
 import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget, LayoutItem } from '@lumino/widgets';
-import { EditorModel } from './newmodel';
+import { EditorModel } from './model';
 import { RichMouseHandler } from './mousehandler';
 import { numberToCharacter } from './_helper';
 import { toArray, range } from '@lumino/algorithm';

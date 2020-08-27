@@ -11,7 +11,7 @@ import {
 import { Drag } from '@lumino/dragdrop';
 import { Signal } from '@lumino/signaling';
 import { renderSelection, IBoundingRegion, BoundedDrag } from './drag';
-import { EditorModel } from './newmodel';
+import { EditorModel } from './model';
 import { DSVEditor } from './widget';
 import { HeaderCellEditor } from './headercelleditor';
 import { PaintedGrid } from './grid';
