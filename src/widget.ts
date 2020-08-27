@@ -14,7 +14,6 @@ import { PromiseDelegate } from '@lumino/coreutils';
 import { Signal } from '@lumino/signaling';
 import { TextRenderConfig } from 'tde-csvviewer';
 import {
-  BasicKeyHandler,
   DataGrid,
   TextRenderer,
   SelectionModel,
@@ -23,8 +22,8 @@ import {
 } from 'tde-datagrid';
 import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget, LayoutItem } from '@lumino/widgets';
-import { EditorModel } from './newmodel';
-import { RichMouseHandler } from './handler';
+import { EditorModel } from './model';
+import { RichMouseHandler } from './mousehandler';
 import { numberToCharacter } from './_helper';
 import { toArray, range } from '@lumino/algorithm';
 import { CommandRegistry } from '@lumino/commands';
@@ -38,6 +37,7 @@ import { ListField, MapField } from 'tde-datastore';
 import { unsaveDialog } from './dialog';
 import { PaintedGrid } from './grid';
 import { HeaderTextRenderer } from './headercelleditor';
+import { RichKeyHandler } from './keyhandler';
 
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
@@ -75,7 +75,7 @@ export class DSVEditor extends Widget {
     });
 
     this._grid.addClass(CSV_GRID_CLASS);
-    const keyHandler = new BasicKeyHandler();
+    const keyHandler = new RichKeyHandler();
     this._grid.keyHandler = keyHandler;
 
     this._grid.copyConfig = {
@@ -425,6 +425,9 @@ export class DSVEditor extends Widget {
     update.rowUpdate = rowUpdate;
     update.columnUpdate = columnUpdate;
 
+    // Set an indicator to show that this is the initial update.
+    update.type = 'init';
+
     // set inital status of litestore
     this.updateModel(update);
 
@@ -546,15 +549,6 @@ export class DSVEditor extends Widget {
       c2 = Math.max(selection.c1, selection.c2);
     }
 
-    const newSelection: SelectionModel.SelectArgs = {
-      r1,
-      r2,
-      c1,
-      c2,
-      cursorColumn: c1,
-      cursorRow: r1,
-      clear: 'all'
-    };
     // Set up the update object for the litestore.
     let update: DSVEditor.ModelChangedArgs | null = null;
 
@@ -567,8 +561,8 @@ export class DSVEditor extends Widget {
         update = this.dataModel.addRows('body', r2 + 1, rowSpan);
 
         // move the selection down a row to account for the new row being inserted
-        newSelection.r1 += rowSpan;
-        newSelection.r2 += rowSpan;
+        r1 += rowSpan;
+        r2 += rowSpan;
         break;
       }
       case 'insert-columns-left': {
@@ -579,8 +573,8 @@ export class DSVEditor extends Widget {
         update = this.dataModel.addColumns('body', c2 + 1, colSpan);
 
         // move the selection right a column to account for the new column being inserted
-        newSelection.c1 += colSpan;
-        newSelection.c2 += colSpan;
+        c1 += colSpan;
+        c2 += colSpan;
         break;
       }
       case 'remove-rows': {
@@ -645,21 +639,7 @@ export class DSVEditor extends Widget {
         // Have the model emit the opposite change to the Grid.
         this.dataModel.emitOppositeChange(gridState);
 
-        if (!selection) {
-          break;
-        }
-
-        // reselect the previous selection.
-        const { r1, r2, c1, c2 } = selection;
-        this._grid.selectionModel.select({
-          r1,
-          r2,
-          c1,
-          c2,
-          cursorRow: r1,
-          cursorColumn: c1,
-          clear: 'all'
-        });
+        this._grid.selectCells(selection);
 
         break;
       }
@@ -705,15 +685,7 @@ export class DSVEditor extends Widget {
         }
 
         // Make the new selection.
-        this._grid.selectionModel.select({
-          r1,
-          r2,
-          c1,
-          c2,
-          cursorRow: r1,
-          cursorColumn: c1,
-          clear: 'all'
-        });
+        this._grid.selectCells({ r1, r2, c1, c2 });
         break;
       }
       case 'save':
@@ -724,9 +696,9 @@ export class DSVEditor extends Widget {
       update.selection = selection;
       // Add the command to the grid state.
       update.gridStateUpdate.nextCommand = command;
-      this.updateModel(update);
-      this._grid.selectionModel.select(newSelection);
+      this._grid.selectCells({ r1, r2, c1, c2 });
     }
+    this.updateModel(update);
   }
 
   /**
@@ -734,42 +706,35 @@ export class DSVEditor extends Widget {
    * @param update The modelChanged args for the Datagrid (may be null)
    */
   public updateModel(update?: DSVEditor.ModelChangedArgs): void {
-    // if not selection was passed through, take the current selection
-    // Bail early if there is no update.
-    if (!update) {
-      return;
-    }
-    // If no selection property was passed in, record the current selection.
-    // grab current selection if none exists
-    if (!update.selection) {
-      update.selection = this._grid.selectionModel.currentSelection();
-    }
-    // for every litestore change except the init, set the dirty boolean to true
-    this.dirty =
-      update &&
-      update.gridStateUpdate &&
-      update.gridStateUpdate.nextCommand === 'init'
-        ? false
-        : true;
-    // Update the litestore.
-    this._litestore.beginTransaction();
-    this._litestore.updateRecord(
-      {
-        schema: DSVEditor.DATAMODEL_SCHEMA,
-        record: DSVEditor.RECORD_ID
-      },
-      {
-        rowMap: update.rowUpdate || DSVEditor.NULL_NUM_SPLICE,
-        columnMap: update.columnUpdate || DSVEditor.NULL_NUM_SPLICE,
-        valueMap: update.valueUpdate || null,
-        selection: update.selection || null,
-        gridState: update.gridStateUpdate || null
+    if (update) {
+      // If no selection property was passed in, record the current selection.
+      if (!update.selection) {
+        update.selection = this._grid.selectionModel.currentSelection();
       }
-    );
-    if (this.dataModel.isDataFormatted) {
-      this._updateRenderer();
+
+      // Update the litestore.
+      this._litestore.beginTransaction();
+      this._litestore.updateRecord(
+        {
+          schema: DSVEditor.DATAMODEL_SCHEMA,
+          record: DSVEditor.RECORD_ID
+        },
+        {
+          rowMap: update.rowUpdate || DSVEditor.NULL_NUM_SPLICE,
+          columnMap: update.columnUpdate || DSVEditor.NULL_NUM_SPLICE,
+          valueMap: update.valueUpdate || null,
+          selection: update.selection || null,
+          gridState: update.gridStateUpdate || null
+        }
+      );
+      this._litestore.endTransaction();
+
+      // Bail before setting dirty if this is an init command.
+      if (update.type === 'init') {
+        return;
+      }
+      this.dirty = true;
     }
-    this._litestore.endTransaction();
 
     // Recompute all of the metadata.
     // TODO: integrate the metadata with the rest of the model.
@@ -777,24 +742,6 @@ export class DSVEditor extends Widget {
       this.dataModel.dataTypes = this.dataModel.resetMetadata();
       this._updateRenderer();
     }
-  }
-
-  /**
-   * Selects a certain cell using the selection model
-   * @param row The row being selected
-   * @param column The column being selected
-   */
-  public selectSingleCell(row: number, column: number): void {
-    const select: SelectionModel.SelectArgs = {
-      r1: row,
-      r2: row,
-      c1: column,
-      c2: column,
-      cursorRow: row,
-      cursorColumn: column,
-      clear: 'all'
-    };
-    this._grid.selectionModel.select(select);
   }
 
   protected getSelectedRange(): SelectionModel.Selection {

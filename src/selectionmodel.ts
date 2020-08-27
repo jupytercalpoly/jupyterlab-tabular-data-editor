@@ -1,5 +1,5 @@
 import { BasicSelectionModel, SelectionModel } from 'tde-datagrid';
-import { EditorModel } from './newmodel';
+import { EditorModel } from './model';
 
 export default class GhostSelectionModel extends BasicSelectionModel {
   select(selection: SelectionModel.SelectArgs): void {
