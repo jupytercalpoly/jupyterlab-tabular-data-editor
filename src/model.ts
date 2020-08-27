@@ -1,19 +1,23 @@
 import { DSVModel } from 'tde-csvviewer';
 import { MutableDataModel, DataModel, SelectionModel } from 'tde-datagrid';
 import { Litestore } from './litestore';
+// import { toArray, range } from '@lumino/algorithm';
 import { DSVEditor } from './widget';
 import { Signal } from '@lumino/signaling';
 import { ListField, MapField, RegisterField } from 'tde-datastore';
 import { toArray, range } from '@lumino/algorithm';
 import { inferType } from 'vega';
+// import { SplitPanel } from '@lumino/widgets';
 
 export class EditorModel extends MutableDataModel {
   constructor(options: DSVModel.IOptions) {
     super();
+
     // If the string is empty, add a Column 1 label.
     if (options.data === '') {
       options.data = 'Column 1';
     }
+
     // Define our model.
     this._model = new DSVModel(options);
 
@@ -63,7 +67,10 @@ export class EditorModel extends MutableDataModel {
   }
 
   /**
-   * Returns an array of datatypes used as the metadata for each column
+   * An array holding the data type for each column.
+   * Current types are 'string' (generic), 'integer',
+   * 'number', 'boolean' (see Private.boolyCheck),
+   * and date.
    */
   get dataTypes(): Array<DataModel.Metadata> {
     if (this._dataTypes) {
@@ -124,7 +131,10 @@ export class EditorModel extends MutableDataModel {
 
   /**
    * The grid's current number of columns. TOTAL, NOT BY REGION.
+   *
+   * Notes: This is equivalent to columnCount('body')
    */
+
   get totalColumns(): number {
     return (
       this._model.columnCount('body') +
@@ -133,6 +143,10 @@ export class EditorModel extends MutableDataModel {
     );
   }
 
+  /**
+   * A boolean value which should be set to true
+   * when data formatting is toggled on.
+   */
   get isDataFormatted(): boolean {
     return this._isDataFormatted;
   }
@@ -163,6 +177,7 @@ export class EditorModel extends MutableDataModel {
     row: number,
     column: number
   ): DataModel.Metadata {
+    // Fetch the data type for the column.
     return this.dataTypes[column];
   }
 
@@ -226,8 +241,7 @@ export class EditorModel extends MutableDataModel {
       return;
     }
 
-    // The row comes to us as an index on a particular region. We need the
-    // absolute index (ie index 0 is the first row of data).
+    // Fetch the absolute index for the row.
     row = this._absoluteIndex(row, region);
 
     // unpack the maps from the LiteStore.
@@ -244,15 +258,15 @@ export class EditorModel extends MutableDataModel {
       return '';
     }
 
-    // check if a new value has been stored at this cell.
+    // Check if a new value has been stored at this cell.
     if (valueMap[`${row},${column}`] !== undefined) {
       const data = valueMap[`${row},${column}`];
       return data;
     }
 
     if (row < 0 || column < 0) {
-      // we are on a new column or row which has no mapped
-      // value, so we know that the value must be empty
+      // We are on a new column or row which has no maped
+      // value, so we know that the value must be empty.
       return '';
     }
 
@@ -262,7 +276,6 @@ export class EditorModel extends MutableDataModel {
     // fetch the value from the data
     const data = this._model.data(region, row, column);
 
-    // TODO: do we still need to have this, it isn't included above
     if (data === 'true') {
       return true;
     }
@@ -284,8 +297,7 @@ export class EditorModel extends MutableDataModel {
     columnSpan = 1,
     update: DSVEditor.ModelChangedArgs | null = null
   ): boolean {
-    // The row comes to us as an index on a particular region. We need the
-    // absolute index (ie index 0 is the first row of data).
+    // Fetch the absolute index for the row.
     row = this._absoluteIndex(row, region);
 
     // unpack Litestore values.
@@ -451,8 +463,7 @@ export class EditorModel extends MutableDataModel {
     // Set up an udate object for the litestore.
     const update: DSVEditor.ModelChangedArgs = {};
 
-    // The row comes to us as an index on a particular region. We need the
-    // absolute index (ie index 0 is the first row of data).
+    // Fetch the absolute index for the row.
     start = this._absoluteIndex(start, region);
 
     // Unpack values from the litestore.
@@ -588,8 +599,7 @@ export class EditorModel extends MutableDataModel {
     // Set up an udate object for the litestore.
     const update: DSVEditor.ModelChangedArgs = {};
 
-    // The row comes to us as an index on a particular region. We need the
-    // absolute index (ie index 0 is the first row of data).
+    // Fetch the absolute index for the row.
     start = this._absoluteIndex(start, region);
 
     // Unpack values from the litestore.
@@ -936,8 +946,7 @@ export class EditorModel extends MutableDataModel {
     // Set up an udate object for the litestore.
     const update: DSVEditor.ModelChangedArgs = {};
 
-    // The row comes to us as an index on a particular region. We need the
-    // absolute index (ie index 0 is the first row of data).
+    // Fetch the absolute index for the row.
     start = this._absoluteIndex(start, region);
 
     // Unpack values from the litestore.
@@ -1141,8 +1150,7 @@ export class EditorModel extends MutableDataModel {
       // convert the copied data to an array
       this._clipboard = data.split('\n').map(elem => elem.split('\t'));
     }
-    // Row comes to us as an index on a particular region. We need the
-    // absolute index (ie index 0 is the first row of data).
+    // Fetch the absolute index for the row.
     row = this._absoluteIndex(row, region);
 
     // see how much space we have
@@ -1333,19 +1341,33 @@ export class EditorModel extends MutableDataModel {
   }
 
   /**
-   * Produces two arrays inverseRowMap and inverseColumnMap such that for each x
-   * in rowMap, inverseRowMap[x] === rowMap.indexOf(x). Likewise for inverseColumnMap
-   * and columnMap.
+   * Produces two arrays inverseRowMap and inverseColumnMap
+   * such that for each x in the rowMap, inverseRowMap[x] ===
+   * rowMap.indexOf(x). The same relationship holds for
+   * inverseColumnMap and columnMap.
+   *
+   * ## Notes
+   * An analogy to consider is that the changes we have made to the row and column
+   * map are like shuffling a deck of cards. Now, we are unsuffling
+   * by performing the opposite shuffle starting with the last shuffle
+   * that was made. The only difference to note is that we are performing
+   * an *arg-sort*, so we actually begin this process with a sorted deck.
+   *
+   * ### Further notes:
+   * Though the row map and column map may change size in the process of mutations,
+   * there is a way to translate these mutations into permutations on a larger array
+   * that preserves uniqueness. What we are undoing is these permutations, which achieves an
+   * argsort.
    */
   private _invertMaps(rows: number, columns: number): Array<Array<number>> {
-    // Initialize the inverse row map and inverse column map
+    // Initialize the inverse row map and inverse column map.
     const inverseRowMap = toArray(range(0, rows));
     const inverseColumnMap = toArray(range(0, columns));
 
     // Get a copy of the undo stack of transaction ids.
     const ids = [...this._litestore.transactionStore.undoStack];
 
-    // Set up some helpful constants.
+    // Set up some helpful variables.
     let id: string;
     let change: DataModel.ChangedArgs;
     let values: number[] = [];
@@ -1354,18 +1376,20 @@ export class EditorModel extends MutableDataModel {
 
     // Iterate through each transaction id starting with the most recent.
     while (ids.length > 0) {
-      // Get the most recent ID.
+      // Fetch the id.
       id = ids.pop();
 
-      // Get the data store patch for this ID.
+      // Fetch the data store patch for this ID.
       const patch = this._litestore.getTransaction(id).patch[
         DSVEditor.SCHEMA_ID
       ][DSVEditor.RECORD_ID];
 
-      // Get the grid state before this patch.
+      // Fetch the grid state before this patch.
       const gridState = patch.gridState as RegisterField.Patch<
         DSVEditor.GridState
       >;
+
+      // Skip if there was no change to the grid state.
       if (!gridState.value) {
         continue;
       }
@@ -1378,16 +1402,21 @@ export class EditorModel extends MutableDataModel {
         nextCommand
       } = gridState.value;
 
-      // See if there is a command to invert.
+      // Skip if there is no command to invert.
       if (!nextCommand) {
         continue;
       }
 
+      // Handle each command which changes the row/column map.
       switch (nextCommand) {
         case 'insert-rows-above':
         case 'insert-rows-below': {
+          // Identify the change as a row change.
           change = nextChange as DataModel.RowsChangedArgs;
+
+          // Fetch the real index of the change.
           index = this._absoluteIndex(change.index, change.region);
+
           // The inverse change is to move a span's worth of values
           // starting from the insert point to just beyond the current length.
           values = inverseRowMap.splice(index, change.span);
@@ -1396,7 +1425,9 @@ export class EditorModel extends MutableDataModel {
         }
         case 'insert-columns-left':
         case 'insert-columns-right': {
+          // Identify the change as a column change.
           change = nextChange as DataModel.ColumnsChangedArgs;
+
           // The inverse change is to move a span's worth of values
           // starting from the insert point to just beyond the current length.
           values = inverseColumnMap.splice(change.index, change.span);
@@ -1404,8 +1435,12 @@ export class EditorModel extends MutableDataModel {
           break;
         }
         case 'remove-rows': {
+          // Identify the change as a row change.
           change = nextChange as DataModel.RowsChangedArgs;
+
+          // Fetch the absolute index.
           index = this._absoluteIndex(change.index, change.region);
+
           // The inverse change is to move a spans worth of items from
           // the end to the remove index.
           values = inverseRowMap.splice(
@@ -1416,7 +1451,9 @@ export class EditorModel extends MutableDataModel {
           break;
         }
         case 'remove-columns': {
+          // Identify the change as a column change.
           change = nextChange as DataModel.ColumnsChangedArgs;
+
           // The inverse change is to move a spans worth of items from
           // the end to the remove index.
           values = inverseColumnMap.splice(
@@ -1427,24 +1464,34 @@ export class EditorModel extends MutableDataModel {
           break;
         }
         case 'move-rows': {
+          // Identify the change as a row change.
           change = nextChange as DataModel.RowsMovedArgs;
+
+          // Fetch the absolute indices.
           index = this._absoluteIndex(change.index, change.region);
           destination = this._absoluteIndex(change.destination, change.region);
+
           // The inverse change is to move a span's worth of values from the destination to the start.
           values = inverseRowMap.splice(destination, change.span);
           inverseRowMap.splice(index, 0, ...values);
           break;
         }
         case 'move-columns': {
+          // Identify the change as a column change.
           change = nextChange as DataModel.ColumnsMovedArgs;
+
           // The inverse change is to move a span's worth of values from the destination to the start.
           values = inverseColumnMap.splice(change.destination, change.span);
           inverseColumnMap.splice(change.index, 0, ...values);
           break;
         }
         case 'clear-rows': {
+          // Identify the change as a cell change.
           change = nextChange as DataModel.CellsChangedArgs;
+
+          // Fetch the absolute index.
           index = this._absoluteIndex(change.row, change.region);
+
           // The inverse of this change is a dual operation. First, grab a span of
           values = inverseRowMap.splice(index, change.rowSpan);
           inverseRowMap.splice(currentRows - change.rowSpan, 0, ...values);
@@ -1456,8 +1503,10 @@ export class EditorModel extends MutableDataModel {
           break;
         }
         case 'clear-columns': {
+          // Identify the change as a cell change.
           change = nextChange as DataModel.CellsChangedArgs;
-          // The inverse of this change is a dual operation.
+
+          // The inverse of this change is a dual operation. First, grab a span of
           values = inverseColumnMap.splice(change.column, change.columnSpan);
           inverseColumnMap.splice(
             currentColumns - change.columnSpan,
@@ -1477,7 +1526,9 @@ export class EditorModel extends MutableDataModel {
   }
 
   /**
-   * translate from the Grid's row IDs to our own standard
+   * The data grid indexes the rows and columns on a per-region basis. The DSVModel
+   * treats the column header as the 0th row and counts up from there. This method
+   * translates one to the other.
    */
   private _absoluteIndex(row: number, region: DataModel.CellRegion): number {
     return region === 'column-header' || region === 'corner-header'
