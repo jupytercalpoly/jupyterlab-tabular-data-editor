@@ -30,7 +30,7 @@ An account of tasks and features that are completed or planned
 
 ## Current Progress
 
-### 08/16/20-08/18/20
+### 08/16/20-08/20/20
 - Data type icons. - Logan
 
 ### 08/10/20 - 08/14/20
