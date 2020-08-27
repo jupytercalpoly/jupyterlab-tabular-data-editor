@@ -18,8 +18,6 @@ import { PaintedGrid } from './grid';
 // import { BasicKeyHandler } from 'tde-datagrid';
 
 export class RichMouseHandler extends BasicMouseHandler {
-  private _moveLine: BoundedDrag;
-  private _currentHoverRegion: 'ghost-row' | 'ghost-column' | null;
   constructor(options: RichMouseHandler.IOptions) {
     super();
     this._grid = options.grid;
@@ -526,6 +524,8 @@ export class RichMouseHandler extends BasicMouseHandler {
     super.onMouseDoubleClick(grid, event);
   }
 
+  private _moveLine: BoundedDrag;
+  private _currentHoverRegion: 'ghost-row' | 'ghost-column' | null;
   private _grid: DataGrid;
   private _event: MouseEvent;
   private _cursor: string | null;
