@@ -80,21 +80,25 @@ export class BoundedDrag extends Drag {
       return;
     }
     if (this._boundingRegion || this._initializing) {
-      let sudoClientX = clientX - this._mouseOffsetX;
-      let sudoClientY = clientY - this._mouseOffsetY;
-      [sudoClientX, sudoClientY] = this.bound(sudoClientX, sudoClientY);
+      const { left, top } = this.bound(clientX, clientY);
       const style = this.dragImage.style;
-      style.top = `${sudoClientY}px`;
-      style.left = `${sudoClientX}px`;
+      style.top = `${left}px`;
+      style.left = `${top}px`;
       this._initializing = false;
     }
   }
 
-  bound(x: number, y: number): Array<number> {
+  bound(clientX: number, clientY: number): { left: number; top: number } {
+    // Adjust the position of there are mouse offsets.
+    let left = clientX - this._mouseOffsetX;
+    let top = clientY - this._mouseOffsetY;
+
+    // Return early if we do not have a bounding region.
     if (!this._boundingRegion) {
-      return [x, y];
+      return { left, top };
     }
-    // unpack the bounding region
+
+    // Unpack the bounding region.
     const {
       topBound,
       bottomBound,
@@ -109,10 +113,10 @@ export class BoundedDrag extends Drag {
     const width = parseFloat(style.width);
     const height = parseFloat(style.height);
 
-    // Bound
-    x = Math.max(leftBound, Math.min(x, rightBound - width));
-    y = Math.max(topBound, Math.min(y, bottomBound - height));
-    return [x, y];
+    // Bound.
+    left = Math.max(leftBound, Math.min(left, rightBound - width));
+    top = Math.max(topBound, Math.min(top, bottomBound - height));
+    return { left, top };
   }
 
   manualPositionUpdate(xLocation?: number, yLocation?: number): void {
