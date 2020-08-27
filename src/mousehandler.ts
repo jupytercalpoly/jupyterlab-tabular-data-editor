@@ -240,7 +240,7 @@ export class RichMouseHandler extends BasicMouseHandler {
       'shadow'
     );
 
-    // set r1, r2, c1, c2 to the bounds for the dark line
+    // Set r1, r2, c1, c2 to the bounds for the move line.
     switch (region) {
       case 'column-header': {
         leftSide = leftSide - 1;
