@@ -1,6 +1,6 @@
 import { DataGrid, SelectionModel } from 'tde-datagrid';
 import { LabIcon, addIcon } from '@jupyterlab/ui-components';
-import { EditorModel } from './newmodel';
+import { EditorModel } from './model';
 
 export class PaintedGrid extends DataGrid {
   constructor(options: PaintedGrid.IOptions) {

@@ -1,6 +1,6 @@
 import { BasicKeyHandler, DataGrid } from 'tde-datagrid';
 import { getKeyboardLayout } from '@lumino/keyboard';
-import { EditorModel } from './newmodel';
+import { EditorModel } from './model';
 
 export class RichKeyHandler extends BasicKeyHandler {
   onKeyDown(grid: DataGrid, event: KeyboardEvent): void {
