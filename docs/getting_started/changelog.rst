@@ -3,6 +3,10 @@
 Changelog
 ---------
 
+v0.7.5
+^^^^^^
+* Bug fixes with moving shadow/line
+
 v0.7.4
 ^^^^^^
 * Backspace keyboard shortcut working
