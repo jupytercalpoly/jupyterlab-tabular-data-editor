@@ -27,7 +27,7 @@ Format your data with a click of a button
 .. image:: ../../design/gifs/auto-format.gif
    :align: center
    
-Format your data with a click of a button
+Search and replace with ease
 """""""""
 
 .. image:: ../../design/gifs/searchandreplace.gif
