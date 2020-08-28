@@ -1,3 +1,4 @@
+**[Documentation](https://jupyterlab-tabular-data-editor.readthedocs.io/)** | **[Contributing](#contributing)**
 # jupyterlab-tabular-data-editor
 
 ### Manipulate your tabular data responsively and effectively within JupyterLab.
