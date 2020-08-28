@@ -82,8 +82,8 @@ export class BoundedDrag extends Drag {
     if (this._boundingRegion || this._initializing) {
       const { left, top } = this.bound(clientX, clientY);
       const style = this.dragImage.style;
-      style.top = `${left}px`;
-      style.left = `${top}px`;
+      style.left = `${left}px`;
+      style.top = `${top}px`;
       this._initializing = false;
     }
   }
