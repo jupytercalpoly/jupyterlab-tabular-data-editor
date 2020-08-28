@@ -1,8 +1,10 @@
+**[Documentation](https://jupyterlab-tabular-data-editor.readthedocs.io/)** | **[Contributing](#contributing)**
 # jupyterlab-tabular-data-editor
 
 ### Manipulate your tabular data responsively and effectively within JupyterLab.
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/jupytercalpoly/jupyterlab-tabular-data-editor/master?urlpath=lab) ![Github Actions Status](https://github.com/jupytercalpoly/jupyterlab-tabular-data-editor/workflows/Build/badge.svg) ![npm](https://img.shields.io/npm/v/jupyterlab-tabular-data-editor) ![npm](https://img.shields.io/npm/dt/jupyterlab-tabular-data-editor?color=orange)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/jupytercalpoly/jupyterlab-tabular-data-editor/master?urlpath=lab) ![Github Actions Status](https://github.com/jupytercalpoly/jupyterlab-tabular-data-editor/workflows/Build/badge.svg) [![Documentation Status](https://readthedocs.org/projects/jupyterlab-tabular-data-editor/badge/?version=latest)](https://jupyterlab-tabular-data-editor.readthedocs.io/en/latest/?badge=latest)
+ ![npm](https://img.shields.io/npm/v/jupyterlab-tabular-data-editor) ![npm](https://img.shields.io/npm/dt/jupyterlab-tabular-data-editor?color=orange)
 
 ### EXPERIMENTAL: This extension is still in alpha. The API is subject to frequent changes.
 
@@ -16,7 +18,7 @@ Read more about the Jupyter Tabular Data Editor Extension in our [press release]
 
 Check out our [current progress and future plans](https://github.com/jupytercalpoly/jupyterlab-tabular-data-editor/blob/master/PROGRESS.md)!
 
-See our progress as of 08/07/2020 from these [slides](https://docs.google.com/presentation/d/1ZGjFb3RkoR5Cc39DDdtU-AYAoYMNVMyUM9g80qgNzos/edit?usp=sharing)!
+See our progress as of 08/27/2020 from these [slides](https://docs.google.com/presentation/d/12M3riXxlj1GouMA5mIt6B1QbdA7MSt_KNf8h545I2oI/edit?usp=sharing)!
 
 ## Feature Showcase
 <details>
