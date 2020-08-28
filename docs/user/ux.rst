@@ -23,7 +23,10 @@ Keyboard Shortcuts
 =========
 You can manipulate your data and navigate the datagrid through keyboard shortcuts.
 
-.. list-table:: General extension shortcuts
+General extension shortcuts
+"""""""""
+
+.. list-table:: 
    :widths: 30 70
    :header-rows: 1
 
@@ -46,8 +49,10 @@ You can manipulate your data and navigate the datagrid through keyboard shortcut
    * - Space
      - Edit a cell
 
+Moving around in the datagrid
+"""""""""
 
-.. list-table:: Moving around in the datagrid
+.. list-table:: 
    :widths: 30 70
    :header-rows: 1
 
@@ -70,7 +75,10 @@ You can manipulate your data and navigate the datagrid through keyboard shortcut
    * - Shift + Enter
      - Move one cell up
      
-.. list-table:: Selecting cells
+Selecting cells
+"""""""""
+
+.. list-table:: 
    :widths: 30 70
    :header-rows: 1
 
