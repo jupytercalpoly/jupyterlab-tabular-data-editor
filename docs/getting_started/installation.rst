@@ -54,4 +54,5 @@ Now every change will be built locally and bundled into JupyterLab. Be sure to r
 Uninstall
 =========
 .. code:: bash
+
     jupyter labextension uninstall jupyterlab-tabular-data-editor
