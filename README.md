@@ -16,7 +16,7 @@ Read more about the Jupyter Tabular Data Editor Extension in our [press release]
 
 Check out our [current progress and future plans](https://github.com/jupytercalpoly/jupyterlab-tabular-data-editor/blob/master/PROGRESS.md)!
 
-See our progress as of 08/07/2020 from these [slides](https://docs.google.com/presentation/d/1ZGjFb3RkoR5Cc39DDdtU-AYAoYMNVMyUM9g80qgNzos/edit?usp=sharing)!
+See our progress as of 08/27/2020 from these [slides](https://docs.google.com/presentation/d/12M3riXxlj1GouMA5mIt6B1QbdA7MSt_KNf8h545I2oI/edit?usp=sharing)!
 
 ## Feature Showcase
 <details>
