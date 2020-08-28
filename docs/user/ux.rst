@@ -9,14 +9,14 @@ Toolbar
 =========
 The toolbar has the following functionalities: save, undo, redo, cut, copy, and paste. In addition, you can format your data based on data types by toggling on `Format Data`.
 
-.. image:: ../../design/gifs/moving.gif
+.. image:: ../../design/gifs/Toolbar.png
    :align: center
 
 Context Menus
 =========
 You can access the context menu by right-clicking. Commands within the context menu adjust depending on what’s selected and where you right-click on the datagrid. 
 
-.. image:: ../../design/gifs/moving.gif
+.. image:: ../../design/gifs/context-menus.gif
    :align: center
 
 Keyboard Shortcuts
