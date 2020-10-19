@@ -7,6 +7,12 @@ Requirements
 ~~~~~~~~~~~~
 JupyterLab >= 2.0
 
+Install Nodejs
+~~~~~~~
+.. code:: bash
+
+    conda install -c conda forge nodejs 
+
 Install
 ~~~~~~~
 
