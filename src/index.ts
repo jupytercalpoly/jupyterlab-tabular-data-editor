@@ -368,6 +368,14 @@ function addCommands(
     }
   });
 
+  commands.addCommand(CommandIDs.openLinkContextMenu, {
+    label: 'Open Link',
+    execute: () => {
+      tracker.currentWidget &&
+        tracker.currentWidget.content.commandSignal.emit('open-link');
+    }
+  });
+
   commands.addCommand(CommandIDs.clearCells, {
     label: 'Clear Contents',
     execute: () => {
@@ -397,6 +405,8 @@ function addCommands(
     'cutContextMenu',
     'copyContextMenu',
     'pasteContextMenu',
+    'separator',
+    'openLinkContextMenu', //temporarily here to display the open link command on the context menu
     'separator'
   ];
 
@@ -709,5 +719,6 @@ export const CommandIDs: { [key: string]: string } = {
   save: 'tde-save',
   clearCells: 'tde-clear-contents',
   clearColumns: 'tde-clear-columns',
-  clearRows: 'tde-clear-rows'
+  clearRows: 'tde-clear-rows',
+  openLinkContextMenu: 'tde:open-link'
 };
