@@ -38,6 +38,7 @@ import { unsaveDialog } from './dialog';
 import { PaintedGrid } from './grid';
 import { HeaderTextRenderer } from './headercelleditor';
 import { RichKeyHandler } from './keyhandler';
+import { checkHyperlink } from './hyperlink';
 
 const CSV_CLASS = 'jp-CSVViewer';
 const CSV_GRID_CLASS = 'jp-CSVViewer-grid';
@@ -553,6 +554,15 @@ export class DSVEditor extends Widget {
     let update: DSVEditor.ModelChangedArgs | null = null;
 
     switch (command) {
+      case 'open-link': {
+        const cellData = this.dataModel.data('body', r1, c1);
+        const checkedHyperlink = checkHyperlink(cellData);
+        if (checkedHyperlink) {
+          window.open(cellData, '_blank');
+        }
+        break;
+      }
+
       case 'insert-rows-above': {
         update = this.dataModel.addRows('body', r1, rowSpan);
         break;
@@ -894,7 +904,8 @@ export namespace DSVEditor {
     | 'paste-cells'
     | 'undo'
     | 'redo'
-    | 'save';
+    | 'save'
+    | 'open-link';
   /**
 
    * The arguments emitted to the Editor when the datamodel changes
