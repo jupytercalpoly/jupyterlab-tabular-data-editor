@@ -8,7 +8,7 @@
 
 ### EXPERIMENTAL: This extension is still in alpha. The API is subject to frequent changes.
 
-![](design/gifs/showcase.gif)
+![](https://raw.githubusercontent.com/jupytercalpoly/jupyterlab-tabular-data-editor/master/design/gifs/showcase.gif)
 
 Try our extension [here](https://mybinder.org/v2/gh/jupytercalpoly/jupyterlab-tabular-data-editor/master?urlpath=lab)!
 
@@ -25,31 +25,31 @@ See our progress as of 08/27/2020 from these [slides](https://docs.google.com/pr
 <summary>View Extension Highlights</summary>
 <br>
   <h3>Launch new files and quickly add rows and columns</h3>
-  <img src="design/gifs/csvlauncher.gif" alt="gif of launching a new csv file within JupyterLab">
+  <img src="https://raw.githubusercontent.com/jupytercalpoly/jupyterlab-tabular-data-editor/master/design/gifs/csvlauncher.gif" alt="gif of launching a new csv file within JupyterLab">
   
   <br>
   <br>
   
   <h3>Seamlessly rearrange your data table</h3>
-  <img src="design/gifs/moving.gif" alt="gif of moving rows and columns within JupyterLab">
+  <img src="https://raw.githubusercontent.com/jupytercalpoly/jupyterlab-tabular-data-editor/master/design/gifs/moving.gif" alt="gif of moving rows and columns within JupyterLab">
   
    <br>
    <br>
    
   <h3>Insert and remove multiple rows and columns</h3>
-  <img src="design/gifs/multiremoveandinsert.gif" alt="gif of removing and inserting multiple rows and columns within JupyterLab">
+  <img src="https://raw.githubusercontent.com/jupytercalpoly/jupyterlab-tabular-data-editor/master/design/gifs/multiremoveandinsert.gif" alt="gif of removing and inserting multiple rows and columns within JupyterLab">
   
    <br>
    <br>
    
   <h3>Format your data with a click of a button</h3>
-  <img src="design/gifs/auto-format.gif" alt="gif of toggling on a mode that formats data based on data types within JupyterLab">
+  <img src="https://raw.githubusercontent.com/jupytercalpoly/jupyterlab-tabular-data-editor/master/design/gifs/auto-format.gif" alt="gif of toggling on a mode that formats data based on data types within JupyterLab">
   
    <br>
    <br>
    
   <h3>Search and replace with ease</h3>
-  <img src="design/gifs/searchandreplace.gif" alt="gif of searching and replacing a word within a large file within JupyterLab">
+  <img src="https://raw.githubusercontent.com/jupytercalpoly/jupyterlab-tabular-data-editor/master/design/gifs/searchandreplace.gif" alt="gif of searching and replacing a word within a large file within JupyterLab">
 </details>
 
 ## Requirements
