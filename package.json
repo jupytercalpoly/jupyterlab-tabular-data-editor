@@ -12,7 +12,9 @@
     "url": "https://github.com/jupytercalpoly/jupyterlab-tabular-dataeditor.git/issues"
   },
   "license": "BSD-3-Clause",
-  "author": "Kalen Goo, Logan McNichols, Ryan Untalan",
+  "author": {
+    "name": "Kalen Goo, Logan McNichols, Ryan Untalan"
+  },
   "files": [
     "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
     "style/**/*.{css,eot,gif,html,jpg,json,png,svg,woff2,ttf}",
