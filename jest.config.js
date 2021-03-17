@@ -9,7 +9,7 @@ module.exports = {
   setupFiles: ['<rootDir>/testutils/jest-setup-files.js'],
   testPathIgnorePatterns: ['/lib/', '/node_modules/'],
   transformIgnorePatterns: [
-    '/node_modules/(?!(@jupyterlab/.*|tde-csvviewer)/)'
+    '/node_modules/(?!(@jupyterlab/.*)/)'
   ],
 
   globals: {

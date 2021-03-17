@@ -5,7 +5,7 @@ import {
   TextRenderer,
   CellRenderer,
   GraphicsContext
-} from 'tde-datagrid';
+} from '@lumino/datagrid';
 
 export class HeaderCellEditor extends TextCellEditor {
   /**

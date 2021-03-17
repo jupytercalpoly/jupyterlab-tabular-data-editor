@@ -1,6 +1,6 @@
 import { Signal } from '@lumino/signaling';
 import { TextRenderConfig } from '@jupyterlab/csvviewer';
-import { DataGrid, CellRenderer } from 'tde-datagrid';
+import { DataGrid, CellRenderer } from '@lumino/datagrid';
 import { ISignal } from '@lumino/signaling';
 import { ISearchMatch } from '@jupyterlab/documentsearch';
 

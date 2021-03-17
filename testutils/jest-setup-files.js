@@ -1,5 +1,5 @@
 global.fetch = require('jest-fetch-mock');
 require('enzyme').configure({
-  adapter: new (require('enzyme-adapter-react-16'))()
+  adapter: new (require('@wojtekmaj/enzyme-adapter-react-17'))()
 });
 require('jest-canvas-mock');

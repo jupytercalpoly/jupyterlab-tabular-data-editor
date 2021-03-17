@@ -30,7 +30,7 @@ import {
   spreadsheetIcon,
   LabIcon
 } from '@jupyterlab/ui-components';
-import { DataGrid } from 'tde-datagrid';
+import { DataGrid } from '@lumino/datagrid';
 import { DSVEditor, EditableCSVViewerFactory } from './widget';
 import { CSVSearchProvider } from './searchprovider';
 import { PaintedGrid } from './grid';
