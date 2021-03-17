@@ -1385,9 +1385,7 @@ export class EditorModel extends MutableDataModel {
       ][DSVEditor.RECORD_ID];
 
       // Fetch the grid state before this patch.
-      const gridState = patch.gridState as RegisterField.Patch<
-        DSVEditor.GridState
-      >;
+      const gridState = patch.gridState as RegisterField.Patch<DSVEditor.GridState>;
 
       // Skip if there was no change to the grid state.
       if (!gridState.value) {

@@ -360,10 +360,7 @@ export class DSVEditor extends Widget {
     // if only single alphabets fix the string
     if (numCol <= 26) {
       return (
-        alphabet
-          .slice(0, numCol)
-          .split('')
-          .join(colDelimiter) + rowDelimiter
+        alphabet.slice(0, numCol).split('').join(colDelimiter) + rowDelimiter
       );
     }
     // otherwise compute the column header with multi-letters (AA..)
@@ -485,9 +482,7 @@ export class DSVEditor extends Widget {
     });
   }
 
-  cellHorizontalAlignmentRendererFunc(): CellRenderer.ConfigOption<
-    TextRenderer.HorizontalAlignment
-  > {
+  cellHorizontalAlignmentRendererFunc(): CellRenderer.ConfigOption<TextRenderer.HorizontalAlignment> {
     return ({ region, row, column }) => {
       const { type } = this.dataModel.dataTypes[column];
       if (region !== 'body' || type === 'boolean') {
