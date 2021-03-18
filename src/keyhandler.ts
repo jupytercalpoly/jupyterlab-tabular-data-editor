@@ -1,4 +1,4 @@
-import { BasicKeyHandler, DataGrid } from 'tde-datagrid';
+import { BasicKeyHandler, DataGrid } from '@lumino/datagrid';
 import { getKeyboardLayout } from '@lumino/keyboard';
 import { EditorModel } from './model';
 

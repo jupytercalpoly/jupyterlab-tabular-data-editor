@@ -6,7 +6,7 @@ import {
   Schema,
   Table,
   Record
-} from 'tde-datastore';
+} from '@lumino/datastore';
 
 import { IDisposable } from '@lumino/disposable';
 

@@ -1,4 +1,4 @@
-import { DataGrid, SelectionModel } from 'tde-datagrid';
+import { DataGrid, SelectionModel } from '@lumino/datagrid';
 import { LabIcon, addIcon } from '@jupyterlab/ui-components';
 import { EditorModel } from './model';
 

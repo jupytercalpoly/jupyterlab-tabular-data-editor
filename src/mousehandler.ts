@@ -7,7 +7,7 @@ import {
   CellEditor,
   ICellEditResponse,
   MutableDataModel
-} from 'tde-datagrid';
+} from '@lumino/datagrid';
 import { Drag } from '@lumino/dragdrop';
 import { Signal } from '@lumino/signaling';
 import { renderSelection, IBoundingRegion, BoundedDrag } from './drag';
@@ -15,7 +15,7 @@ import { EditorModel } from './model';
 import { DSVEditor } from './widget';
 import { HeaderCellEditor } from './headercelleditor';
 import { PaintedGrid } from './grid';
-// import { BasicKeyHandler } from 'tde-datagrid';
+// import { BasicKeyHandler } from '@lumino/datagrid';
 
 export class RichMouseHandler extends BasicMouseHandler {
   constructor(options: RichMouseHandler.IOptions) {

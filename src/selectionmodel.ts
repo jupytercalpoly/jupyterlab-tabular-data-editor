@@ -1,4 +1,4 @@
-import { BasicSelectionModel, SelectionModel } from 'tde-datagrid';
+import { BasicSelectionModel, SelectionModel } from '@lumino/datagrid';
 import { EditorModel } from './model';
 
 export default class GhostSelectionModel extends BasicSelectionModel {

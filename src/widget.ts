@@ -12,14 +12,14 @@ import {
 } from '@jupyterlab/docregistry';
 import { PromiseDelegate } from '@lumino/coreutils';
 import { Signal } from '@lumino/signaling';
-import { TextRenderConfig } from 'tde-csvviewer';
+import { TextRenderConfig } from '@jupyterlab/csvviewer';
 import {
   DataGrid,
   TextRenderer,
   SelectionModel,
   DataModel,
   CellRenderer
-} from 'tde-datagrid';
+} from '@lumino/datagrid';
 import { Message } from '@lumino/messaging';
 import { PanelLayout, Widget, LayoutItem } from '@lumino/widgets';
 import { EditorModel } from './model';
@@ -32,8 +32,8 @@ import { VirtualDOM, h } from '@lumino/virtualdom';
 import { GridSearchService } from './searchservice';
 import { Litestore } from './litestore';
 import GhostSelectionModel from './selectionmodel';
-import { Fields } from 'tde-datastore';
-import { ListField, MapField } from 'tde-datastore';
+import { Fields } from '@lumino/datastore';
+import { ListField, MapField } from '@lumino/datastore';
 import { unsaveDialog } from './dialog';
 import { PaintedGrid } from './grid';
 import { HeaderTextRenderer } from './headercelleditor';
@@ -360,10 +360,7 @@ export class DSVEditor extends Widget {
     // if only single alphabets fix the string
     if (numCol <= 26) {
       return (
-        alphabet
-          .slice(0, numCol)
-          .split('')
-          .join(colDelimiter) + rowDelimiter
+        alphabet.slice(0, numCol).split('').join(colDelimiter) + rowDelimiter
       );
     }
     // otherwise compute the column header with multi-letters (AA..)
@@ -485,9 +482,7 @@ export class DSVEditor extends Widget {
     });
   }
 
-  cellHorizontalAlignmentRendererFunc(): CellRenderer.ConfigOption<
-    TextRenderer.HorizontalAlignment
-  > {
+  cellHorizontalAlignmentRendererFunc(): CellRenderer.ConfigOption<TextRenderer.HorizontalAlignment> {
     return ({ region, row, column }) => {
       const { type } = this.dataModel.dataTypes[column];
       if (region !== 'body' || type === 'boolean') {

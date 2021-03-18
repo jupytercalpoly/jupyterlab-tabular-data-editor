@@ -30,7 +30,7 @@ import {
   spreadsheetIcon,
   LabIcon
 } from '@jupyterlab/ui-components';
-import { DataGrid } from 'tde-datagrid';
+import { DataGrid } from '@lumino/datagrid';
 import { DSVEditor, EditableCSVViewerFactory } from './widget';
 import { CSVSearchProvider } from './searchprovider';
 import { PaintedGrid } from './grid';
@@ -485,20 +485,18 @@ function buildContextMenu(
   selector: string
 ): void {
   // iterate over every command adding it to the context menu
-  commands.forEach(
-    (command: string): void => {
-      // if the command is a separator, add a separator
-      command === 'separator'
-        ? app.contextMenu.addItem({
-            type: 'separator',
-            selector: selector
-          })
-        : app.contextMenu.addItem({
-            command: CommandIDs[command],
-            selector: selector
-          });
-    }
-  );
+  commands.forEach((command: string): void => {
+    // if the command is a separator, add a separator
+    command === 'separator'
+      ? app.contextMenu.addItem({
+          type: 'separator',
+          selector: selector
+        })
+      : app.contextMenu.addItem({
+          command: CommandIDs[command],
+          selector: selector
+        });
+  });
 }
 
 export default [extension];

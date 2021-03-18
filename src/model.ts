@@ -1,10 +1,10 @@
-import { DSVModel } from 'tde-csvviewer';
-import { MutableDataModel, DataModel, SelectionModel } from 'tde-datagrid';
+import { DSVModel } from '@jupyterlab/csvviewer';
+import { MutableDataModel, DataModel, SelectionModel } from '@lumino/datagrid';
 import { Litestore } from './litestore';
 // import { toArray, range } from '@lumino/algorithm';
 import { DSVEditor } from './widget';
 import { Signal } from '@lumino/signaling';
-import { ListField, MapField, RegisterField } from 'tde-datastore';
+import { ListField, MapField, RegisterField } from '@lumino/datastore';
 import { toArray, range } from '@lumino/algorithm';
 import { inferType } from 'vega';
 // import { SplitPanel } from '@lumino/widgets';
@@ -1385,9 +1385,7 @@ export class EditorModel extends MutableDataModel {
       ][DSVEditor.RECORD_ID];
 
       // Fetch the grid state before this patch.
-      const gridState = patch.gridState as RegisterField.Patch<
-        DSVEditor.GridState
-      >;
+      const gridState = patch.gridState as RegisterField.Patch<DSVEditor.GridState>;
 
       // Skip if there was no change to the grid state.
       if (!gridState.value) {
