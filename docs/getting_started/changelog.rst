@@ -2,6 +2,9 @@
 
 Changelog
 ---------
+v1.0.0
+^^^^^^
+* Extension is now compatible with Jupyterlab 3.0
 
 v0.7.5
 ^^^^^^

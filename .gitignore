@@ -9,3 +9,5 @@ node_modules/
 .eslintcache
 **/.DS_Store
 coverage/
+jupyterlab-tabular-data-editor/__pycache__/
+jupyterlab-tabular-data-editor/labextension/
